@@ -37,6 +37,9 @@ namespace CrazyBowling.Ball
 
         /// <summary>レーン正面から左右に振る角度（度）。正が右回り。</summary>
         public float sideAngle;
+
+        /// <summary>引き幅の割合（0〜1）。表示用。isValid が false のときも値が入る。</summary>
+        public float pullRatio;
     }
 
     /// <summary>
@@ -71,14 +74,16 @@ namespace CrazyBowling.Ball
                 pull = -pull;
             }
 
+            // 引き幅を 0〜1 に正規化する。表示に使うので、投げない場合も先に求める
+            float pullRatio = Mathf.Clamp01(pull / maxDrag);
+
             // 引き幅が足りない（または逆向きに動かした）ときは投げない
             if (pull < settings.minDragPixels)
             {
-                return new ThrowResult { isValid = false, speed = 0f, sideAngle = 0f };
+                return new ThrowResult { isValid = false, speed = 0f, sideAngle = 0f, pullRatio = pullRatio };
             }
 
-            // 引き幅を 0〜1 に正規化して、最小初速と最大初速の間を取る
-            float pullRatio = Mathf.Clamp01(pull / maxDrag);
+            // 最小初速と最大初速の間を取る
             float speed = Mathf.Lerp(settings.minThrowSpeed, settings.maxThrowSpeed, pullRatio);
 
             // 右にずらすと正。パチンコと同じで、引いた向きと逆に飛ぶ
@@ -90,7 +95,7 @@ namespace CrazyBowling.Ball
                 sideAngle = -sideAngle;
             }
 
-            return new ThrowResult { isValid = true, speed = speed, sideAngle = sideAngle };
+            return new ThrowResult { isValid = true, speed = speed, sideAngle = sideAngle, pullRatio = pullRatio };
         }
     }
 }

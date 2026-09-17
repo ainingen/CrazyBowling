@@ -132,6 +132,35 @@ namespace CrazyBowling.Tests.EditMode
         }
 
         [Test]
+        public void 半分引くと引き幅の割合が0_5になる()
+        {
+            ThrowResult result = ThrowCalculator.Calculate(
+                new Vector2(500f, 400f), new Vector2(500f, 250f), CreateSettings());
+
+            Assert.That(result.pullRatio, Is.EqualTo(0.5f).Within(Tolerance));
+        }
+
+        [Test]
+        public void 投げない範囲でも引き幅の割合は入っている()
+        {
+            ThrowResult result = ThrowCalculator.Calculate(
+                new Vector2(500f, 400f), new Vector2(500f, 390f), CreateSettings());
+
+            // 表示のバーを伸ばすため、投げない場合も割合だけは返す
+            Assert.IsFalse(result.isValid);
+            Assert.That(result.pullRatio, Is.EqualTo(10f / 300f).Within(Tolerance));
+        }
+
+        [Test]
+        public void 引きすぎても引き幅の割合は1でクランプされる()
+        {
+            ThrowResult result = ThrowCalculator.Calculate(
+                new Vector2(500f, 400f), new Vector2(500f, -200f), CreateSettings());
+
+            Assert.That(result.pullRatio, Is.EqualTo(1f).Within(Tolerance));
+        }
+
+        [Test]
         public void 最小の引き幅ちょうどなら投げられる()
         {
             ThrowResult result = ThrowCalculator.Calculate(

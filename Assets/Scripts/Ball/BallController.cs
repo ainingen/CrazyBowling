@@ -79,12 +79,25 @@ namespace CrazyBowling.Ball
         private Vector2 _dragStart;
         private float _rollingTimer;
         private float _stopTimer;
+        private ThrowResult _dragPreview;
 
         /// <summary>現在の状態。</summary>
         public BallState State => _state;
 
         /// <summary>転がっている最中か。カメラの追従切り替えに使う。</summary>
         public bool IsRolling => _state == BallState.Rolling;
+
+        /// <summary>ドラッグ中か。表示の出し入れに使う。</summary>
+        public bool IsDragging => _state == BallState.Dragging;
+
+        /// <summary>
+        /// ドラッグ中に毎フレーム計算している、今離したらどうなるかの予測。表示専用。
+        /// 実際の投球はこの値を使わず、離した時点で改めて計算する。
+        /// </summary>
+        public ThrowResult DragPreview => _dragPreview;
+
+        /// <summary>構え位置。矢印の起点を知るために公開している。</summary>
+        public Transform SpawnPoint => spawnPoint;
 
         private void Awake()
         {
@@ -128,6 +141,7 @@ namespace CrazyBowling.Ball
             if (Mouse.current.leftButton.wasPressedThisFrame)
             {
                 _dragStart = mousePosition;
+                _dragPreview = default;
                 _state = BallState.Dragging;
             }
         }
@@ -135,6 +149,10 @@ namespace CrazyBowling.Ball
         /// <summary>ドラッグ中：位置は固定。離したら投球を計算する。</summary>
         private void UpdateDragging()
         {
+            // 表示用の予測を毎フレーム更新する（投球には使わない）
+            _dragPreview = ThrowCalculator.Calculate(
+                _dragStart, Mouse.current.position.ReadValue(), BuildThrowSettings(), invertDrag, invertSideAngle);
+
             if (!Mouse.current.leftButton.wasReleasedThisFrame)
             {
                 return;
@@ -193,11 +211,7 @@ namespace CrazyBowling.Ball
             _rigidbody.linearVelocity = Vector3.zero;
             _rigidbody.angularVelocity = Vector3.zero;
 
-            // 構え位置の前方向を基準に、左右へ角度を振る
-            Vector3 forward = spawnPoint != null ? spawnPoint.forward : Vector3.forward;
-            Vector3 direction = Quaternion.AngleAxis(result.sideAngle, Vector3.up) * forward;
-            direction.y = 0f;
-            direction = direction.sqrMagnitude > Mathf.Epsilon ? direction.normalized : Vector3.forward;
+            Vector3 direction = CalculateThrowDirection(result.sideAngle);
 
             // 初速（m/s）をそのまま速度差として与える
             _rigidbody.AddForce(direction * result.speed, ForceMode.VelocityChange);
@@ -210,6 +224,19 @@ namespace CrazyBowling.Ball
             {
                 Debug.Log($"投球：初速 {result.speed:F2} m/s ／ 角度 {result.sideAngle:F1} 度", this);
             }
+        }
+
+        /// <summary>
+        /// 左右の角度から、実際に投げる方向を求める。
+        /// 表示の矢印が実際の進路とズレないよう、投球と同じこのメソッドを使う。
+        /// </summary>
+        public Vector3 CalculateThrowDirection(float sideAngle)
+        {
+            // 構え位置の前方向を基準に、左右へ角度を振る
+            Vector3 forward = spawnPoint != null ? spawnPoint.forward : Vector3.forward;
+            Vector3 direction = Quaternion.AngleAxis(sideAngle, Vector3.up) * forward;
+            direction.y = 0f;
+            return direction.sqrMagnitude > Mathf.Epsilon ? direction.normalized : Vector3.forward;
         }
 
         /// <summary>構え位置に戻す。速度を0にしてから Kinematic に戻す。</summary>
