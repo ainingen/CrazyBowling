@@ -14,6 +14,9 @@ namespace CrazyBowling.Ball
 
         /// <summary>投球後。物理に任せて転がっている。</summary>
         Rolling,
+
+        /// <summary>転がり終わって決着した。判定が済むまで、この場で待つ。</summary>
+        Settled,
     }
 
     /// <summary>
@@ -56,21 +59,21 @@ namespace CrazyBowling.Ball
         [Tooltip("左右の向きを反転する。")]
         [SerializeField] private bool invertSideAngle = false;
 
-        [Header("リセット条件")]
+        [Header("決着の条件")]
         [Tooltip("これより遅くなったら「止まった」とみなす速度（m/s）。")]
         [SerializeField] private float stopVelocityThreshold = 0.2f;
 
-        [Tooltip("止まった状態がこの秒数続いたら構えに戻す。")]
+        [Tooltip("止まった状態がこの秒数続いたら決着とみなす。構えには戻らない。")]
         [SerializeField] private float stopWaitSeconds = 1f;
 
-        [Tooltip("何も起きなくてもこの秒数で構えに戻す（保険）。")]
+        [Tooltip("転がり続けても、この秒数で強制的に決着とみなす（保険）。判定が止まらないようにするため。")]
         [SerializeField] private float autoResetSeconds = 8f;
 
-        [Tooltip("この高さより下に落ちたら構えに戻す（m）。")]
+        [Tooltip("この高さより下に落ちたら決着とみなす（m）。")]
         [SerializeField] private float fallYThreshold = -5f;
 
         [Header("デバッグ")]
-        [Tooltip("投球の内容とリセット理由を Console に出す。")]
+        [Tooltip("投球の内容と決着の理由を Console に出す。")]
         [SerializeField] private bool logEvents = true;
 
         private Rigidbody _rigidbody;
@@ -89,6 +92,12 @@ namespace CrazyBowling.Ball
 
         /// <summary>ドラッグ中か。表示の出し入れに使う。</summary>
         public bool IsDragging => _state == BallState.Dragging;
+
+        /// <summary>転がり終わって決着したか。判定はここから始まる。</summary>
+        public bool IsSettled => _state == BallState.Settled;
+
+        /// <summary>投球中か（転がり中または決着待ち）。カメラの追従に使う。</summary>
+        public bool IsInPlay => _state == BallState.Rolling || _state == BallState.Settled;
 
         /// <summary>
         /// ドラッグ中に毎フレーム計算している、今離したらどうなるかの予測。表示専用。
@@ -173,14 +182,14 @@ namespace CrazyBowling.Ball
             }
         }
 
-        /// <summary>転がり中：止まった、落ちた、時間切れで構えに戻す。</summary>
+        /// <summary>転がり中：止まった、落ちた、時間切れで決着とみなす。構えには戻さない。</summary>
         private void UpdateRolling()
         {
             _rollingTimer += Time.deltaTime;
 
             if (transform.position.y < fallYThreshold)
             {
-                ResetToSpawn("場外に落ちた");
+                MarkSettled("場外に落ちた");
                 return;
             }
 
@@ -189,7 +198,7 @@ namespace CrazyBowling.Ball
                 _stopTimer += Time.deltaTime;
                 if (_stopTimer >= stopWaitSeconds)
                 {
-                    ResetToSpawn("停止した");
+                    MarkSettled("停止した");
                     return;
                 }
             }
@@ -200,7 +209,7 @@ namespace CrazyBowling.Ball
 
             if (_rollingTimer >= autoResetSeconds)
             {
-                ResetToSpawn("時間切れ");
+                MarkSettled("時間切れ");
             }
         }
 
@@ -237,6 +246,31 @@ namespace CrazyBowling.Ball
             Vector3 direction = Quaternion.AngleAxis(sideAngle, Vector3.up) * forward;
             direction.y = 0f;
             return direction.sqrMagnitude > Mathf.Epsilon ? direction.normalized : Vector3.forward;
+        }
+
+        /// <summary>
+        /// 転がり終わったことにする。構えには戻さず、その場で止まって判定を待つ。
+        /// ピットに入ったときは BallPit から呼ばれる。
+        /// </summary>
+        public void MarkSettled(string reason)
+        {
+            if (_state != BallState.Rolling)
+            {
+                return;
+            }
+
+            _state = BallState.Settled;
+
+            if (logEvents)
+            {
+                Debug.Log($"決着：{reason}", this);
+            }
+        }
+
+        /// <summary>構え位置に戻して、次の投球を受け付ける。進行役（ThrowSequencer）が呼ぶ。</summary>
+        public void ReturnToSpawn()
+        {
+            ResetToSpawn("次の投球へ");
         }
 
         /// <summary>構え位置に戻す。速度を0にしてから Kinematic に戻す。</summary>

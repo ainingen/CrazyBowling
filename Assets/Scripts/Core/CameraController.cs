@@ -39,9 +39,10 @@ namespace CrazyBowling.Core
 
         private void LateUpdate()
         {
-            bool isRolling = ballController != null && ballController.IsRolling;
+            // 決着後も判定が終わるまでは奥に留まり、倒れたピンが見えるようにする
+            bool isInPlay = ballController != null && ballController.IsInPlay;
 
-            if (!isRolling)
+            if (!isInPlay)
             {
                 UpdateAimingView();
                 return;
