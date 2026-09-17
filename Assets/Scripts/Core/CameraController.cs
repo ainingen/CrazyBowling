@@ -1,0 +1,95 @@
+using UnityEngine;
+using CrazyBowling.Ball;
+
+namespace CrazyBowling.Core
+{
+    /// <summary>
+    /// カメラの制御。構え中は決まった位置で待ち、投球後はボールを追う。
+    /// </summary>
+    public class CameraController : MonoBehaviour
+    {
+        [Header("対象")]
+        [Tooltip("追いかける対象（ボール）。")]
+        [SerializeField] private Transform target;
+
+        [Tooltip("状態を見るための BallController。構え中と転がり中を切り替える。")]
+        [SerializeField] private BallController ballController;
+
+        [Header("構え中")]
+        [Tooltip("構え中のカメラ位置（ワールド座標）。")]
+        [SerializeField] private Vector3 aimingPosition = new Vector3(0f, 1.6f, -2.5f);
+
+        [Tooltip("構え中のカメラの角度（度）。")]
+        [SerializeField] private Vector3 aimingEulerAngles = new Vector3(12f, 0f, 0f);
+
+        [Header("追従中")]
+        [Tooltip("ボールからどれだけ離れて追うか（ワールド座標のずれ）。")]
+        [SerializeField] private Vector3 followOffset = new Vector3(0f, 1.5f, -3f);
+
+        [Tooltip("位置の追従の滑らかさ。小さいほど機敏に動く（秒）。")]
+        [SerializeField] private float followSmoothTime = 0.2f;
+
+        [Tooltip("常にボールの方を向くか。")]
+        [SerializeField] private bool lookAtTarget = true;
+
+        [Tooltip("向きの追従の速さ。大きいほど機敏に向く。")]
+        [SerializeField] private float rotationSmoothSpeed = 10f;
+
+        private Vector3 _positionVelocity;
+
+        private void LateUpdate()
+        {
+            bool isRolling = ballController != null && ballController.IsRolling;
+
+            if (!isRolling)
+            {
+                UpdateAimingView();
+                return;
+            }
+
+            UpdateFollowView();
+        }
+
+        /// <summary>構え中：決まった位置と角度へ戻る。</summary>
+        private void UpdateAimingView()
+        {
+            transform.position = Vector3.SmoothDamp(
+                transform.position, aimingPosition, ref _positionVelocity, followSmoothTime);
+
+            SmoothLookTo(Quaternion.Euler(aimingEulerAngles));
+        }
+
+        /// <summary>追従中：ボールを追いかける。</summary>
+        private void UpdateFollowView()
+        {
+            if (target == null)
+            {
+                return;
+            }
+
+            Vector3 desiredPosition = target.position + followOffset;
+            transform.position = Vector3.SmoothDamp(
+                transform.position, desiredPosition, ref _positionVelocity, followSmoothTime);
+
+            if (!lookAtTarget)
+            {
+                return;
+            }
+
+            Vector3 toTarget = target.position - transform.position;
+            if (toTarget.sqrMagnitude <= Mathf.Epsilon)
+            {
+                return;
+            }
+
+            SmoothLookTo(Quaternion.LookRotation(toTarget));
+        }
+
+        /// <summary>フレームレートに左右されにくい形で目標の向きへ近づける。</summary>
+        private void SmoothLookTo(Quaternion targetRotation)
+        {
+            float t = 1f - Mathf.Exp(-rotationSmoothSpeed * Time.deltaTime);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, t);
+        }
+    }
+}
