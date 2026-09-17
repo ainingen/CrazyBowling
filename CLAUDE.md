@@ -48,6 +48,11 @@ Unity 6.3 LTS（URP / 3D）で作るボウリングゲーム。
 - ロジック（スコア計算など）は MonoBehaviour に依存しない純粋なC#クラスにし、EditModeテストを書く
 - 調整用の数値は [SerializeField] で Inspector に出す（ユーザーが自分で調整する）
 - 数値はコードに直書きせず、ScriptableObject か SerializeField に置く
+- **動くオブジェクト（ボール・ピンなど）は「物理の親」と「見た目の子」に分ける**
+  - 親：Rigidbody / Collider / スクリプト。**Scale は 1 のままにし、Collider には実寸を直接入れる**
+  - 子：`Visual` という名前で、MeshFilter / MeshRenderer だけを持つ。Collider は付けない
+  - 理由：後で見た目を市販モデルに差し替えても、物理と当たり判定に影響させないため
+  - 例：`Ball`（Rigidbody / SphereCollider radius 0.11 / BallController）＋ `Ball/Visual`（Scale 0.22 の球）
 
 ## 既知のハマりどころ
 - スクリプト作成後、Unityが裏にいるとコンパイルされない。
