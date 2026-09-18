@@ -17,10 +17,12 @@ namespace CrazyBowling.Pins
         [Tooltip("回転の速さの上限（rad/s）。小さいと、当たったときの回り方が鈍くなる。")]
         [SerializeField] private float maxAngularVelocity = 50f;
 
-        [Tooltip("速さの上限（m/s）。まれに起きる計算の暴走で、ピンが異常な速さで飛ぶのを防ぐ保険。")]
+        [Tooltip("速さの上限（m/s）。まれに起きる計算の暴走で、ピンが異常な速さで飛ぶのを防ぐ保険。" +
+                 "上げると飛距離は伸びるが、デッキの外へ出ていくピンが増えて滞空時間はむしろ短くなる。")]
         [SerializeField] private float maxLinearVelocity = 15f;
 
-        [Tooltip("当たり判定の方式。Continuous Speculative は、飛んだピンがすり抜けにくく動きも落ち着きやすい。")]
+        [Tooltip("当たり判定の方式。Continuous Speculative は、飛んだピンがすり抜けにくく、" +
+                 "Continuous Dynamic より倒れ方も浮き方も良い（実測で確認済み）。")]
         [SerializeField] private CollisionDetectionMode collisionDetection = CollisionDetectionMode.ContinuousSpeculative;
 
         private Rigidbody _rigidbody;
