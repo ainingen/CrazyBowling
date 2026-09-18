@@ -23,8 +23,11 @@ namespace CrazyBowling.Core
             /// <summary>自動の下見を再生中。</summary>
             Auto,
 
-            /// <summary>手動の下見。押している間だけ奥へ寄る。</summary>
+            /// <summary>手動の下見。押した分だけ奥へ進み、離すとその場で止まる。</summary>
             Manual,
+
+            /// <summary>手動の下見から構えの視点へ戻っている最中。</summary>
+            Returning,
         }
 
         [Header("参照")]
@@ -48,11 +51,12 @@ namespace CrazyBowling.Core
         [SerializeField] private bool skippable = true;
 
         [Header("手動の下見")]
-        [Tooltip("押しているときに奥へ寄る速さ（1秒で進む割合）。")]
+        [Tooltip("押している間に奥へ進む速さ（1秒で進む割合）。離すとその場で止まる。")]
         [SerializeField] private float manualSpeed = 1.6f;
 
-        [Tooltip("押すのをやめたときに戻る速さ（1秒で戻る割合）。")]
-        [SerializeField] private float manualReturnSpeed = 2.4f;
+        [Tooltip("構えの視点へ戻る速さ（1秒で戻る割合）。" +
+                 "投球操作を始めたときに自動で戻る。進む速さと同じか少し速めにする。")]
+        [SerializeField] private float manualReturnSpeed = 2.2f;
 
         [Header("経路が無いレーンのとき")]
         [Tooltip("自動で作る経路の、途中の高さ（m）。")]
@@ -90,7 +94,12 @@ namespace CrazyBowling.Core
 
         /// <summary>手動の下見が使えるか。構え中だけ。</summary>
         public bool CanLookAround =>
-            _state != PreviewState.Auto && ballController != null && ballController.IsAiming;
+            _state != PreviewState.Auto
+            && _state != PreviewState.Returning
+            && ballController != null && ballController.IsAiming;
+
+        /// <summary>手動の下見でどこまで進んでいるか。0で構えの視点、1で経路の終点。</summary>
+        public float LookAroundProgress => _manualProgress;
 
         /// <summary>
         /// レーンに入ったときに呼ぶ。経路を組み立てて、自動の下見を始める。
@@ -153,6 +162,9 @@ namespace CrazyBowling.Core
                 case PreviewState.Manual:
                     UpdateManual();
                     break;
+                case PreviewState.Returning:
+                    UpdateReturning();
+                    break;
                 default:
                     UpdateIdle();
                     break;
@@ -180,13 +192,34 @@ namespace CrazyBowling.Core
             Apply(CameraPathSampler.ToOneWayProgress(eased));
         }
 
-        /// <summary>手動の下見：押している間は奥へ、離したら構えへ。</summary>
+        /// <summary>
+        /// 手動の下見：押している間だけ経路を進み、離したらその位置で止まる。
+        /// 構えの視点へは戻さない。止めた位置からもう一度押せば続きを進む。
+        /// </summary>
         private void UpdateManual()
         {
-            float speed = _manualHeld ? manualSpeed : -manualReturnSpeed;
-            _manualProgress = Mathf.Clamp01(_manualProgress + speed * Time.deltaTime);
+            // 投球操作を始めたら構えの視点へ戻す。戻す専用のボタンは作らない
+            if (ballController != null && !ballController.IsAiming)
+            {
+                _state = PreviewState.Returning;
+                return;
+            }
 
-            if (!_manualHeld && _manualProgress <= 0f)
+            if (_manualHeld)
+            {
+                _manualProgress = Mathf.Clamp01(_manualProgress + manualSpeed * Time.deltaTime);
+            }
+
+            // 離している間は進めないだけで、その位置に居続ける
+            Apply(_manualProgress);
+        }
+
+        /// <summary>構えの視点へ戻っている最中。戻りきったら通常の制御に返す。</summary>
+        private void UpdateReturning()
+        {
+            _manualProgress = Mathf.Clamp01(_manualProgress - manualReturnSpeed * Time.deltaTime);
+
+            if (_manualProgress <= 0f)
             {
                 Stop();
                 return;
@@ -238,7 +271,7 @@ namespace CrazyBowling.Core
                 cameraController.ExternalControl = active;
             }
 
-            // 手動の下見では投げられてよいが、自動の下見の間は止める
+            // 手動の下見では投げられてよい（投げ始めたら戻る）。自動の下見の間だけ止める
             if (ballController != null)
             {
                 ballController.SetInputBlocked(active && _state == PreviewState.Auto);

@@ -1289,7 +1289,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   skippable: 1
   manualSpeed: 1.6
-  manualReturnSpeed: 2.4
+  manualReturnSpeed: 2.2
   defaultTravelHeight: 2.2
   defaultTargetZ: 16.2
   logEvents: 0
