@@ -43,12 +43,18 @@ namespace CrazyBowling.Lanes
         [Tooltip("横の分割数。")]
         [SerializeField] private int segmentsAcross = 8;
 
-        [Tooltip("奥行きの分割数。多いほど起伏が滑らかになる。")]
-        [SerializeField] private int segmentsAlong = 180;
+        [Tooltip("奥行きの分割数。多いほど起伏が滑らかに見えるが、細かくしすぎないこと。" +
+                 "1マスがボールの半径（0.11m）より短くなると、当たり判定の継ぎ目でボールが跳ねる。" +
+                 "18mのレーンなら120前後（1マス15cm）が浮きがいちばん小さかった。")]
+        [SerializeField] private int segmentsAlong = 120;
 
         [Header("参照")]
         [Tooltip("組み上げたメッシュを入れる相手。")]
         [SerializeField] private MeshFilter floorMeshFilter;
+
+        [Tooltip("床の当たり判定。組んだメッシュをここにも入れる。" +
+                 "空なら当たり判定は変えない（見た目だけの確認に使う）。")]
+        [SerializeField] private MeshCollider floorCollider;
 
         /// <summary>実行時に作ったメッシュ。レーンを出るときに捨てる。</summary>
         private Mesh _runtimeMesh;
@@ -114,6 +120,22 @@ namespace CrazyBowling.Lanes
             _runtimeMesh.RecalculateBounds();
 
             floorMeshFilter.sharedMesh = _runtimeMesh;
+            ApplyCollider();
+        }
+
+        /// <summary>
+        /// 当たり判定にも同じメッシュを渡す。
+        /// 同じメッシュを入れ直すときは一度外さないと、PhysX 側が作り直してくれない。
+        /// </summary>
+        private void ApplyCollider()
+        {
+            if (floorCollider == null)
+            {
+                return;
+            }
+
+            floorCollider.sharedMesh = null;
+            floorCollider.sharedMesh = _runtimeMesh;
         }
 
         /// <summary>作ったメッシュを捨てる。放っておくと積み上がる。</summary>
@@ -127,6 +149,11 @@ namespace CrazyBowling.Lanes
             if (floorMeshFilter != null && floorMeshFilter.sharedMesh == _runtimeMesh)
             {
                 floorMeshFilter.sharedMesh = null;
+            }
+
+            if (floorCollider != null && floorCollider.sharedMesh == _runtimeMesh)
+            {
+                floorCollider.sharedMesh = null;
             }
 
             if (Application.isPlaying)
