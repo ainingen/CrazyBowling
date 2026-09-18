@@ -135,11 +135,23 @@ namespace CrazyBowling.Lanes
         }
 
         /// <summary>
-        /// 足りないぶんの重力を加える。
+        /// レーンの毎フレーム更新（物理と同じ間隔）。
+        /// 動く障害物や回る円盤は、これを継承して動かす。
+        /// 物理に関わるものを動かすので、Update ではなくこちらを使う。
+        /// </summary>
+        /// <param name="deltaTime">前回からの経過（秒）。</param>
+        protected virtual void OnLaneFixedUpdate(float deltaTime)
+        {
+        }
+
+        /// <summary>
+        /// 足りないぶんの重力を加え、レーンごとの毎フレーム更新を呼ぶ。
         /// Physics.gravity を書き換えるとプロジェクト設定に残ってしまうので、そちらは触らない。
         /// </summary>
         private void FixedUpdate()
         {
+            OnLaneFixedUpdate(Time.fixedDeltaTime);
+
             if (Mathf.Approximately(gravityScale, 1f) || _gravityTargets == null)
             {
                 return;
