@@ -52,6 +52,18 @@ namespace CrazyBowling.Lanes
         /// <summary>動きが一番速いときの速さ（m/秒）。</summary>
         public float PeakSpeed => ObstacleMotion.GetPeakSpeed(Settings);
 
+        /// <summary>出発点からの今のずれ（m）。見た目を合わせるのに使う。</summary>
+        public float Offset { get; private set; }
+
+        /// <summary>今の速さ（m/秒。動く向きに沿った符号つき）。見た目を合わせるのに使う。</summary>
+        public float AxisVelocity { get; private set; }
+
+        /// <summary>出発してから進んだ道のり（m）。往復ぶんを足し続ける。</summary>
+        public float TravelledDistance { get; private set; }
+
+        /// <summary>動く向き（このものから見た向き）。</summary>
+        public Vector3 LocalAxis => axis.sqrMagnitude > Mathf.Epsilon ? axis.normalized : Vector3.right;
+
         private void Awake()
         {
             _rigidbody = GetComponent<Rigidbody>();
@@ -81,6 +93,7 @@ namespace CrazyBowling.Lanes
                 return;
             }
 
+            UpdateMotionState(time);
             _rigidbody.MovePosition(GetWorldPosition(time));
         }
 
@@ -95,8 +108,26 @@ namespace CrazyBowling.Lanes
                 return;
             }
 
+            Offset = ObstacleMotion.GetOffset(time, Settings);
+            AxisVelocity = 0f;
+            TravelledDistance = 0f;
+
             _rigidbody.position = GetWorldPosition(time);
             transform.position = _rigidbody.position;
+        }
+
+        /// <summary>
+        /// 今どこにいて、どちらへどれだけ速く動いているかを控えておく。
+        /// 見た目の側（滑り歩きなど）がこれを読む。
+        /// </summary>
+        private void UpdateMotionState(float time)
+        {
+            float offset = ObstacleMotion.GetOffset(time, Settings);
+            float moved = offset - Offset;
+
+            AxisVelocity = Time.fixedDeltaTime > Mathf.Epsilon ? moved / Time.fixedDeltaTime : 0f;
+            TravelledDistance += Mathf.Abs(moved);
+            Offset = offset;
         }
 
         /// <summary>その時刻の置き場所（ワールド座標）。</summary>
