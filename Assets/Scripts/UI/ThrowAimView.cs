@@ -1,12 +1,13 @@
+using System.Collections.Generic;
 using UnityEngine;
 using CrazyBowling.Ball;
 
 namespace CrazyBowling.UI
 {
     /// <summary>
-    /// ドラッグ中だけ出る、向きの矢印。
-    /// 向きは BallController.CalculateThrowDirection をそのまま使うので、
-    /// 実際に飛ぶ方向と必ず一致する（Invert Side Angle の設定も反映される）。
+    /// ドラッグ中だけ出る、進路の予測線。
+    /// カーブの計算は BallCurveModel を実際の投球と共有しているので、
+    /// 予測と実際の軌道が同じ式から出る（あくまで近似で、物理の細部までは一致しない）。
     /// </summary>
     [RequireComponent(typeof(LineRenderer))]
     public class ThrowAimView : MonoBehaviour
@@ -24,6 +25,15 @@ namespace CrazyBowling.UI
 
         [Tooltip("最大まで引いたときの長さ（m）。")]
         [SerializeField] private float maxLength = 4f;
+
+        [Header("予測線")]
+        [Tooltip("線を分割する点の数。多いほど曲線が滑らかになる。")]
+        [Range(2, 64)]
+        [SerializeField] private int pathStepCount = 24;
+
+        [Tooltip("滑りが減っていく速さの見積もり（m/s を1秒あたり）。" +
+                 "予測線がどこまで曲がるかに効く。実際の値は床の摩擦で決まる。")]
+        [SerializeField] private float slipDecayRate = 20f;
 
         [Tooltip("床から浮かせる高さ（m）。めり込みを防ぐ。")]
         [SerializeField] private float heightOffset = 0.02f;
@@ -59,6 +69,9 @@ namespace CrazyBowling.UI
         [Range(0f, 1f)]
         [SerializeField] private float mediumThreshold = 0.5f;
 
+        /// <summary>予測線の点。毎フレーム使い回して、確保し直さないようにする。</summary>
+        private readonly List<Vector3> _pathPoints = new List<Vector3>();
+
         private void Reset()
         {
             lineRenderer = GetComponent<LineRenderer>();
@@ -80,7 +93,7 @@ namespace CrazyBowling.UI
             }
 
             ThrowResult preview = ballController.DragPreview;
-            Vector3 direction = ballController.CalculateThrowDirection(preview.sideAngle);
+            Vector3 direction = ballController.GetForwardDirection();
 
             // ボールの足元から描く。当たり判定の下端を基準にするので、
             // ボールの大きさを変えても追従する
@@ -89,20 +102,48 @@ namespace CrazyBowling.UI
             float footY = (ballCollider != null ? ballCollider.bounds.min.y : ballPosition.y) + heightOffset;
             Vector3 start = new Vector3(ballPosition.x, footY, ballPosition.z);
 
+            // 引き幅で決まる長さを、初速で割って「何秒ぶん描くか」に直す
             float length = Mathf.Lerp(minLength, maxLength, preview.pullRatio);
-            Vector3 tip = start + direction * length;
+            float speed = Mathf.Max(preview.speed, 0.01f);
+            float duration = length / speed;
 
-            // 矢じりは、先端から後ろ向きに左右へ開いた2本
-            Vector3 leftBarb = tip + Quaternion.AngleAxis(180f - headAngle, Vector3.up) * direction * headLength;
-            Vector3 rightBarb = tip + Quaternion.AngleAxis(180f + headAngle, Vector3.up) * direction * headLength;
+            BallCurveSettings curveSettings = ballController.BuildCurveSettings();
+            BallCurveModel.PredictPath(
+                start,
+                direction,
+                speed,
+                preview.curve * curveSettings.maxSideSpin,
+                ballController.EstimateInitialSlip(speed),
+                slipDecayRate,
+                curveSettings,
+                duration,
+                pathStepCount,
+                _pathPoints);
+
+            if (_pathPoints.Count < 2)
+            {
+                lineRenderer.enabled = false;
+                return;
+            }
+
+            // 予測線の最後の向きに合わせて矢じりを付ける
+            Vector3 tip = _pathPoints[_pathPoints.Count - 1];
+            Vector3 tipDirection = tip - _pathPoints[_pathPoints.Count - 2];
+            tipDirection.y = 0f;
+            tipDirection = tipDirection.sqrMagnitude > Mathf.Epsilon ? tipDirection.normalized : direction;
+
+            Vector3 leftBarb = tip + Quaternion.AngleAxis(180f - headAngle, Vector3.up) * tipDirection * headLength;
+            Vector3 rightBarb = tip + Quaternion.AngleAxis(180f + headAngle, Vector3.up) * tipDirection * headLength;
 
             lineRenderer.useWorldSpace = true;
-            lineRenderer.positionCount = 5;
-            lineRenderer.SetPosition(0, start);
-            lineRenderer.SetPosition(1, tip);
-            lineRenderer.SetPosition(2, leftBarb);
-            lineRenderer.SetPosition(3, tip);
-            lineRenderer.SetPosition(4, rightBarb);
+            lineRenderer.positionCount = _pathPoints.Count + 3;
+            for (int i = 0; i < _pathPoints.Count; i++)
+            {
+                lineRenderer.SetPosition(i, _pathPoints[i]);
+            }
+            lineRenderer.SetPosition(_pathPoints.Count, leftBarb);
+            lineRenderer.SetPosition(_pathPoints.Count + 1, tip);
+            lineRenderer.SetPosition(_pathPoints.Count + 2, rightBarb);
 
             lineRenderer.startWidth = startWidth;
             lineRenderer.endWidth = endWidth;

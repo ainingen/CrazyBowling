@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Controls;
 
 namespace CrazyBowling.Ball
 {
@@ -50,14 +51,27 @@ namespace CrazyBowling.Ball
         [Tooltip("最大の初速（m/s）。")]
         [SerializeField] private float maxThrowSpeed = 10f;
 
-        [Tooltip("左右に振れる最大角度（度）。")]
-        [SerializeField] private float maxSideAngle = 20f;
-
         [Tooltip("引く向きを反転する（奥に払って投げる操作にする）。")]
         [SerializeField] private bool invertDrag = false;
 
-        [Tooltip("左右の向きを反転する。")]
-        [SerializeField] private bool invertSideAngle = false;
+        [Header("カーブ")]
+        [Tooltip("カーブが最大になるマウスの横移動量（ピクセル）。小さいほど少し動かすだけで曲がる。")]
+        [SerializeField] private float maxCurvePixels = 200f;
+
+        [Tooltip("横に動かさずに離した場合も投げられるか。切ると、カーブ無しでは投球できなくなる。")]
+        [SerializeField] private bool allowStraightThrow = true;
+
+        [Tooltip("カーブ最大のときに与える縦軸まわりの回転（rad/s）。")]
+        [SerializeField] private float maxSideSpin = 30f;
+
+        [Tooltip("横回転1rad/s あたりに加える横向きの加速度（m/s^2）。曲がりの強さの主な調整項目。")]
+        [SerializeField] private float curveForce = 0.11f;
+
+        [Tooltip("横回転が失われる速さ（1/秒）。大きいほど早く曲がりが止まる。")]
+        [SerializeField] private float sideSpinDecay = 1.5f;
+
+        [Tooltip("接地点の滑りがこれ以下なら「転がっている」とみなす（m/s）。転がったら曲がりは止まる。")]
+        [SerializeField] private float slipThreshold = 0.15f;
 
         [Header("転がり")]
         [Tooltip("回転の速さの上限（rad/s）。既定の50では、半径0.11mのボールは5.5m/sまでしか転がれず、" +
@@ -93,6 +107,18 @@ namespace CrazyBowling.Ball
         private float _rollingTimer;
         private float _stopTimer;
         private ThrowResult _dragPreview;
+
+        /// <summary>ドラッグを始めたのが右ボタンか。カーブの向きを決める。</summary>
+        private bool _dragWithRightButton;
+
+        /// <summary>今かかっている横回転（rad/s）。正で右へ曲がる。</summary>
+        private float _sideSpin;
+
+        /// <summary>
+        /// 転がりに変わって、曲がりが終わったか。
+        /// 一度終わったら、そのあと滑りが増えても曲げ直さない。
+        /// </summary>
+        private bool _curveFinished;
 
         /// <summary>現在の状態。</summary>
         public BallState State => _state;
@@ -158,8 +184,12 @@ namespace CrazyBowling.Ball
             _sideOffset = Mathf.MoveTowards(_sideOffset, targetOffset, sideMoveSpeed * Time.deltaTime);
             ApplySpawnPosition();
 
-            if (Mouse.current.leftButton.wasPressedThisFrame)
+            // 押したボタンでカーブの向きが決まる。左ボタンなら左、右ボタンなら右へ曲がる
+            bool leftPressed = Mouse.current.leftButton.wasPressedThisFrame;
+            bool rightPressed = Mouse.current.rightButton.wasPressedThisFrame;
+            if (leftPressed || rightPressed)
             {
+                _dragWithRightButton = rightPressed && !leftPressed;
                 _dragStart = mousePosition;
                 _dragPreview = default;
                 _state = BallState.Dragging;
@@ -171,16 +201,18 @@ namespace CrazyBowling.Ball
         {
             // 表示用の予測を毎フレーム更新する（投球には使わない）
             _dragPreview = ThrowCalculator.Calculate(
-                _dragStart, Mouse.current.position.ReadValue(), BuildThrowSettings(), invertDrag, invertSideAngle);
+                _dragStart, Mouse.current.position.ReadValue(), BuildThrowSettings(), _dragWithRightButton, invertDrag);
 
-            if (!Mouse.current.leftButton.wasReleasedThisFrame)
+            // ドラッグを始めたボタンが離されたときだけ投げる
+            ButtonControl dragButton = _dragWithRightButton ? Mouse.current.rightButton : Mouse.current.leftButton;
+            if (!dragButton.wasReleasedThisFrame)
             {
                 return;
             }
 
             Vector2 dragEnd = Mouse.current.position.ReadValue();
             ThrowResult result = ThrowCalculator.Calculate(
-                _dragStart, dragEnd, BuildThrowSettings(), invertDrag, invertSideAngle);
+                _dragStart, dragEnd, BuildThrowSettings(), _dragWithRightButton, invertDrag);
 
             if (result.isValid)
             {
@@ -234,12 +266,14 @@ namespace CrazyBowling.Ball
             // 再生中に Inspector で変えた値も、次の投球から効くようにする
             _rigidbody.maxAngularVelocity = maxAngularVelocity;
 
-            Vector3 direction = CalculateThrowDirection(result.sideAngle);
+            // 投げる向きは常に構え位置の正面。狙いは立ち位置とカーブで決める
+            Vector3 direction = GetForwardDirection();
 
             // 初速（m/s）をそのまま速度差として与える
             _rigidbody.AddForce(direction * result.speed, ForceMode.VelocityChange);
 
             ApplyReleaseSpin(direction, result.speed);
+            ApplySideSpin(result.curve);
 
             _state = BallState.Rolling;
             _rollingTimer = 0f;
@@ -247,8 +281,84 @@ namespace CrazyBowling.Ball
 
             if (logEvents)
             {
-                Debug.Log($"投球：初速 {result.speed:F2} m/s ／ 角度 {result.sideAngle:F1} 度", this);
+                Debug.Log($"投球：初速 {result.speed:F2} m/s ／ カーブ {result.curve:F2}", this);
             }
+        }
+
+        /// <summary>
+        /// 縦軸まわりの回転を与える。見た目の回転と、カーブの計算に使う値の両方を用意する。
+        /// 右へ曲がるボールは、上から見て時計回りに回る。
+        /// </summary>
+        private void ApplySideSpin(float curve)
+        {
+            _sideSpin = curve * maxSideSpin;
+            _curveFinished = false;
+            _rigidbody.angularVelocity += Vector3.up * (-_sideSpin);
+        }
+
+        /// <summary>
+        /// 転がり中のカーブ。滑っている間だけ横向きの力を加え、横回転は徐々に失う。
+        /// Unity の物理は縦軸の回転でボールを曲げてくれないので、ここで補う。
+        /// </summary>
+        private void FixedUpdate()
+        {
+            if (_state != BallState.Rolling || _rigidbody == null || _rigidbody.isKinematic)
+            {
+                return;
+            }
+
+            if (Mathf.Approximately(_sideSpin, 0f))
+            {
+                return;
+            }
+
+            // 投げた直後の1回目は、まだ速度が反映されていない（AddForce は次のステップで効く）。
+            // ここで判定すると「速度0＝転がっている」と誤解して、曲がる前に終わってしまう
+            Vector3 horizontalVelocity = _rigidbody.linearVelocity;
+            horizontalVelocity.y = 0f;
+            if (horizontalVelocity.sqrMagnitude < 0.01f)
+            {
+                return;
+            }
+
+            BallCurveSettings settings = BuildCurveSettings();
+
+            // 進む向きの滑りだけを見る。横向きの速度が増えたぶんを数えると、
+            // 曲がるほど滑りが増えて永久に曲がり続けてしまう
+            float forwardSlip = BallCurveModel.CalculateForwardSlip(
+                _rigidbody.linearVelocity, _rigidbody.angularVelocity, settings.radius);
+
+            if (!_curveFinished && !BallCurveModel.IsSliding(forwardSlip, settings))
+            {
+                _curveFinished = true;
+            }
+
+            // 転がりに変わったら、そこで曲がりを止める
+            if (!_curveFinished)
+            {
+                Vector3 acceleration = BallCurveModel.CalculateLateralAcceleration(
+                    _rigidbody.linearVelocity, _sideSpin, settings);
+                _rigidbody.AddForce(acceleration, ForceMode.Acceleration);
+            }
+
+            // 横回転を減らす。見た目の回転も同じ割合で落とす
+            float decayed = BallCurveModel.DecaySideSpin(_sideSpin, Time.fixedDeltaTime, settings);
+            float removed = _sideSpin - decayed;
+            _rigidbody.angularVelocity += Vector3.up * removed;
+            _sideSpin = decayed;
+        }
+
+        /// <summary>Inspector の値をカーブの計算用にまとめる。</summary>
+        public BallCurveSettings BuildCurveSettings()
+        {
+            return new BallCurveSettings
+            {
+                radius = GetBallRadius(),
+                maxSideSpin = maxSideSpin,
+                curveForce = curveForce,
+                spinDecay = sideSpinDecay,
+                slipThreshold = slipThreshold,
+            };
         }
 
         /// <summary>
@@ -292,16 +402,26 @@ namespace CrazyBowling.Ball
         }
 
         /// <summary>
-        /// 左右の角度から、実際に投げる方向を求める。
-        /// 表示の矢印が実際の進路とズレないよう、投球と同じこのメソッドを使う。
+        /// 投げる方向。構え位置の正面をそのまま使う。
+        /// 角度の指定は廃止したので、狙いは立ち位置とカーブで決める。
         /// </summary>
-        public Vector3 CalculateThrowDirection(float sideAngle)
+        public Vector3 GetForwardDirection()
         {
-            // 構え位置の前方向を基準に、左右へ角度を振る
             Vector3 forward = spawnPoint != null ? spawnPoint.forward : Vector3.forward;
-            Vector3 direction = Quaternion.AngleAxis(sideAngle, Vector3.up) * forward;
-            direction.y = 0f;
-            return direction.sqrMagnitude > Mathf.Epsilon ? direction.normalized : Vector3.forward;
+            forward.y = 0f;
+            return forward.sqrMagnitude > Mathf.Epsilon ? forward.normalized : Vector3.forward;
+        }
+
+        /// <summary>今かかっている横回転（rad/s）。表示が読む。</summary>
+        public float CurrentSideSpin => _sideSpin;
+
+        /// <summary>
+        /// 放した直後の接地点の滑り（m/s）。予測線が、どこまで曲がるかを見積もるのに使う。
+        /// 前回転を与えたぶんだけ滑りは小さくなる。
+        /// </summary>
+        public float EstimateInitialSlip(float speed)
+        {
+            return speed * (1f - releaseSpinRatio);
         }
 
         /// <summary>
@@ -350,6 +470,9 @@ namespace CrazyBowling.Ball
             _state = BallState.Aiming;
             _rollingTimer = 0f;
             _stopTimer = 0f;
+            _sideSpin = 0f;
+            _curveFinished = false;
+            _dragWithRightButton = false;
 
             if (logEvents)
             {
@@ -376,7 +499,8 @@ namespace CrazyBowling.Ball
                 minDragPixels = minDragPixels,
                 minThrowSpeed = minThrowSpeed,
                 maxThrowSpeed = maxThrowSpeed,
-                maxSideAngle = maxSideAngle,
+                maxCurvePixels = maxCurvePixels,
+                allowStraightThrow = allowStraightThrow,
             };
         }
     }
