@@ -21,7 +21,16 @@ namespace CrazyBowling.Tests.EditMode
                 chainFalloff = 0.6f,
                 maxChainCount = 4,
                 spinStrength = 25f,
+                originOffsetMin = 0f,
+                originOffsetMax = 0.12f,
+                originFalloffWidth = 0.03f,
             };
+        }
+
+        /// <summary>レーン中央を奥へ転がるボールと、その先のヘッドピン。</summary>
+        private static Vector3 HeadPin()
+        {
+            return new Vector3(0f, 0.05f, 16.2f);
         }
 
         [Test]
@@ -181,6 +190,141 @@ namespace CrazyBowling.Tests.EditMode
             Vector3 velocityChange;
             Assert.IsFalse(PinBlastCalculator.TryCalculateBlast(
                 Vector3.zero, new Vector3(0f, 0.3f, 0f), 0, settings, out velocityChange));
+        }
+
+        // ---- 横ずれ（厚く当たったかの判定） ----
+
+        [Test]
+        public void ど真ん中に当たると横ずれは0()
+        {
+            float offset = PinBlastCalculator.CalculateLateralOffset(
+                new Vector3(0f, 0.16f, 16.0f), Vector3.forward * 7f, HeadPin());
+
+            Assert.AreEqual(0f, offset, 0.0001f);
+        }
+
+        [Test]
+        public void 横にずれた分だけ横ずれになる()
+        {
+            float offset = PinBlastCalculator.CalculateLateralOffset(
+                new Vector3(0.09f, 0.16f, 16.0f), Vector3.forward * 7f, HeadPin());
+
+            Assert.AreEqual(0.09f, offset, 0.0001f);
+        }
+
+        [Test]
+        public void 手前からの距離は横ずれに含めない()
+        {
+            // 同じ横位置なら、ピンまでの残り距離が変わっても横ずれは同じ
+            float near = PinBlastCalculator.CalculateLateralOffset(
+                new Vector3(0.09f, 0.16f, 16.0f), Vector3.forward * 7f, HeadPin());
+            float far = PinBlastCalculator.CalculateLateralOffset(
+                new Vector3(0.09f, 0.16f, 14.0f), Vector3.forward * 7f, HeadPin());
+
+            Assert.AreEqual(near, far, 0.0001f);
+        }
+
+        [Test]
+        public void 斜めから入ってきても進行方向に対する横ずれで測る()
+        {
+            // 45度の向きに進むボールが、その進路の真上にヘッドピンがある場合は横ずれ0
+            Vector3 direction = new Vector3(1f, 0f, 1f).normalized;
+            Vector3 ball = HeadPin() - direction * 2f;
+            ball.y = 0.16f;
+
+            float offset = PinBlastCalculator.CalculateLateralOffset(ball, direction * 7f, HeadPin());
+
+            Assert.AreEqual(0f, offset, 0.0001f);
+        }
+
+        [Test]
+        public void 斜めから入って進路が外れていれば横ずれが出る()
+        {
+            Vector3 direction = new Vector3(1f, 0f, 1f).normalized;
+            Vector3 right = new Vector3(direction.z, 0f, -direction.x);
+            Vector3 ball = HeadPin() - direction * 2f + right * 0.09f;
+            ball.y = 0.16f;
+
+            float offset = PinBlastCalculator.CalculateLateralOffset(ball, direction * 7f, HeadPin());
+
+            Assert.AreEqual(0.09f, offset, 0.0001f);
+        }
+
+        [Test]
+        public void 止まっているボールでも横ずれを返す()
+        {
+            float offset = PinBlastCalculator.CalculateLateralOffset(
+                new Vector3(0.09f, 0.16f, 16.2f), Vector3.zero, HeadPin());
+
+            Assert.AreEqual(0.09f, offset, 0.0001f);
+        }
+
+        // ---- 横ずれによる威力の倍率 ----
+
+        [Test]
+        public void 範囲の内側なら満威力()
+        {
+            PinBlastSettings s = CreateSettings();
+
+            Assert.AreEqual(1f, PinBlastCalculator.OriginStrengthScale(0f, s), 0.0001f);
+            Assert.AreEqual(1f, PinBlastCalculator.OriginStrengthScale(0.05f, s), 0.0001f);
+            Assert.AreEqual(1f, PinBlastCalculator.OriginStrengthScale(0.09f, s), 0.0001f);
+        }
+
+        [Test]
+        public void 上限を超えたら爆発しない()
+        {
+            PinBlastSettings s = CreateSettings();
+
+            Assert.AreEqual(0f, PinBlastCalculator.OriginStrengthScale(0.121f, s), 0.0001f);
+            Assert.AreEqual(0f, PinBlastCalculator.OriginStrengthScale(0.15f, s), 0.0001f);
+        }
+
+        [Test]
+        public void 下限に届かなければ爆発しない()
+        {
+            PinBlastSettings s = CreateSettings();
+            s.originOffsetMin = 0.04f;
+
+            Assert.AreEqual(0f, PinBlastCalculator.OriginStrengthScale(0.02f, s), 0.0001f);
+            Assert.Greater(PinBlastCalculator.OriginStrengthScale(0.05f, s), 0f);
+        }
+
+        [Test]
+        public void 上限に近づくほど威力が落ちる()
+        {
+            PinBlastSettings s = CreateSettings();
+
+            float at9 = PinBlastCalculator.OriginStrengthScale(0.09f, s);
+            float at10 = PinBlastCalculator.OriginStrengthScale(0.10f, s);
+            float at11 = PinBlastCalculator.OriginStrengthScale(0.11f, s);
+
+            Assert.AreEqual(1f, at9, 0.0001f);
+            Assert.Less(at10, at9);
+            Assert.Less(at11, at10);
+            Assert.Greater(at11, 0f);
+        }
+
+        [Test]
+        public void 補間の幅を0にすると境界まで満威力()
+        {
+            PinBlastSettings s = CreateSettings();
+            s.originFalloffWidth = 0f;
+
+            Assert.AreEqual(1f, PinBlastCalculator.OriginStrengthScale(0.119f, s), 0.0001f);
+            Assert.AreEqual(0f, PinBlastCalculator.OriginStrengthScale(0.121f, s), 0.0001f);
+        }
+
+        [Test]
+        public void 威力の倍率は飛ばす強さに掛かる()
+        {
+            PinBlastSettings s = CreateSettings();
+
+            Vector3 full, half;
+            PinBlastCalculator.TryCalculateBlast(Vector3.zero, new Vector3(0.3f, 0f, 0f), 0, 1f, s, out full);
+            PinBlastCalculator.TryCalculateBlast(Vector3.zero, new Vector3(0.3f, 0f, 0f), 0, 0.5f, s, out half);
+
+            Assert.AreEqual(full.magnitude * 0.5f, half.magnitude, 0.0001f);
         }
 
         [Test]

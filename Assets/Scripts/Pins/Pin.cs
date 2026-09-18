@@ -42,8 +42,14 @@ namespace CrazyBowling.Pins
         /// <summary>この投球で既に爆発の起点になったか。1投につき1回にするために使う。</summary>
         private bool _hasExploded;
 
-        /// <summary>連鎖の何回目で飛ばされたか。ボールに当たった最初のピンは0。</summary>
-        private int _blastGeneration;
+        /// <summary>この投球で、満威力の爆発（世代0）の起点になったか。</summary>
+        private bool _isBlastOrigin;
+
+        /// <summary>
+        /// 連鎖の何回目で飛ばされたか。-1 は「まだ飛ばされていない」。
+        /// 0 を「未設定」と兼用すると、起点のピンの世代が後から上書きされてしまう。
+        /// </summary>
+        private int _blastGeneration = -1;
 
         /// <summary>場外へ飛んだので物理を止めたか。</summary>
         private bool _culled;
@@ -57,8 +63,13 @@ namespace CrazyBowling.Pins
         /// <summary>この投球で既に爆発の起点になったか。</summary>
         public bool HasExploded => _hasExploded;
 
-        /// <summary>連鎖の何回目で飛ばされたか。</summary>
-        public int BlastGeneration => _blastGeneration;
+        /// <summary>
+        /// 次にこのピンが爆発するときの世代。まだ飛ばされていなければ0（＝起点になれる）。
+        /// </summary>
+        public int BlastGeneration => _blastGeneration < 0 ? 0 : _blastGeneration;
+
+        /// <summary>この投球で、満威力の爆発の起点になったか。</summary>
+        public bool IsBlastOrigin => _isBlastOrigin;
 
         /// <summary>吹き飛ばす対象にできるか。取り除かれたピンと場外のピンは対象外。</summary>
         public bool CanBeBlasted => gameObject.activeSelf && !_culled && !_rigidbody.isKinematic;
@@ -93,7 +104,7 @@ namespace CrazyBowling.Pins
                 return;
             }
 
-            _explosion.ReportImpact(this, CalculateImpactSpeed(collision));
+            _explosion.ReportImpact(this, CalculateImpactSpeed(collision), collision.rigidbody);
         }
 
         /// <summary>
@@ -146,9 +157,13 @@ namespace CrazyBowling.Pins
         }
 
         /// <summary>爆発の起点になったことを記録する。1投につき1回にするため。</summary>
-        public void MarkExploded()
+        public void MarkExploded(int generation)
         {
             _hasExploded = true;
+            if (generation == 0)
+            {
+                _isBlastOrigin = true;
+            }
         }
 
         /// <summary>
@@ -166,7 +181,7 @@ namespace CrazyBowling.Pins
             _rigidbody.angularVelocity += angularVelocityChange;
 
             // 先に浅い世代で飛ばされていたら、そちらを残す（威力が強いほうの記録）
-            if (_blastGeneration == 0 || generation < _blastGeneration)
+            if (_blastGeneration < 0 || generation < _blastGeneration)
             {
                 _blastGeneration = generation;
             }
@@ -179,7 +194,8 @@ namespace CrazyBowling.Pins
         public void ClearThrowState()
         {
             _hasExploded = false;
-            _blastGeneration = 0;
+            _isBlastOrigin = false;
+            _blastGeneration = -1;
         }
 
         /// <summary>PinSet が並べ直したあとに、その場所を初期姿勢として覚える。</summary>

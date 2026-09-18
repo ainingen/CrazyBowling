@@ -634,7 +634,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Pins.PinExplosion
   enableEffect: 1
-  triggerSpeed: 8
+  headPin: {fileID: 814328946}
+  originFromBallOnly: 1
+  originOffsetMin: 0
+  originOffsetMax: 0.13
+  originFalloffWidth: 0.02
+  triggerSpeed: 5
   maxChainCount: 4
   oneOriginPerThrow: 1
   force: 12

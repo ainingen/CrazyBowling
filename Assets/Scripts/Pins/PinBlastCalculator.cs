@@ -27,6 +27,15 @@ namespace CrazyBowling.Pins
 
         /// <summary>追加する回転の強さ（rad/s）。</summary>
         public float spinStrength;
+
+        /// <summary>起点になれる横ずれの下限（m）。0ならど真ん中でも起点になる。</summary>
+        public float originOffsetMin;
+
+        /// <summary>起点になれる横ずれの上限（m）。これより薄い当たりでは爆発しない。</summary>
+        public float originOffsetMax;
+
+        /// <summary>上限の手前、威力が落ち始める幅（m）。境界で急に切り替わらないようにする。</summary>
+        public float originFalloffWidth;
     }
 
     /// <summary>
@@ -68,6 +77,20 @@ namespace CrazyBowling.Pins
             PinBlastSettings settings,
             out Vector3 velocityChange)
         {
+            return TryCalculateBlast(originPosition, targetPosition, generation, 1f, settings, out velocityChange);
+        }
+
+        /// <summary>
+        /// 起点から対象のピンへ与える速度の変化を求める。strengthScale は横ずれによる減衰。
+        /// </summary>
+        public static bool TryCalculateBlast(
+            Vector3 originPosition,
+            Vector3 targetPosition,
+            int generation,
+            float strengthScale,
+            PinBlastSettings settings,
+            out Vector3 velocityChange)
+        {
             velocityChange = Vector3.zero;
 
             // 距離は水平だけで測る。高さの差で威力が変わらないようにするため
@@ -89,11 +112,67 @@ namespace CrazyBowling.Pins
 
             // 起点から離れるほど弱くする。範囲の端でちょうど半分
             float distanceFalloff = 1f - 0.5f * (distance / radius);
-            float strength = StrengthAt(generation, settings) * distanceFalloff;
+            float strength = StrengthAt(generation, settings) * distanceFalloff * strengthScale;
 
             Vector3 direction = offset / distance + Vector3.up * settings.upwardRatio;
             velocityChange = direction.normalized * strength;
             return true;
+        }
+
+        /// <summary>
+        /// この倍率を下回る爆発は起こさない。
+        /// 上限ぎりぎりの当たりで、見えないほど弱い爆発が起点の枠を使ってしまうのを防ぐ。
+        /// </summary>
+        private const float MinimumOriginScale = 0.05f;
+
+        /// <summary>
+        /// ボールの進む向きに対して、ヘッドピンの中心がどれだけ横にずれているか（m）。
+        /// ワールド座標のXではなく進行方向を基準にするので、
+        /// 斜めのレーンでも回転するレーンでも「厚く当たったか」の意味が変わらない。
+        /// </summary>
+        public static float CalculateLateralOffset(Vector3 ballPosition, Vector3 ballVelocity, Vector3 headPinPosition)
+        {
+            Vector3 delta = headPinPosition - ballPosition;
+            delta.y = 0f;
+
+            Vector3 direction = ballVelocity;
+            direction.y = 0f;
+
+            // 止まっているボールでは向きが決まらないので、そのままの距離を返す
+            if (direction.sqrMagnitude < 1e-6f)
+            {
+                return delta.magnitude;
+            }
+
+            direction.Normalize();
+            Vector3 along = direction * Vector3.Dot(delta, direction);
+            return (delta - along).magnitude;
+        }
+
+        /// <summary>
+        /// 横ずれから、起点の爆発の威力の倍率を求める。範囲の外なら0。
+        /// 上限の手前 originFalloffWidth の幅で 1 から 0 へ落としていくので、
+        /// 境界をまたいでも急に爆発が消えない。
+        /// </summary>
+        public static float OriginStrengthScale(float lateralOffset, PinBlastSettings settings)
+        {
+            if (lateralOffset < settings.originOffsetMin || lateralOffset > settings.originOffsetMax)
+            {
+                return 0f;
+            }
+
+            float width = Mathf.Max(settings.originFalloffWidth, 0f);
+            float scale = 1f;
+            if (width > 0f)
+            {
+                float rampStart = settings.originOffsetMax - width;
+                if (lateralOffset > rampStart)
+                {
+                    scale = Mathf.Clamp01((settings.originOffsetMax - lateralOffset) / width);
+                }
+            }
+
+            return scale < MinimumOriginScale ? 0f : scale;
         }
 
         /// <summary>その世代で追加する回転の強さ。威力と同じ率で減衰させる。</summary>
