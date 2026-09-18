@@ -178,7 +178,7 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.1, y: 0.08, z: 0.1}
+  m_Size: {x: 0.06, y: 0.08, z: 0.06}
   m_Center: {x: 0, y: 0.04, z: 0}
 --- !u!136 &6555287328217249392
 CapsuleCollider:
@@ -242,7 +242,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5652f4060f404e84e871938234a477e2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Pins.Pin
-  centerOfMassHeight: 0.2
+  centerOfMassHeight: 0.13
+  maxAngularVelocity: 50
+  maxLinearVelocity: 15
+  collisionDetection: 3
 --- !u!1 &7284691265525138860
 GameObject:
   m_ObjectHideFlags: 0

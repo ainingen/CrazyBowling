@@ -9,8 +9,19 @@ namespace CrazyBowling.Pins
     [RequireComponent(typeof(Rigidbody))]
     public class Pin : MonoBehaviour
     {
-        [Tooltip("重心の高さ（m）。低いほど倒れにくくなる。倒れやすさの主な調整項目。")]
-        [SerializeField] private float centerOfMassHeight = 0.20f;
+        [Header("倒れやすさ")]
+        [Tooltip("重心の高さ（m）。低いほど倒れにくくなる。倒れやすさの主な調整項目。実物のピンは約0.14。")]
+        [SerializeField] private float centerOfMassHeight = 0.13f;
+
+        [Header("物理の上限")]
+        [Tooltip("回転の速さの上限（rad/s）。小さいと、当たったときの回り方が鈍くなる。")]
+        [SerializeField] private float maxAngularVelocity = 50f;
+
+        [Tooltip("速さの上限（m/s）。まれに起きる計算の暴走で、ピンが異常な速さで飛ぶのを防ぐ保険。")]
+        [SerializeField] private float maxLinearVelocity = 15f;
+
+        [Tooltip("当たり判定の方式。Continuous Speculative は、飛んだピンがすり抜けにくく動きも落ち着きやすい。")]
+        [SerializeField] private CollisionDetectionMode collisionDetection = CollisionDetectionMode.ContinuousSpeculative;
 
         private Rigidbody _rigidbody;
         private Vector3 _initialPosition;
@@ -27,7 +38,7 @@ namespace CrazyBowling.Pins
             _rigidbody = GetComponent<Rigidbody>();
             _initialPosition = transform.position;
             _initialRotation = transform.rotation;
-            ApplyCenterOfMass();
+            ApplyPhysicsSettings();
         }
 
         /// <summary>PinSet が並べ直したあとに、その場所を初期姿勢として覚える。</summary>
@@ -83,14 +94,23 @@ namespace CrazyBowling.Pins
             _rigidbody.rotation = _initialRotation;
             transform.SetPositionAndRotation(_initialPosition, _initialRotation);
 
-            ApplyCenterOfMass();
+            ApplyPhysicsSettings();
         }
 
-        /// <summary>重心を下げる。実物のピンは下が重く、少し傾いても立ち直る。</summary>
-        private void ApplyCenterOfMass()
+        /// <summary>
+        /// Inspector の値を Rigidbody に反映する。立て直すたびに呼ぶので、
+        /// 再生中に Inspector で値を変えると、次にピンを並べ直した時点から効く。
+        /// </summary>
+        private void ApplyPhysicsSettings()
         {
             EnsureRigidbody();
+
+            // 重心を下げる。実物のピンは下が重く、少し傾いても立ち直る
             _rigidbody.centerOfMass = new Vector3(0f, centerOfMassHeight, 0f);
+
+            _rigidbody.maxAngularVelocity = maxAngularVelocity;
+            _rigidbody.maxLinearVelocity = maxLinearVelocity;
+            _rigidbody.collisionDetectionMode = collisionDetection;
         }
 
         /// <summary>Awake より先に呼ばれても動くようにする。</summary>

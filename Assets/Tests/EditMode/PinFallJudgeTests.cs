@@ -194,6 +194,71 @@ namespace CrazyBowling.Tests.EditMode
         }
 
         [Test]
+        public void ピットに落ちたピンはデッキから出ている()
+        {
+            PinSample pin = StandingPin();
+            pin.position = new Vector3(0f, -0.6f, 19f);
+
+            Assert.IsTrue(PinFallJudge.IsOutOfPlay(pin, CreateSettings()));
+        }
+
+        [Test]
+        public void 台から外れるほど動いたピンはデッキから出ている()
+        {
+            PinSample pin = StandingPin();
+            pin.position = pin.initialPosition + new Vector3(0.6f, 0f, 0f);
+
+            Assert.IsTrue(PinFallJudge.IsOutOfPlay(pin, CreateSettings()));
+        }
+
+        [Test]
+        public void 傾いているだけのピンはデッキから出ていない()
+        {
+            // 倒れてはいるが、まだデッキ上にある。立ち直ることも他のピンに当たることもある
+            PinSample pin = StandingPin();
+            pin.up = TiltedUp(80f);
+
+            Assert.IsTrue(PinFallJudge.IsFallen(pin, CreateSettings()));
+            Assert.IsFalse(PinFallJudge.IsOutOfPlay(pin, CreateSettings()));
+        }
+
+        [Test]
+        public void ピットで転がり続けるピンは静止判定から除く()
+        {
+            // ピットに落ちたピンは止まらないので、これを待つと毎投タイムアウトしてしまう
+            List<PinSample> pins = new List<PinSample>();
+            for (int i = 0; i < 9; i++)
+            {
+                pins.Add(StandingPin());
+            }
+            PinSample inPit = StandingPin();
+            inPit.position = new Vector3(0.2f, -0.6f, 19f);
+            inPit.linearSpeed = 2f;
+            inPit.angularSpeed = 20f;
+            pins.Add(inPit);
+
+            Assert.IsTrue(PinFallJudge.AreAllAtRest(pins, CreateSettings()));
+        }
+
+        [Test]
+        public void デッキ上で傾いて動いているピンは静止判定を待つ()
+        {
+            // 倒れかけて滑っているピンは、まだ他のピンを倒しうるので待つ
+            List<PinSample> pins = new List<PinSample>();
+            for (int i = 0; i < 9; i++)
+            {
+                pins.Add(StandingPin());
+            }
+            PinSample sliding = StandingPin();
+            sliding.up = TiltedUp(80f);
+            sliding.position = sliding.initialPosition + new Vector3(0.1f, 0f, 0f);
+            sliding.linearSpeed = 1.2f;
+            pins.Add(sliding);
+
+            Assert.IsFalse(PinFallJudge.AreAllAtRest(pins, CreateSettings()));
+        }
+
+        [Test]
         public void 角速度だけ大きい場合も静止とみなさない()
         {
             List<PinSample> pins = new List<PinSample>();

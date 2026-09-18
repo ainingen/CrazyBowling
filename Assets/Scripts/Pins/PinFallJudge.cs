@@ -52,12 +52,13 @@ namespace CrazyBowling.Pins
     public static class PinFallJudge
     {
         /// <summary>
-        /// 1本のピンが倒れたか。次のどれかに当てはまれば倒れたとみなす。
+        /// ピンがピンデッキから出てしまったか。次のどちらかに当てはまる場合。
         /// ・レーン外に落ちた
-        /// ・初期位置から水平に大きく動いた（ピンの台から外れた扱い。立ったまま滑った場合を拾う）
-        /// ・傾きが閾値を超えた
+        /// ・初期位置から水平に大きく動いた（台から外れた扱い）
+        /// こうなったピンは二度と立ち上がらず、残りのピンに当たることもないので、
+        /// 静止判定の対象から外す。
         /// </summary>
-        public static bool IsFallen(PinSample sample, PinJudgeSettings settings)
+        public static bool IsOutOfPlay(PinSample sample, PinJudgeSettings settings)
         {
             // レーン外への落下
             if (sample.position.y < settings.fallYThreshold)
@@ -68,7 +69,17 @@ namespace CrazyBowling.Pins
             // 台から外れるほど水平に動いた
             Vector3 moved = sample.position - sample.initialPosition;
             moved.y = 0f;
-            if (moved.magnitude > settings.horizontalMoveThreshold)
+            return moved.magnitude > settings.horizontalMoveThreshold;
+        }
+
+        /// <summary>
+        /// 1本のピンが倒れたか。次のどれかに当てはまれば倒れたとみなす。
+        /// ・デッキから出た（落下、または台から外れるほど動いた）
+        /// ・傾きが閾値を超えた
+        /// </summary>
+        public static bool IsFallen(PinSample sample, PinJudgeSettings settings)
+        {
+            if (IsOutOfPlay(sample, settings))
             {
                 return true;
             }
@@ -97,7 +108,12 @@ namespace CrazyBowling.Pins
             return count;
         }
 
-        /// <summary>全部が静止しているか。1本でも動いていれば false。</summary>
+        /// <summary>
+        /// 全部が静止しているか。1本でも動いていれば false。
+        /// ピットに落ちたピンは転がり続けて止まらないので、判定の対象から外す。
+        /// 傾いているだけでデッキ上に残っているピンは、立ち直ることも他のピンに当たることも
+        /// あるので、対象に含めたままにする。
+        /// </summary>
         public static bool AreAllAtRest(IReadOnlyList<PinSample> samples, PinJudgeSettings settings)
         {
             if (samples == null)
@@ -107,6 +123,10 @@ namespace CrazyBowling.Pins
 
             for (int i = 0; i < samples.Count; i++)
             {
+                if (IsOutOfPlay(samples[i], settings))
+                {
+                    continue;
+                }
                 if (samples[i].linearSpeed > settings.restLinearSpeed)
                 {
                     return false;
