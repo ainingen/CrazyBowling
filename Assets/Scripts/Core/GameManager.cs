@@ -130,8 +130,17 @@ namespace CrazyBowling.Core
             StartGame();
         }
 
+        /// <summary>レーンの本数。</summary>
+        public int LaneCount => laneSequence != null ? laneSequence.Count : 0;
+
         /// <summary>最初のレーンから始める。</summary>
         public void StartGame()
+        {
+            StartGame(0);
+        }
+
+        /// <summary>指定した位置のレーンから始める。0で1レーン目。</summary>
+        public void StartGame(int startLaneIndex)
         {
             if (laneSequence == null || laneSequence.Count <= 0)
             {
@@ -140,7 +149,29 @@ namespace CrazyBowling.Core
             }
 
             _laneFallen = new int[laneSequence.Count];
-            _laneIndex = -1;
+            _laneIndex = Mathf.Clamp(startLaneIndex, 0, laneSequence.Count - 1) - 1;
+            GoToNextLane();
+        }
+
+        /// <summary>
+        /// 指定したレーンへ飛ぶ。1で1レーン目。
+        /// 途中から始めるので、それまでのレーンの得点は0のままになる。
+        /// 開発中の確認用。
+        /// </summary>
+        public void JumpToLane(int laneNumber)
+        {
+            if (laneSequence == null || laneSequence.Count <= 0)
+            {
+                return;
+            }
+
+            if (_laneFallen == null || _laneFallen.Length != laneSequence.Count)
+            {
+                _laneFallen = new int[laneSequence.Count];
+            }
+
+            _state = GameState.Idle;
+            _laneIndex = Mathf.Clamp(laneNumber, 1, laneSequence.Count) - 2;
             GoToNextLane();
         }
 
