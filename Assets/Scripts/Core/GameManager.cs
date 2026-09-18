@@ -219,9 +219,29 @@ namespace CrazyBowling.Core
             }
 
             PlaceByAnchors();
+            RefreshFloorLook();
 
             ballController.ApplyLaneSettings(data.MaxAngleDegrees);
             ballController.ReturnToSpawn();
+        }
+
+        /// <summary>
+        /// 床の見た目（格子と高さの色分け）を測り直す。
+        /// LaneFloorLook の Awake はプレハブを作った時点で走るので、
+        /// レーンが傾きや起伏を決める前の「平らな床」を測ってしまう。
+        /// 形が決まったこの時点で測り直す。
+        /// </summary>
+        private void RefreshFloorLook()
+        {
+            if (_laneInstance == null)
+            {
+                return;
+            }
+
+            foreach (LaneFloorLook look in _laneInstance.GetComponentsInChildren<LaneFloorLook>(true))
+            {
+                look.Apply();
+            }
         }
 
         /// <summary>レーンに渡す持ち物をまとめる。</summary>

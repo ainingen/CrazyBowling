@@ -40,6 +40,10 @@ namespace CrazyBowling.Lanes
         [Tooltip("自動で決めないときの高さの幅（m）。")]
         [SerializeField] private float manualHeightSpan = 0.05f;
 
+        [Tooltip("床の高低差がこれ未満なら、平らとみなして色を付けない（m）。" +
+                 "平らな床に色を付けると、低くも高くもない中間の色で全面が塗られてしまう。")]
+        [SerializeField] private float flatFloorThreshold = 0.005f;
+
         [Header("参照")]
         [Tooltip("床の形。大きさと高さをここから読む。空なら同じ GameObject の MeshFilter を使う。")]
         [SerializeField] private MeshFilter meshFilter;
@@ -72,11 +76,15 @@ namespace CrazyBowling.Lanes
             Vector2 tiling = CalculateTiling();
             MeasureHeightRange(out float center, out float span);
 
+            // 平らな床では色分けを切る。高低差が無いと全面が中間の色になり、
+            // 何も伝えないままレーンの色だけが濁る
+            float strength = span < flatFloorThreshold ? 0f : heightStrength;
+
             var block = new MaterialPropertyBlock();
             meshRenderer.GetPropertyBlock(block);
 
             block.SetVector(BaseMapST, new Vector4(tiling.x, tiling.y, 0f, 0f));
-            block.SetFloat(HeightStrengthId, heightStrength);
+            block.SetFloat(HeightStrengthId, strength);
             block.SetFloat(HeightCenterId, center);
             block.SetFloat(HeightSpanId, span);
             block.SetColor(LowColorId, ToShaderColor(lowColor));

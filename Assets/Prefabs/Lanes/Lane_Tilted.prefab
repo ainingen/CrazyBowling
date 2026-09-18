@@ -63,39 +63,5 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 1539823112461782701, guid: 4a1ff78bb397c2b4bbc8643d7ec6383f, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 2408358196620130182}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 4a1ff78bb397c2b4bbc8643d7ec6383f, type: 3}
---- !u!33 &2338958551540951497 stripped
-MeshFilter:
-  m_CorrespondingSourceObject: {fileID: 1256514497499803682, guid: 4a1ff78bb397c2b4bbc8643d7ec6383f, type: 3}
-  m_PrefabInstance: {fileID: 3532422095892863467}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &2619727020432021318 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 1539823112461782701, guid: 4a1ff78bb397c2b4bbc8643d7ec6383f, type: 3}
-  m_PrefabInstance: {fileID: 3532422095892863467}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &2408358196620130182
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2619727020432021318}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c23b63d3a127c3a468940a74a9fa30f1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Lanes.LaneFloorLook
-  cellSizeMeters: 0.35
-  snapToWholeCells: 1
-  heightStrength: 0.15
-  lowColor: {r: 0.35, g: 0.55, b: 1, a: 1}
-  highColor: {r: 1, g: 0.55, b: 0.3, a: 1}
-  autoHeightRange: 1
-  heightRangePadding: 1.1
-  manualHeightSpan: 0.05
-  meshFilter: {fileID: 2338958551540951497}

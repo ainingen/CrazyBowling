@@ -124,6 +124,7 @@ GameObject:
   - component: {fileID: 1256514497499803682}
   - component: {fileID: 2436191510996450726}
   - component: {fileID: 65553881342431095}
+  - component: {fileID: 7358347331637065735}
   m_Layer: 0
   m_Name: Floor
   m_TagString: Untagged
@@ -200,7 +201,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 574196d0177da77408046f5c6be4c114, type: 2}
+  - {fileID: 2100000, guid: 21c6b95e013bb194691c794d9213692d, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -224,6 +225,27 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &7358347331637065735
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1539823112461782701}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c23b63d3a127c3a468940a74a9fa30f1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Lanes.LaneFloorLook
+  cellSizeMeters: 0.35
+  snapToWholeCells: 1
+  heightStrength: 0.25
+  lowColor: {r: 0.35, g: 0.55, b: 1, a: 1}
+  highColor: {r: 1, g: 0.55, b: 0.3, a: 1}
+  autoHeightRange: 1
+  heightRangePadding: 1.1
+  manualHeightSpan: 0.05
+  meshFilter: {fileID: 1256514497499803682}
 --- !u!1 &3566031388944682031
 GameObject:
   m_ObjectHideFlags: 0

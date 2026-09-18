@@ -1,6 +1,9 @@
 // レーンの床。高さで色を変え、その上に格子を掛ける。
 // 高さはワールド座標から取るので、平らな床でも起伏のある床でも同じものが使える。
 // 傾きの向きではなく高さそのもので塗るので、うねった床でも谷と山が読める。
+//
+// include は必ず各パスの中に書くこと。HLSLINCLUDE に置くと Core.hlsl が
+// キーワードより先に展開され、影を受けなくなる。
 Shader "CrazyBowling/LaneFloor"
 {
     Properties
@@ -12,7 +15,7 @@ Shader "CrazyBowling/LaneFloor"
         _Metallic("金属っぽさ", Range(0, 1)) = 0
 
         [Header(Height Tint)]
-        _HeightStrength("色分けの濃さ", Range(0, 1)) = 0.15
+        _HeightStrength("色分けの濃さ", Range(0, 1)) = 0.25
         _HeightCenter("色分けの基準の高さ m", Float) = 0
         _HeightSpan("色分けの高さの幅 m", Float) = 0.05
         _LowColor("低い側の色", Color) = (0.35, 0.55, 1.0, 1)
@@ -29,45 +32,6 @@ Shader "CrazyBowling/LaneFloor"
         }
         LOD 300
 
-        // 共通の宣言。どのパスからも同じ並びで見えるようにしておく
-        HLSLINCLUDE
-        #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-
-        CBUFFER_START(UnityPerMaterial)
-            float4 _BaseMap_ST;
-            half4 _BaseColor;
-            half4 _LowColor;
-            half4 _HighColor;
-            half _Smoothness;
-            half _Metallic;
-            half _HeightStrength;
-            float _HeightCenter;
-            float _HeightSpan;
-        CBUFFER_END
-
-        TEXTURE2D(_BaseMap);
-        SAMPLER(sampler_BaseMap);
-
-        // ガンマ空間との行き来。URP の Color.hlsl はパスによっては届かないので、
-        // 依存を作らずここで済ませる
-        half3 ToGamma(half3 c) { return pow(max(c, 0.0001), 1.0 / 2.2); }
-        half3 ToLinear(half3 c) { return pow(max(c, 0.0001), 2.2); }
-
-        // 高さから床の色を作る。格子はこのあとで掛ける。
-        // 混ぜ算はガンマ空間で行う。リニア空間で混ぜると、茶色は青成分がほぼ0なので
-        // 「濃さ15%」でも青が何倍にもなってしまい、見た目が一気に紫になる
-        half3 CalculateFloorColor(float worldY, half4 grid)
-        {
-            float span = max(abs(_HeightSpan), 0.0001);
-            float t = saturate((worldY - _HeightCenter) / span + 0.5);
-
-            half3 tintGamma = lerp(ToGamma(_LowColor.rgb), ToGamma(_HighColor.rgb), t);
-            half3 mixedGamma = lerp(ToGamma(_BaseColor.rgb), tintGamma, _HeightStrength);
-
-            return ToLinear(mixedGamma) * grid.rgb;
-        }
-        ENDHLSL
-
         Pass
         {
             Name "ForwardLit"
@@ -78,16 +42,22 @@ Shader "CrazyBowling/LaneFloor"
             #pragma fragment Frag
             #pragma target 3.0
 
+            // 影のキーワード。これが効くよう、include はこのあとに書く
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
+            #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile _ _ADDITIONAL_LIGHTS_VERTEX _ADDITIONAL_LIGHTS
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHT_SHADOWS
-            #pragma multi_compile_fragment _ _SHADOWS_SOFT
             #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
-            #pragma multi_compile_fog
+            #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
+            #pragma multi_compile _ LIGHTMAP_SHADOW_MIXING
+            #pragma multi_compile _ SHADOWS_SHADOWMASK
             #pragma multi_compile _ LIGHTMAP_ON
             #pragma multi_compile _ DIRLIGHTMAP_COMBINED
+            #pragma multi_compile_fog
 
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "LaneFloorInput.hlsl"
 
             struct Attributes
             {
@@ -170,8 +140,9 @@ Shader "CrazyBowling/LaneFloor"
 
             #pragma multi_compile_vertex _ _CASTING_PUNCTUAL_LIGHT_SHADOW
 
-            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Shadows.hlsl"
+            #include "LaneFloorInput.hlsl"
 
             float3 _LightDirection;
             float3 _LightPosition;
@@ -220,7 +191,7 @@ Shader "CrazyBowling/LaneFloor"
             ENDHLSL
         }
 
-        // 深度だけを書くパス。被写界深度やSSAOを使うときに要る
+        // 深度だけを書くパス。SSAO や被写界深度を使うときに要る
         Pass
         {
             Name "DepthOnly"
@@ -234,6 +205,9 @@ Shader "CrazyBowling/LaneFloor"
             #pragma vertex DepthVert
             #pragma fragment DepthFrag
             #pragma target 3.0
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "LaneFloorInput.hlsl"
 
             struct DepthAttributes
             {
@@ -255,6 +229,50 @@ Shader "CrazyBowling/LaneFloor"
             half4 DepthFrag(DepthVaryings input) : SV_Target
             {
                 return 0;
+            }
+            ENDHLSL
+        }
+
+        // 深度と法線を書くパス。SSAO が使う
+        Pass
+        {
+            Name "DepthNormals"
+            Tags { "LightMode" = "DepthNormals" }
+
+            ZWrite On
+            Cull Back
+
+            HLSLPROGRAM
+            #pragma vertex DepthNormalsVert
+            #pragma fragment DepthNormalsFrag
+            #pragma target 3.0
+
+            #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+            #include "LaneFloorInput.hlsl"
+
+            struct DepthNormalsAttributes
+            {
+                float4 positionOS : POSITION;
+                float3 normalOS   : NORMAL;
+            };
+
+            struct DepthNormalsVaryings
+            {
+                float4 positionCS : SV_POSITION;
+                float3 normalWS   : TEXCOORD0;
+            };
+
+            DepthNormalsVaryings DepthNormalsVert(DepthNormalsAttributes input)
+            {
+                DepthNormalsVaryings output = (DepthNormalsVaryings)0;
+                output.positionCS = TransformObjectToHClip(input.positionOS.xyz);
+                output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+                return output;
+            }
+
+            half4 DepthNormalsFrag(DepthNormalsVaryings input) : SV_Target
+            {
+                return half4(NormalizeNormalPerPixel(input.normalWS), 0);
             }
             ENDHLSL
         }

@@ -115,7 +115,7 @@ Material:
     - _GlossyReflections: 0
     - _HeightCenter: 0.05
     - _HeightSpan: 0.03
-    - _HeightStrength: 0.15
+    - _HeightStrength: 0.25
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.005
