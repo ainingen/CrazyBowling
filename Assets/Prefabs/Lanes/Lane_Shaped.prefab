@@ -561,8 +561,8 @@ Transform:
   m_GameObject: {fileID: 2011380881644039655}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.585, y: 0.44, z: 16.95}
-  m_LocalScale: {x: 0.04, y: 0.22, z: 2.1000004}
+  m_LocalPosition: {x: 0.745, y: 0.25, z: 16.95}
+  m_LocalScale: {x: 0.04, y: 0.6, z: 2.1000004}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1858898484094875542}
@@ -693,10 +693,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Lanes.Kickback
   leftWall: {fileID: 752461799460913711}
   rightWall: {fileID: 6608464350124890117}
-  innerDistanceX: 0.565
+  innerDistanceX: 0.725
   thickness: 0.04
-  bottomY: 0.33
-  height: 0.22
+  bottomY: -0.05
+  height: 0.6
   startZ: 15.9
   endZ: 18
 --- !u!1 &4420287243077961740
@@ -870,8 +870,8 @@ Transform:
   m_GameObject: {fileID: 7189613576169650333}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.585, y: 0.44, z: 16.95}
-  m_LocalScale: {x: 0.04, y: 0.22, z: 2.1000004}
+  m_LocalPosition: {x: -0.745, y: 0.25, z: 16.95}
+  m_LocalScale: {x: 0.04, y: 0.6, z: 2.1000004}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1858898484094875542}
