@@ -72,6 +72,18 @@ namespace CrazyBowling.Lanes
         {
         }
 
+        /// <summary>
+        /// その位置の床の高さと向きを返す。
+        /// 平らなレーンは床の形を知らないので false を返し、呼ぶ側は何もしない。
+        /// 起伏のあるレーンだけが答える。
+        /// </summary>
+        public virtual bool TrySampleFloor(Vector3 worldPosition, out float height, out Vector3 normal)
+        {
+            height = worldPosition.y;
+            normal = Vector3.up;
+            return false;
+        }
+
         /// <summary>レーンを出る。借りたものはここで返す。</summary>
         public virtual void OnLaneEnd()
         {

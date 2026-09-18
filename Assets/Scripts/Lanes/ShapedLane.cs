@@ -171,6 +171,15 @@ namespace CrazyBowling.Lanes
         /// この位置の床の高さと向きを返す。ワールド座標でやり取りする。
         /// 段階2-C で、ボールとピンをこの床に合わせて置くのに使う。
         /// </summary>
+        public override bool TrySampleFloor(Vector3 worldPosition, out float height, out Vector3 normal)
+        {
+            return SampleFloor(worldPosition, out height, out normal);
+        }
+
+        /// <summary>
+        /// この位置の床の高さと向きを返す。ワールド座標でやり取りする。
+        /// レーンの外でも高さは返すが、戻り値は false になる。
+        /// </summary>
         public bool SampleFloor(Vector3 worldPosition, out float height, out Vector3 normal)
         {
             // メッシュが乗っている Transform を基準にする。

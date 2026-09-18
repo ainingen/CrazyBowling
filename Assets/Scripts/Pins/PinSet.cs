@@ -50,6 +50,16 @@ namespace CrazyBowling.Pins
         /// <summary>連鎖爆発の演出。付いていなければ null。</summary>
         private PinExplosion _explosion;
 
+        /// <summary>ピンを置く高さ（このまとまりの原点から数えた高さ）。</summary>
+        public float BaseY => baseY;
+
+        /// <summary>
+        /// ピン台の床を調べるための位置（ヘッドピンの足元）。
+        /// 起伏のあるレーンで、ピン台の高さを合わせるのに使う。
+        /// </summary>
+        public Vector3 DeckSamplePoint =>
+            transform.TransformPoint(new Vector3(laneCenterX, 0f, headPinZ));
+
         /// <summary>ピンの本数。</summary>
         public int PinCount => pins == null ? 0 : pins.Length;
 

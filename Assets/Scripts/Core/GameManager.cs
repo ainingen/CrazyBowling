@@ -250,10 +250,70 @@ namespace CrazyBowling.Core
             }
 
             PlaceByAnchors();
+            AlignToFloor();
             RefreshFloorLook();
 
+            ballController.SetFloorSampler(BuildFloorSampler());
             ballController.ApplyLaneSettings(data.MaxAngleDegrees);
             ballController.ReturnToSpawn();
+        }
+
+        /// <summary>
+        /// 今のレーンに床の高さを聞く役を作る。形を知らないレーンでは null を返す。
+        /// </summary>
+        private BallController.FloorSampler BuildFloorSampler()
+        {
+            if (_laneBehaviour == null)
+            {
+                return null;
+            }
+
+            LaneBehaviour lane = _laneBehaviour;
+            return (Vector3 worldPosition, out float height) =>
+                lane != null && lane.TrySampleFloor(worldPosition, out height, out _)
+                    ? true
+                    : Fail(out height);
+        }
+
+        /// <summary>床の高さが分からなかったときの返し方をまとめる。</summary>
+        private static bool Fail(out float height)
+        {
+            height = 0f;
+            return false;
+        }
+
+        /// <summary>
+        /// ボールとピン台を、床の高さに合わせて置き直す。
+        /// 起伏のあるレーンでは、アンカーの高さと実際の床の高さがずれるため。
+        /// 平らなレーンは TrySampleFloor が false を返すので何も起きない。
+        /// </summary>
+        private void AlignToFloor()
+        {
+            if (_laneBehaviour == null)
+            {
+                return;
+            }
+
+            // ボールは床から半径のぶん浮かせる。
+            // 構え中に左右へずらしたときも追従するよう、調べる手段ごと渡す
+            if (ballSpawnPoint != null && ballController != null
+                && _laneBehaviour.TrySampleFloor(ballSpawnPoint.position, out float spawnFloorY, out _))
+            {
+                Vector3 position = ballSpawnPoint.position;
+                position.y = spawnFloorY + ballController.BallRadius;
+                ballSpawnPoint.position = position;
+            }
+
+            // ピン台は、ヘッドピンの足元の床に合わせる。
+            // ピン台の手前から奥は平らに保たれているので、1点で測れば10本ぶん足りる
+            if (pinSet != null
+                && _laneBehaviour.TrySampleFloor(pinSet.DeckSamplePoint, out float deckFloorY, out _))
+            {
+                Vector3 position = pinSet.transform.position;
+                position.y = deckFloorY - pinSet.BaseY;
+                pinSet.transform.position = position;
+                pinSet.ApplyLayout();
+            }
         }
 
         /// <summary>

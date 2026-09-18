@@ -28,6 +28,12 @@ namespace CrazyBowling.Ball
     [RequireComponent(typeof(Rigidbody))]
     public class BallController : MonoBehaviour
     {
+        /// <summary>
+        /// その場所の床の高さを教える役。起伏のあるレーンで、構え中のボールを床に乗せるのに使う。
+        /// 床の形を知らないレーンでは false を返す。
+        /// </summary>
+        public delegate bool FloorSampler(Vector3 worldPosition, out float height);
+
         [Header("構え位置")]
         [Tooltip("ボールが構える基準になる Transform。この前方向へ投げる。")]
         [SerializeField] private Transform spawnPoint;
@@ -118,6 +124,9 @@ namespace CrazyBowling.Ball
 
         /// <summary>今かかっている横回転（rad/s）。正で右へ曲がる。</summary>
         private float _sideSpin;
+
+        /// <summary>床の高さを調べる手段。起伏のあるレーンでだけ入る。</summary>
+        private FloorSampler _floorSampler;
 
         /// <summary>
         /// 転がりに変わって、曲がりが終わったか。
@@ -450,6 +459,12 @@ namespace CrazyBowling.Ball
             return sphere.radius * maxScale;
         }
 
+        /// <summary>
+        /// 当たり判定から見たボールの半径（m）。
+        /// 起伏のあるレーンで、床の上に置くときの高さに使う。
+        /// </summary>
+        public float BallRadius => GetBallRadius();
+
         /// <summary>構え位置の正面。角度0のときの投球方向。</summary>
         public Vector3 GetForwardDirection()
         {
@@ -536,6 +551,16 @@ namespace CrazyBowling.Ball
             }
         }
 
+        /// <summary>
+        /// 床の高さを調べる手段を渡す。GameManager がレーンを差し替えるたびに呼ぶ。
+        /// null を渡すと、構え位置の高さをそのまま使う。
+        /// </summary>
+        public void SetFloorSampler(FloorSampler sampler)
+        {
+            _floorSampler = sampler;
+            ApplySpawnPosition();
+        }
+
         /// <summary>構え位置と左右のずれを実際の座標に反映する。</summary>
         private void ApplySpawnPosition()
         {
@@ -543,7 +568,17 @@ namespace CrazyBowling.Ball
             {
                 return;
             }
-            transform.position = spawnPoint.position + spawnPoint.right * _sideOffset;
+
+            Vector3 position = spawnPoint.position + spawnPoint.right * _sideOffset;
+
+            // 起伏のあるレーンでは、左右にずれた先の床の高さに合わせる。
+            // 構え位置の高さのままだと、端へ寄るほど床に埋まったり浮いたりする
+            if (_floorSampler != null && _floorSampler(position, out float floorY))
+            {
+                position.y = floorY + GetBallRadius();
+            }
+
+            transform.position = position;
         }
 
         /// <summary>Inspector の値を計算用の設定にまとめる。</summary>
