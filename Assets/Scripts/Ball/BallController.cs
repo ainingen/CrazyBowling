@@ -128,6 +128,9 @@ namespace CrazyBowling.Ball
         /// <summary>床の高さを調べる手段。起伏のあるレーンでだけ入る。</summary>
         private FloorSampler _floorSampler;
 
+        /// <summary>入力を止めているか。下見の間は投げられないようにする。</summary>
+        private bool _inputBlocked;
+
         /// <summary>
         /// 転がりに変わって、曲がりが終わったか。
         /// 一度終わったら、そのあと滑りが増えても曲げ直さない。
@@ -190,11 +193,42 @@ namespace CrazyBowling.Ball
             ResetToSpawn("初期化");
         }
 
+        /// <summary>
+        /// 入力を止める・再開する。下見カメラが動いている間に投げられないようにする。
+        /// 止めている間も構え位置の更新は続くので、ボールは床の上に居続ける。
+        /// </summary>
+        public void SetInputBlocked(bool blocked)
+        {
+            if (_inputBlocked == blocked)
+            {
+                return;
+            }
+
+            _inputBlocked = blocked;
+
+            // 引いている途中で止められたら、投げずに構えへ戻す
+            if (blocked && _state == BallState.Pulling)
+            {
+                _dragPreview = default;
+                _state = BallState.Aiming;
+            }
+        }
+
         private void Update()
         {
             // マウス・タッチ・ペンのどれも無い環境では何もしない
             if (Pointer.current == null)
             {
+                return;
+            }
+
+            if (_inputBlocked)
+            {
+                // 構え位置だけは保つ。床の高さが変わっても追従させるため
+                if (_state == BallState.Aiming)
+                {
+                    ApplySpawnPosition();
+                }
                 return;
             }
 

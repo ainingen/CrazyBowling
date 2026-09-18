@@ -55,6 +55,9 @@ namespace CrazyBowling.Core
         [Tooltip("1レーンぶんの投球係。")]
         [SerializeField] private ThrowSequencer throwSequencer;
 
+        [Tooltip("投球前の下見カメラ。無くてもよい。")]
+        [SerializeField] private CameraPreview cameraPreview;
+
         [Header("間合い")]
         [Tooltip("レーンが終わってから次のレーンに移るまでの間（秒）。")]
         [SerializeField] private float delayBetweenLanes = 2f;
@@ -256,6 +259,29 @@ namespace CrazyBowling.Core
             ballController.SetFloorSampler(BuildFloorSampler());
             ballController.ApplyLaneSettings(data.MaxAngleDegrees);
             ballController.ReturnToSpawn();
+
+            StartPreview();
+        }
+
+        /// <summary>
+        /// 下見カメラを始める。レーンに入ったときの1回だけ流れる。
+        /// 2投目では呼ばれない（投球係が内部で回すため）。
+        /// </summary>
+        private void StartPreview()
+        {
+            if (cameraPreview == null)
+            {
+                return;
+            }
+
+            LaneAnchors anchors = _laneInstance != null
+                ? _laneInstance.GetComponentInChildren<LaneAnchors>()
+                : null;
+
+            cameraPreview.BeginLane(
+                _laneBehaviour,
+                anchors != null ? anchors.CameraAnchor : null,
+                _laneInstance != null ? _laneInstance.transform : null);
         }
 
         /// <summary>

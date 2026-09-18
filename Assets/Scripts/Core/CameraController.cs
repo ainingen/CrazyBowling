@@ -38,6 +38,12 @@ namespace CrazyBowling.Core
         private Vector3 _positionVelocity;
 
         /// <summary>
+        /// 下見カメラなど、外からカメラを動かしている間は true。
+        /// この間は通常の追従を止めて、位置と向きに手を出さない。
+        /// </summary>
+        public bool ExternalControl { get; set; }
+
+        /// <summary>
         /// 構え中の視点を、レーンの目印に合わせる。GameManager がレーンを差し替えたときに呼ぶ。
         /// レーンをまたぐときは滑らかに動かす意味が無いので、その場で切り替える。
         /// </summary>
@@ -62,6 +68,11 @@ namespace CrazyBowling.Core
 
         private void LateUpdate()
         {
+            if (ExternalControl)
+            {
+                return;
+            }
+
             // 決着後も判定が終わるまでは奥に留まり、倒れたピンが見えるようにする
             bool isInPlay = ballController != null && ballController.IsInPlay;
 
