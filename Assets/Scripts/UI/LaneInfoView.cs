@@ -24,8 +24,10 @@ namespace CrazyBowling.UI
         [SerializeField] private TMP_Text hintLabel;
 
         [Header("一言の出し方")]
-        [Tooltip("一言を出しておく時間（秒）。")]
-        [SerializeField] private float hintSeconds = 3f;
+        [Tooltip("一言を出しておく時間（秒）。" +
+                 "説明は2文で最長35字あり、ゆっくり読むと5秒ほどかかる。" +
+                 "下見カメラが流れている間と重なるので、短くしすぎないこと。")]
+        [SerializeField] private float hintSeconds = 5f;
 
         [Tooltip("消えるのにかける時間（秒）。")]
         [SerializeField] private float hintFadeSeconds = 0.6f;
