@@ -19,13 +19,13 @@ namespace CrazyBowling.Pins
         [Tooltip("列の間隔（m）。0.3048 × cos30° = 0.264 で正三角形になる。")]
         [SerializeField] private float rowSpacing = 0.2640f;
 
-        [Tooltip("一番手前のピン（ヘッドピン）の位置（m）。")]
+        [Tooltip("一番手前のピン（ヘッドピン）の位置（m）。このまとまりの原点から数えた奥行き。")]
         [SerializeField] private float headPinZ = 16.2f;
 
-        [Tooltip("レーンの中心（m）。")]
+        [Tooltip("レーンの中心（m）。このまとまりの原点から数えた左右のずれ。")]
         [SerializeField] private float laneCenterX = 0f;
 
-        [Tooltip("ピンを置く高さ（m）。床の上面に合わせる。")]
+        [Tooltip("ピンを置く高さ（m）。床の上面に合わせる。このまとまりの原点から数えた高さ。")]
         [SerializeField] private float baseY = 0.05f;
 
         [Header("倒れ判定")]
@@ -71,6 +71,8 @@ namespace CrazyBowling.Pins
 
         /// <summary>
         /// Inspector の間隔に従って10本を三角に並べ、その場所を初期姿勢として覚えさせる。
+        /// 位置はこのまとまり自身を基準にするので、
+        /// ピン台ごと動かしたり傾けたりすれば10本がまとめて付いてくる。
         /// 再生時は Awake から呼ばれる。エディタでは、このコンポーネントを右クリックして実行できる。
         /// </summary>
         [ContextMenu("ピンを並べ直す")]
@@ -105,8 +107,8 @@ namespace CrazyBowling.Pins
                         continue;
                     }
 
-                    Vector3 position = new Vector3(firstX + pinSpacing * i, baseY, rowZ);
-                    pin.SetInitialPose(position, Quaternion.identity);
+                    Vector3 local = new Vector3(firstX + pinSpacing * i, baseY, rowZ);
+                    pin.SetInitialPose(transform.TransformPoint(local), transform.rotation);
                 }
             }
         }

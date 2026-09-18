@@ -37,6 +37,29 @@ namespace CrazyBowling.Core
 
         private Vector3 _positionVelocity;
 
+        /// <summary>
+        /// 構え中の視点を、レーンの目印に合わせる。GameManager がレーンを差し替えたときに呼ぶ。
+        /// レーンをまたぐときは滑らかに動かす意味が無いので、その場で切り替える。
+        /// </summary>
+        public void SetAimingView(Transform anchor, bool snap = true)
+        {
+            if (anchor == null)
+            {
+                return;
+            }
+
+            aimingPosition = anchor.position;
+            aimingEulerAngles = anchor.eulerAngles;
+
+            if (!snap)
+            {
+                return;
+            }
+
+            transform.SetPositionAndRotation(anchor.position, anchor.rotation);
+            _positionVelocity = Vector3.zero;
+        }
+
         private void LateUpdate()
         {
             // 決着後も判定が終わるまでは奥に留まり、倒れたピンが見えるようにする
