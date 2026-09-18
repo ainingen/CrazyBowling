@@ -24,25 +24,6 @@ namespace CrazyBowling.UI
         [Tooltip("初速を出すテキスト。")]
         [SerializeField] private TMP_Text speedLabel;
 
-        [Header("カーブ")]
-        [Tooltip("カーブ表示のまとまり。強さゲージと一緒に出し入れする。")]
-        [SerializeField] private GameObject curveRoot;
-
-        [Tooltip("左へのカーブで伸びるバー。Image Type は Filled / Horizontal / Right にしておく。")]
-        [SerializeField] private Image curveLeftImage;
-
-        [Tooltip("右へのカーブで伸びるバー。Image Type は Filled / Horizontal / Left にしておく。")]
-        [SerializeField] private Image curveRightImage;
-
-        [Tooltip("カーブの強さと、どちらのボタンを押しているかを出すテキスト。")]
-        [SerializeField] private TMP_Text curveLabel;
-
-        [Tooltip("カーブのバーと文字の色。")]
-        [SerializeField] private Color curveColor = new Color(0.35f, 0.85f, 0.45f);
-
-        [Tooltip("カーブ無しのときの色。")]
-        [SerializeField] private Color noCurveColor = new Color(0.55f, 0.55f, 0.55f);
-
         [Header("色")]
         [Tooltip("弱いときの色。")]
         [SerializeField] private Color weakColor = new Color(0.20f, 0.55f, 1.00f);
@@ -67,15 +48,6 @@ namespace CrazyBowling.UI
         [Tooltip("投げない範囲のときに出す文字。")]
         [SerializeField] private string cancelText = "キャンセル";
 
-        [Tooltip("左カーブのときの書き方。{0} に強さのパーセントが入る。")]
-        [SerializeField] private string curveLeftFormat = "◀ 左カーブ {0:F0}%";
-
-        [Tooltip("右カーブのときの書き方。{0} に強さのパーセントが入る。")]
-        [SerializeField] private string curveRightFormat = "右カーブ {0:F0}% ▶";
-
-        [Tooltip("カーブ無しのときに出す文字。")]
-        [SerializeField] private string noCurveText = "ストレート";
-
         private void LateUpdate()
         {
             if (ballController == null)
@@ -83,16 +55,11 @@ namespace CrazyBowling.UI
                 return;
             }
 
-            bool isDragging = ballController.IsDragging;
+            bool isDragging = ballController.IsPulling;
 
             if (gaugeRoot != null && gaugeRoot.activeSelf != isDragging)
             {
                 gaugeRoot.SetActive(isDragging);
-            }
-
-            if (curveRoot != null && curveRoot.activeSelf != isDragging)
-            {
-                curveRoot.SetActive(isDragging);
             }
 
             if (!isDragging)
@@ -115,46 +82,6 @@ namespace CrazyBowling.UI
                     ? string.Format(speedFormat, preview.speed)
                     : cancelText;
                 speedLabel.color = color;
-            }
-
-            UpdateCurve(preview);
-        }
-
-        /// <summary>カーブのバーと文字。中央から左右に伸びるので、向きと強さが同時に分かる。</summary>
-        private void UpdateCurve(ThrowResult preview)
-        {
-            float leftAmount = preview.curve < 0f ? -preview.curve : 0f;
-            float rightAmount = preview.curve > 0f ? preview.curve : 0f;
-            bool hasCurve = leftAmount > 0f || rightAmount > 0f;
-            Color barColor = hasCurve ? curveColor : noCurveColor;
-
-            if (curveLeftImage != null)
-            {
-                curveLeftImage.fillAmount = leftAmount;
-                curveLeftImage.color = barColor;
-            }
-
-            if (curveRightImage != null)
-            {
-                curveRightImage.fillAmount = rightAmount;
-                curveRightImage.color = barColor;
-            }
-
-            if (curveLabel != null)
-            {
-                if (leftAmount > 0f)
-                {
-                    curveLabel.text = string.Format(curveLeftFormat, leftAmount * 100f);
-                }
-                else if (rightAmount > 0f)
-                {
-                    curveLabel.text = string.Format(curveRightFormat, rightAmount * 100f);
-                }
-                else
-                {
-                    curveLabel.text = noCurveText;
-                }
-                curveLabel.color = barColor;
             }
         }
 

@@ -1,6 +1,6 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using UnityEngine.InputSystem.Controls;
 
 namespace CrazyBowling.Ball
 {
@@ -10,8 +10,8 @@ namespace CrazyBowling.Ball
         /// <summary>構え中。マウスの左右でボールの位置を調整できる。</summary>
         Aiming,
 
-        /// <summary>ドラッグ中。位置は固定され、方向と強さを決めている。</summary>
-        Dragging,
+        /// <summary>引いている最中。立ち位置は固定され、角度と強さを決めている。</summary>
+        Pulling,
 
         /// <summary>投球後。物理に任せて転がっている。</summary>
         Rolling,
@@ -40,10 +40,20 @@ namespace CrazyBowling.Ball
 
         [Header("投球")]
         [Tooltip("最大の強さになる引き幅（ピクセル）。")]
-        [SerializeField] private float maxDragPixels = 300f;
+        [SerializeField] private float maxPullPixels = 300f;
 
         [Tooltip("これ以下の引き幅では投げない（ピクセル）。")]
-        [SerializeField] private float minDragPixels = 20f;
+        [SerializeField] private float minPullPixels = 20f;
+
+        [Tooltip("最大の角度になる横ずれ（ピクセル）。")]
+        [SerializeField] private float maxAnglePixels = 250f;
+
+        [Tooltip("左右に振れる最大角度（度）。レーンごとに上書きできる。" +
+                 "15.7m先では1度で27cm動くので、4度あればレーンの端から端まで届く。")]
+        [SerializeField] private float maxAngleDegrees = 4f;
+
+        [Tooltip("この横ずれまでは角度を付けない（ピクセル）。手ブレ対策。")]
+        [SerializeField] private float angleDeadZonePixels = 10f;
 
         [Tooltip("最小の初速（m/s）。")]
         [SerializeField] private float minThrowSpeed = 3f;
@@ -55,12 +65,6 @@ namespace CrazyBowling.Ball
         [SerializeField] private bool invertDrag = false;
 
         [Header("カーブ")]
-        [Tooltip("カーブが最大になるマウスの横移動量（ピクセル）。小さいほど少し動かすだけで曲がる。")]
-        [SerializeField] private float maxCurvePixels = 200f;
-
-        [Tooltip("横に動かさずに離した場合も投げられるか。切ると、カーブ無しでは投球できなくなる。")]
-        [SerializeField] private bool allowStraightThrow = true;
-
         [Tooltip("カーブ最大のときに与える縦軸まわりの回転（rad/s）。")]
         [SerializeField] private float maxSideSpin = 30f;
 
@@ -108,8 +112,8 @@ namespace CrazyBowling.Ball
         private float _stopTimer;
         private ThrowResult _dragPreview;
 
-        /// <summary>ドラッグを始めたのが右ボタンか。カーブの向きを決める。</summary>
-        private bool _dragWithRightButton;
+        /// <summary>構え中のスライダーで決めたカーブ。投球後も次の投球まで残る。</summary>
+        private float _selectedCurve;
 
         /// <summary>今かかっている横回転（rad/s）。正で右へ曲がる。</summary>
         private float _sideSpin;
@@ -126,8 +130,33 @@ namespace CrazyBowling.Ball
         /// <summary>転がっている最中か。カメラの追従切り替えに使う。</summary>
         public bool IsRolling => _state == BallState.Rolling;
 
-        /// <summary>ドラッグ中か。表示の出し入れに使う。</summary>
-        public bool IsDragging => _state == BallState.Dragging;
+        /// <summary>引いている最中か。表示の出し入れに使う。</summary>
+        public bool IsPulling => _state == BallState.Pulling;
+
+        /// <summary>構え中か。カーブのスライダーを触れるのはこの間だけ。</summary>
+        public bool IsAiming => _state == BallState.Aiming;
+
+        /// <summary>今選んでいるカーブ。-1で左いっぱい、0でカーブ無し、+1で右いっぱい。</summary>
+        public float SelectedCurve => _selectedCurve;
+
+        /// <summary>カーブのスライダーから設定する。構え中だけ効く。</summary>
+        public void SetSelectedCurve(float curve)
+        {
+            if (_state != BallState.Aiming)
+            {
+                return;
+            }
+            _selectedCurve = Mathf.Clamp(curve, -1f, 1f);
+        }
+
+        /// <summary>
+        /// レーンごとの上書き。斜めや回転するレーンでは、流れを打ち消すために広い角度が要る。
+        /// 段階3で LaneData から呼ぶ。
+        /// </summary>
+        public void ApplyLaneSettings(float laneMaxAngleDegrees)
+        {
+            maxAngleDegrees = laneMaxAngleDegrees;
+        }
 
         /// <summary>転がり終わって決着したか。判定はここから始まる。</summary>
         public bool IsSettled => _state == BallState.Settled;
@@ -153,8 +182,8 @@ namespace CrazyBowling.Ball
 
         private void Update()
         {
-            // Input System のマウスが無い環境では何もしない
-            if (Mouse.current == null)
+            // マウス・タッチ・ペンのどれも無い環境では何もしない
+            if (Pointer.current == null)
             {
                 return;
             }
@@ -164,8 +193,8 @@ namespace CrazyBowling.Ball
                 case BallState.Aiming:
                     UpdateAiming();
                     break;
-                case BallState.Dragging:
-                    UpdateDragging();
+                case BallState.Pulling:
+                    UpdatePulling();
                     break;
                 case BallState.Rolling:
                     UpdateRolling();
@@ -173,46 +202,57 @@ namespace CrazyBowling.Ball
             }
         }
 
-        /// <summary>構え中：マウスの左右でボールをスライドさせ、押されたらドラッグに移る。</summary>
+        /// <summary>
+        /// 構え中：ポインタの左右でボールをスライドさせ、押されたら引きに移る。
+        /// マウスはホバーで追従し、タッチは指を置いた位置で決まる。
+        /// </summary>
         private void UpdateAiming()
         {
-            Vector2 mousePosition = Mouse.current.position.ReadValue();
-
-            // 画面の左端から右端を、左右の可動範囲に対応させる
-            float screenRatio = Mathf.Clamp01(mousePosition.x / Mathf.Max(Screen.width, 1));
-            float targetOffset = Mathf.Lerp(-sideMoveLimit, sideMoveLimit, screenRatio);
-            _sideOffset = Mathf.MoveTowards(_sideOffset, targetOffset, sideMoveSpeed * Time.deltaTime);
-            ApplySpawnPosition();
-
-            // 押したボタンでカーブの向きが決まる。左ボタンなら左、右ボタンなら右へ曲がる
-            bool leftPressed = Mouse.current.leftButton.wasPressedThisFrame;
-            bool rightPressed = Mouse.current.rightButton.wasPressedThisFrame;
-            if (leftPressed || rightPressed)
-            {
-                _dragWithRightButton = rightPressed && !leftPressed;
-                _dragStart = mousePosition;
-                _dragPreview = default;
-                _state = BallState.Dragging;
-            }
-        }
-
-        /// <summary>ドラッグ中：位置は固定。離したら投球を計算する。</summary>
-        private void UpdateDragging()
-        {
-            // 表示用の予測を毎フレーム更新する（投球には使わない）
-            _dragPreview = ThrowCalculator.Calculate(
-                _dragStart, Mouse.current.position.ReadValue(), BuildThrowSettings(), _dragWithRightButton, invertDrag);
-
-            // ドラッグを始めたボタンが離されたときだけ投げる
-            ButtonControl dragButton = _dragWithRightButton ? Mouse.current.rightButton : Mouse.current.leftButton;
-            if (!dragButton.wasReleasedThisFrame)
+            // カーブのスライダーなど、UIの上にポインタがあるときは投球操作をしない。
+            // これをしないと、スライダーを触りに行くだけでボールが動いてしまう
+            if (IsPointerOverUI())
             {
                 return;
             }
 
-            Vector2 dragEnd = Mouse.current.position.ReadValue();
+            Vector2 pointerPosition = Pointer.current.position.ReadValue();
+
+            // 画面の左端から右端を、左右の可動範囲に対応させる
+            float screenRatio = Mathf.Clamp01(pointerPosition.x / Mathf.Max(Screen.width, 1));
+            float targetOffset = Mathf.Lerp(-sideMoveLimit, sideMoveLimit, screenRatio);
+
+            // タッチは指を置いた瞬間に決まるので、ホバーで追う余地が無い。
+            // 押された時点では補間せず、その位置へ合わせる
+            bool pressed = Pointer.current.press.wasPressedThisFrame;
+            _sideOffset = pressed
+                ? targetOffset
+                : Mathf.MoveTowards(_sideOffset, targetOffset, sideMoveSpeed * Time.deltaTime);
+            ApplySpawnPosition();
+
+            if (pressed)
+            {
+                _dragStart = pointerPosition;
+                _dragPreview = default;
+                _state = BallState.Pulling;
+            }
+        }
+
+        /// <summary>引いている最中：立ち位置は固定。離したら投球を計算する。</summary>
+        private void UpdatePulling()
+        {
+            Vector2 pointerPosition = Pointer.current.position.ReadValue();
+
+            // 表示用の予測を毎フレーム更新する（投球には使わない）
+            _dragPreview = ThrowCalculator.Calculate(
+                _dragStart, pointerPosition, BuildThrowSettings(), _selectedCurve, invertDrag);
+
+            if (!Pointer.current.press.wasReleasedThisFrame)
+            {
+                return;
+            }
+
             ThrowResult result = ThrowCalculator.Calculate(
-                _dragStart, dragEnd, BuildThrowSettings(), _dragWithRightButton, invertDrag);
+                _dragStart, pointerPosition, BuildThrowSettings(), _selectedCurve, invertDrag);
 
             if (result.isValid)
             {
@@ -223,6 +263,14 @@ namespace CrazyBowling.Ball
                 // 引き幅が足りなかったので、投げずに構えに戻る
                 _state = BallState.Aiming;
             }
+        }
+
+        /// <summary>
+        /// ポインタがUIの上にあるか。EventSystem が無いシーンでは常に false を返す。
+        /// </summary>
+        private static bool IsPointerOverUI()
+        {
+            return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
         }
 
         /// <summary>転がり中：止まった、落ちた、時間切れで決着とみなす。構えには戻さない。</summary>
@@ -266,8 +314,8 @@ namespace CrazyBowling.Ball
             // 再生中に Inspector で変えた値も、次の投球から効くようにする
             _rigidbody.maxAngularVelocity = maxAngularVelocity;
 
-            // 投げる向きは常に構え位置の正面。狙いは立ち位置とカーブで決める
-            Vector3 direction = GetForwardDirection();
+            // 引きの横成分で決まった角度を、構え位置の正面から左右に振る
+            Vector3 direction = CalculateThrowDirection(result.sideAngle);
 
             // 初速（m/s）をそのまま速度差として与える
             _rigidbody.AddForce(direction * result.speed, ForceMode.VelocityChange);
@@ -281,7 +329,7 @@ namespace CrazyBowling.Ball
 
             if (logEvents)
             {
-                Debug.Log($"投球：初速 {result.speed:F2} m/s ／ カーブ {result.curve:F2}", this);
+                Debug.Log($"投球：初速 {result.speed:F2} m/s ／ 角度 {result.sideAngle:F1} 度 ／ カーブ {result.curve:F2}", this);
             }
         }
 
@@ -401,15 +449,23 @@ namespace CrazyBowling.Ball
             return sphere.radius * maxScale;
         }
 
-        /// <summary>
-        /// 投げる方向。構え位置の正面をそのまま使う。
-        /// 角度の指定は廃止したので、狙いは立ち位置とカーブで決める。
-        /// </summary>
+        /// <summary>構え位置の正面。角度0のときの投球方向。</summary>
         public Vector3 GetForwardDirection()
         {
             Vector3 forward = spawnPoint != null ? spawnPoint.forward : Vector3.forward;
             forward.y = 0f;
             return forward.sqrMagnitude > Mathf.Epsilon ? forward.normalized : Vector3.forward;
+        }
+
+        /// <summary>
+        /// 左右の角度から、実際に投げる方向を求める。
+        /// 予測線が実際の進路とズレないよう、投球と同じこのメソッドを使う。
+        /// </summary>
+        public Vector3 CalculateThrowDirection(float sideAngle)
+        {
+            Vector3 direction = Quaternion.AngleAxis(sideAngle, Vector3.up) * GetForwardDirection();
+            direction.y = 0f;
+            return direction.sqrMagnitude > Mathf.Epsilon ? direction.normalized : Vector3.forward;
         }
 
         /// <summary>今かかっている横回転（rad/s）。表示が読む。</summary>
@@ -472,7 +528,6 @@ namespace CrazyBowling.Ball
             _stopTimer = 0f;
             _sideSpin = 0f;
             _curveFinished = false;
-            _dragWithRightButton = false;
 
             if (logEvents)
             {
@@ -495,12 +550,13 @@ namespace CrazyBowling.Ball
         {
             return new ThrowSettings
             {
-                maxDragPixels = maxDragPixels,
-                minDragPixels = minDragPixels,
+                maxPullPixels = maxPullPixels,
+                minPullPixels = minPullPixels,
+                maxAnglePixels = maxAnglePixels,
+                maxAngleDegrees = maxAngleDegrees,
+                angleDeadZonePixels = angleDeadZonePixels,
                 minThrowSpeed = minThrowSpeed,
                 maxThrowSpeed = maxThrowSpeed,
-                maxCurvePixels = maxCurvePixels,
-                allowStraightThrow = allowStraightThrow,
             };
         }
     }

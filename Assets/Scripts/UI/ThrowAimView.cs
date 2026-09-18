@@ -84,7 +84,7 @@ namespace CrazyBowling.UI
                 return;
             }
 
-            bool isDragging = ballController.IsDragging;
+            bool isDragging = ballController.IsPulling;
             lineRenderer.enabled = isDragging;
 
             if (!isDragging)
@@ -93,7 +93,7 @@ namespace CrazyBowling.UI
             }
 
             ThrowResult preview = ballController.DragPreview;
-            Vector3 direction = ballController.GetForwardDirection();
+            Vector3 direction = ballController.CalculateThrowDirection(preview.sideAngle);
 
             // ボールの足元から描く。当たり判定の下端を基準にするので、
             // ボールの大きさを変えても追従する
