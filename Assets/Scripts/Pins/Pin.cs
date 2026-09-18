@@ -25,9 +25,28 @@ namespace CrazyBowling.Pins
                  "Continuous Dynamic より倒れ方も浮き方も良い（実測で確認済み）。")]
         [SerializeField] private CollisionDetectionMode collisionDetection = CollisionDetectionMode.ContinuousSpeculative;
 
+        [Header("場外へ飛んだピン")]
+        [Tooltip("立っていた場所からこの距離を超えたら、物理を止めて見た目を隠す（m）。" +
+                 "遠くまで転がり続けて判定を待たせないようにするため。")]
+        [SerializeField] private float cullDistance = 4f;
+
+        [Tooltip("この高さより下まで落ちたら、同じように物理を止めて隠す（m）。")]
+        [SerializeField] private float cullBelowY = -1.5f;
+
         private Rigidbody _rigidbody;
+        private Transform _visual;
+        private PinExplosion _explosion;
         private Vector3 _initialPosition;
         private Quaternion _initialRotation;
+
+        /// <summary>この投球で既に爆発の起点になったか。1投につき1回にするために使う。</summary>
+        private bool _hasExploded;
+
+        /// <summary>連鎖の何回目で飛ばされたか。ボールに当たった最初のピンは0。</summary>
+        private int _blastGeneration;
+
+        /// <summary>場外へ飛んだので物理を止めたか。</summary>
+        private bool _culled;
 
         /// <summary>立っていたときの位置。</summary>
         public Vector3 InitialPosition => _initialPosition;
@@ -35,12 +54,132 @@ namespace CrazyBowling.Pins
         /// <summary>取り除かれずに残っているか。</summary>
         public bool IsStandingInPlay => gameObject.activeSelf;
 
+        /// <summary>この投球で既に爆発の起点になったか。</summary>
+        public bool HasExploded => _hasExploded;
+
+        /// <summary>連鎖の何回目で飛ばされたか。</summary>
+        public int BlastGeneration => _blastGeneration;
+
+        /// <summary>吹き飛ばす対象にできるか。取り除かれたピンと場外のピンは対象外。</summary>
+        public bool CanBeBlasted => gameObject.activeSelf && !_culled && !_rigidbody.isKinematic;
+
         private void Awake()
         {
             _rigidbody = GetComponent<Rigidbody>();
+            _visual = transform.Find("Visual");
             _initialPosition = transform.position;
             _initialRotation = transform.rotation;
             ApplyPhysicsSettings();
+        }
+
+        /// <summary>PinExplosion が Awake で自分を通知先として登録する。</summary>
+        public void SetExplosion(PinExplosion explosion)
+        {
+            _explosion = explosion;
+        }
+
+        /// <summary>
+        /// ぶつかった勢いを見て、連鎖爆発の演出に知らせる。
+        /// 床や壁は Rigidbody を持たないので、ピン同士とボールだけが対象になる。
+        /// </summary>
+        private void OnCollisionEnter(Collision collision)
+        {
+            if (_explosion == null || !_explosion.IsEnabled || _culled)
+            {
+                return;
+            }
+            if (collision.rigidbody == null || collision.contactCount == 0)
+            {
+                return;
+            }
+
+            _explosion.ReportImpact(this, CalculateImpactSpeed(collision));
+        }
+
+        /// <summary>
+        /// ぶつかった強さ。接触面の法線方向の成分だけを見る。
+        /// 速度の大きさをそのまま使うと、かすった当たりでも「強い衝突」になってしまい、
+        /// 厚く当たった場合と区別できない。
+        /// </summary>
+        private static float CalculateImpactSpeed(Collision collision)
+        {
+            Vector3 normal = collision.GetContact(0).normal;
+            return Mathf.Abs(Vector3.Dot(collision.relativeVelocity, normal));
+        }
+
+        /// <summary>
+        /// 場外まで飛んだら物理を止めて見た目を隠す。
+        /// 毎回の物理ステップで PinSet から呼ばれる。
+        /// </summary>
+        public void UpdateOutOfPlayCulling()
+        {
+            EnsureRigidbody();
+            if (_culled || _rigidbody == null || _rigidbody.isKinematic)
+            {
+                return;
+            }
+
+            Vector3 moved = transform.position - _initialPosition;
+            bool tooFar = moved.sqrMagnitude > cullDistance * cullDistance;
+            bool tooLow = transform.position.y < cullBelowY;
+            if (tooFar || tooLow)
+            {
+                Cull();
+            }
+        }
+
+        /// <summary>
+        /// 場外のピンを止める。GameObject は有効なままにするのが要点で、
+        /// こうしておくと倒れ判定が「デッキから出た」として数えてくれる。
+        /// 消してしまうと本数から漏れる。
+        /// </summary>
+        private void Cull()
+        {
+            _culled = true;
+            _rigidbody.linearVelocity = Vector3.zero;
+            _rigidbody.angularVelocity = Vector3.zero;
+            _rigidbody.isKinematic = true;
+            if (_visual != null)
+            {
+                _visual.gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>爆発の起点になったことを記録する。1投につき1回にするため。</summary>
+        public void MarkExploded()
+        {
+            _hasExploded = true;
+        }
+
+        /// <summary>
+        /// 爆発で吹き飛ばされる。速度と回転を足し、連鎖の世代を受け取る。
+        /// </summary>
+        public void ApplyBlast(Vector3 velocityChange, Vector3 angularVelocityChange, int generation)
+        {
+            EnsureRigidbody();
+            if (_culled || _rigidbody.isKinematic)
+            {
+                return;
+            }
+
+            _rigidbody.AddForce(velocityChange, ForceMode.VelocityChange);
+            _rigidbody.angularVelocity += angularVelocityChange;
+
+            // 先に浅い世代で飛ばされていたら、そちらを残す（威力が強いほうの記録）
+            if (_blastGeneration == 0 || generation < _blastGeneration)
+            {
+                _blastGeneration = generation;
+            }
+        }
+
+        /// <summary>
+        /// 1投ごとの記録を消す。位置は動かさない。
+        /// 2投目に入る前に PinSet から呼ばれる。
+        /// </summary>
+        public void ClearThrowState()
+        {
+            _hasExploded = false;
+            _blastGeneration = 0;
         }
 
         /// <summary>PinSet が並べ直したあとに、その場所を初期姿勢として覚える。</summary>
@@ -90,6 +229,15 @@ namespace CrazyBowling.Pins
             gameObject.SetActive(true);
             EnsureRigidbody();
 
+            // 場外で止めていた場合は、物理と見た目を戻してから位置を書く
+            _culled = false;
+            _rigidbody.isKinematic = false;
+            if (_visual != null)
+            {
+                _visual.gameObject.SetActive(true);
+            }
+            ClearThrowState();
+
             _rigidbody.linearVelocity = Vector3.zero;
             _rigidbody.angularVelocity = Vector3.zero;
             _rigidbody.position = _initialPosition;
@@ -121,6 +269,10 @@ namespace CrazyBowling.Pins
             if (_rigidbody == null)
             {
                 _rigidbody = GetComponent<Rigidbody>();
+            }
+            if (_visual == null)
+            {
+                _visual = transform.Find("Visual");
             }
         }
     }

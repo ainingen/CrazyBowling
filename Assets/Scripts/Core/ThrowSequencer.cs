@@ -174,8 +174,10 @@ namespace CrazyBowling.Core
                 }
                 else
                 {
-                    // 倒れたピンを取り除いてから2投目へ
+                    // 倒れたピンを取り除いてから2投目へ。
+                    // 連鎖爆発は1投につき1回なので、残ったピンの記録も消しておく
                     pinSet.RemoveFallen();
+                    pinSet.PrepareNextThrow();
                     _resetPinsNext = false;
                 }
             }

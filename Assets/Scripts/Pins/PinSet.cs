@@ -47,6 +47,9 @@ namespace CrazyBowling.Pins
 
         private readonly List<PinSample> _samples = new List<PinSample>();
 
+        /// <summary>連鎖爆発の演出。付いていなければ null。</summary>
+        private PinExplosion _explosion;
+
         /// <summary>ピンの本数。</summary>
         public int PinCount => pins == null ? 0 : pins.Length;
 
@@ -61,6 +64,7 @@ namespace CrazyBowling.Pins
 
         private void Awake()
         {
+            _explosion = GetComponent<PinExplosion>();
             ApplyLayout();
             ResetAll();
         }
@@ -163,6 +167,60 @@ namespace CrazyBowling.Pins
             }
         }
 
+        /// <summary>
+        /// 場外へ飛んだピンを毎ステップ調べて止める。
+        /// ピン1本ずつに FixedUpdate を持たせず、ここでまとめて見る。
+        /// </summary>
+        private void FixedUpdate()
+        {
+            UpdateCulling();
+        }
+
+        /// <summary>
+        /// 場外へ飛んだピンを止める。通常は FixedUpdate から呼ばれる。
+        /// 物理を手動で進めるとき（検証用）は外から呼べるように公開している。
+        /// </summary>
+        public void UpdateCulling()
+        {
+            if (pins == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < pins.Length; i++)
+            {
+                if (pins[i] != null && pins[i].IsStandingInPlay)
+                {
+                    pins[i].UpdateOutOfPlayCulling();
+                }
+            }
+        }
+
+        /// <summary>
+        /// 次の投球に備えて、1投ごとの記録（連鎖爆発の発動履歴）を消す。
+        /// 位置は動かさないので、2投目に残ったピンはそのまま立っている。
+        /// </summary>
+        public void PrepareNextThrow()
+        {
+            if (pins == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < pins.Length; i++)
+            {
+                if (pins[i] != null)
+                {
+                    pins[i].ClearThrowState();
+                }
+            }
+
+            if (_explosion != null)
+            {
+                _explosion.ClearThrowState();
+            }
+        }
+
         /// <summary>全部のピンを立て直し、本数の記録も消す。</summary>
         public void ResetAll()
         {
@@ -175,6 +233,11 @@ namespace CrazyBowling.Pins
                         pins[i].ResetToInitial();
                     }
                 }
+            }
+
+            if (_explosion != null)
+            {
+                _explosion.ClearThrowState();
             }
 
             FirstThrowFallen = 0;
