@@ -76,8 +76,11 @@ namespace CrazyBowling.Core
         /// <summary>今のレーンの振る舞い。付いていなければ null。</summary>
         private LaneBehaviour _laneBehaviour;
 
-        /// <summary>レーンごとに倒した本数。段階3-Bで得点に変える。</summary>
-        private int[] _laneFallen;
+        /// <summary>レーンごとの得点。まだ遊んでいないレーンは既定値のまま。</summary>
+        private LaneScore[] _laneScores;
+
+        /// <summary>そのレーンをもう遊んだか。得点表で空欄と0点を区別するのに使う。</summary>
+        private bool[] _lanePlayed;
 
         /// <summary>今が何レーン目か（1から数える）。始まっていなければ0。</summary>
         public int LaneNumber => _laneIndex + 1;
@@ -89,23 +92,53 @@ namespace CrazyBowling.Core
         /// <summary>全レーンが終わったか。</summary>
         public bool IsFinished => _state == GameState.Finished;
 
+        /// <summary>ここまでの合計得点。</summary>
+        public int TotalScore => ScoreCalculator.CalculateTotal(_laneScores);
+
         /// <summary>ここまでに倒した合計本数。</summary>
         public int TotalFallen
         {
             get
             {
-                if (_laneFallen == null)
+                if (_laneScores == null)
                 {
                     return 0;
                 }
 
                 int sum = 0;
-                foreach (int fallen in _laneFallen)
+                foreach (LaneScore lane in _laneScores)
                 {
-                    sum += fallen;
+                    sum += lane.fallen;
                 }
                 return sum;
             }
+        }
+
+        /// <summary>倍率なしで取れる満点。リザルトで「◯点中」と出すのに使う。</summary>
+        public int PerfectScore => ScoreCalculator.CalculatePerfectScore(LaneCount);
+
+        /// <summary>指定した位置のレーンの得点。まだ遊んでいなければ既定値。</summary>
+        public LaneScore GetLaneScore(int laneIndex)
+        {
+            if (_laneScores == null || laneIndex < 0 || laneIndex >= _laneScores.Length)
+            {
+                return default;
+            }
+            return _laneScores[laneIndex];
+        }
+
+        /// <summary>そのレーンをもう遊んだか。得点表で空欄と0点を分けるのに使う。</summary>
+        public bool IsLanePlayed(int laneIndex)
+        {
+            return _lanePlayed != null
+                && laneIndex >= 0 && laneIndex < _lanePlayed.Length
+                && _lanePlayed[laneIndex];
+        }
+
+        /// <summary>指定した位置のレーンの設定。得点表の名前に使う。</summary>
+        public LaneData GetLaneData(int laneIndex)
+        {
+            return laneSequence != null ? laneSequence.GetLane(laneIndex) : null;
         }
 
         private void Awake()
@@ -151,7 +184,7 @@ namespace CrazyBowling.Core
                 return;
             }
 
-            _laneFallen = new int[laneSequence.Count];
+            ResetScores();
             _laneIndex = Mathf.Clamp(startLaneIndex, 0, laneSequence.Count - 1) - 1;
             GoToNextLane();
         }
@@ -168,9 +201,9 @@ namespace CrazyBowling.Core
                 return;
             }
 
-            if (_laneFallen == null || _laneFallen.Length != laneSequence.Count)
+            if (_laneScores == null || _laneScores.Length != laneSequence.Count)
             {
-                _laneFallen = new int[laneSequence.Count];
+                ResetScores();
             }
 
             _state = GameState.Idle;
@@ -433,22 +466,39 @@ namespace CrazyBowling.Core
             }
         }
 
-        /// <summary>投球係から「レーンが終わった」と知らされた。</summary>
-        private void OnLaneFinished(int fallen)
+        /// <summary>得点の記録を作り直す。</summary>
+        private void ResetScores()
+        {
+            int count = laneSequence != null ? laneSequence.Count : 0;
+            _laneScores = new LaneScore[count];
+            _lanePlayed = new bool[count];
+        }
+
+        /// <summary>投球係から「レーンが終わった」と知らされた。ここで得点にする。</summary>
+        private void OnLaneFinished(LaneThrowResult result)
         {
             if (_state != GameState.Playing)
             {
                 return;
             }
 
-            if (_laneFallen != null && _laneIndex >= 0 && _laneIndex < _laneFallen.Length)
+            LaneData data = CurrentLane;
+            LaneScore score = ScoreCalculator.Calculate(
+                result, data != null ? data.ScoreMultiplier : 1f);
+
+            if (_laneScores != null && _laneIndex >= 0 && _laneIndex < _laneScores.Length)
             {
-                _laneFallen[_laneIndex] = fallen;
+                _laneScores[_laneIndex] = score;
+                _lanePlayed[_laneIndex] = true;
             }
 
             if (logEvents)
             {
-                Debug.Log($"{LaneNumber}レーン目の結果：{fallen}本（ここまでの合計 {TotalFallen}本）", this);
+                string kind = score.isStrike ? "ストライク"
+                    : score.isSpare ? "スペア"
+                    : score.fallen + "本";
+                Debug.Log($"{LaneNumber}レーン目の結果：{kind} → {score.score}点"
+                    + $"（ここまでの合計 {TotalScore}点）", this);
             }
 
             _betweenTimer = 0f;
@@ -483,7 +533,8 @@ namespace CrazyBowling.Core
 
             if (logEvents)
             {
-                Debug.Log($"══ 全{laneSequence.Count}レーン終了：合計 {TotalFallen}本 ══", this);
+                Debug.Log($"══ 全{laneSequence.Count}レーン終了："
+                    + $"{TotalScore}点 / {PerfectScore}点（{TotalFallen}本） ══", this);
             }
         }
     }

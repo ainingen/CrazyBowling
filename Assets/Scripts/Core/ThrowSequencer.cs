@@ -64,9 +64,9 @@ namespace CrazyBowling.Core
 
         /// <summary>
         /// レーンが終わったときに呼ばれる。
-        /// 引数は「このレーンで倒した合計本数」。GameManager が得点にする。
+        /// 投球の結果をそのまま渡す。得点にするのは GameManager の仕事。
         /// </summary>
-        public event System.Action<int> LaneFinished;
+        public event System.Action<LaneThrowResult> LaneFinished;
 
         /// <summary>投げた瞬間に呼ばれる。レーン側の演出に使う。</summary>
         public event System.Action ThrowStarted;
@@ -196,7 +196,13 @@ namespace CrazyBowling.Core
             }
 
             _state = SequenceState.Idle;
-            LaneFinished?.Invoke(pinSet.TotalFallen);
+            LaneFinished?.Invoke(new LaneThrowResult
+            {
+                firstThrowFallen = pinSet.FirstThrowFallen,
+                secondThrowFallen = pinSet.SecondThrowFallen,
+                throwCount = _throwNumber,
+                pinCount = pinSet.PinCount,
+            });
         }
 
         /// <summary>倒れた本数を数えて、次に何をするか決める。</summary>
