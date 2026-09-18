@@ -31,10 +31,6 @@ namespace CrazyBowling.UI
         [Range(2, 64)]
         [SerializeField] private int pathStepCount = 24;
 
-        [Tooltip("滑りが減っていく速さの見積もり（m/s を1秒あたり）。" +
-                 "予測線がどこまで曲がるかに効く。実際の値は床の摩擦で決まる。")]
-        [SerializeField] private float slipDecayRate = 20f;
-
         [Tooltip("床から浮かせる高さ（m）。めり込みを防ぐ。")]
         [SerializeField] private float heightOffset = 0.02f;
 
@@ -114,11 +110,12 @@ namespace CrazyBowling.UI
                 speed,
                 preview.curve * curveSettings.maxSideSpin,
                 ballController.EstimateInitialSlip(speed),
-                slipDecayRate,
+                ballController.CurveSlipDecay,
                 curveSettings,
                 duration,
                 pathStepCount,
-                _pathPoints);
+                _pathPoints,
+                ballController.SampleFrictionScale);
 
             if (_pathPoints.Count < 2)
             {

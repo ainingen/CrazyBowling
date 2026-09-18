@@ -42,6 +42,24 @@ namespace CrazyBowling.Lanes
         [Tooltip("上書きするときの摩擦。小さいほどよく滑る。")]
         [SerializeField] private float ballFriction = 0.2f;
 
+        [Header("オイル区画")]
+        [Tooltip("手前にオイルを塗る。オンにすると、手前では曲がらず奥で大きく曲がる。" +
+                 "オフにすると全域が乾いた床になり、手前から曲がる。")]
+        [SerializeField] private bool useOil = true;
+
+        [Tooltip("オイルが終わる位置（レーンの手前からの奥行き・m）。" +
+                 "ピンは16.2mにあるので、ここを奥にしすぎると曲がりきらない。")]
+        [SerializeField] private float oilEndZ = 10f;
+
+        [Tooltip("オイルから乾いた床へ移り変わる長さ（m）。短いと曲がりが折れ線に見える。")]
+        [SerializeField] private float oilTransitionLength = 3f;
+
+        [Tooltip("オイル区画の摩擦の係数。小さいほど曲がらないまま滑る。")]
+        [SerializeField] private float oilFriction = 0.03f;
+
+        [Tooltip("乾いた区画の摩擦の係数。")]
+        [SerializeField] private float dryFriction = 1f;
+
         /// <summary>このレーンにいる間の持ち物。</summary>
         protected LaneContext Context { get; private set; }
 
@@ -82,6 +100,26 @@ namespace CrazyBowling.Lanes
             height = worldPosition.y;
             normal = Vector3.up;
             return false;
+        }
+
+        /// <summary>このレーンのオイルの設定。</summary>
+        public LaneOilSettings OilSettings => new LaneOilSettings
+        {
+            enabled = useOil,
+            oilEndZ = oilEndZ,
+            transitionLength = oilTransitionLength,
+            oilFriction = oilFriction,
+            dryFriction = dryFriction,
+        };
+
+        /// <summary>
+        /// その位置の摩擦の効き具合。ボールの曲がりに使う。
+        /// レーンの手前からの奥行きで決まるので、傾いたレーンでも同じように働く。
+        /// </summary>
+        public virtual float GetFrictionScale(Vector3 worldPosition)
+        {
+            float distance = transform.InverseTransformPoint(worldPosition).z;
+            return LaneOil.GetFrictionScale(distance, OilSettings);
         }
 
         /// <summary>レーンを出る。借りたものはここで返す。</summary>

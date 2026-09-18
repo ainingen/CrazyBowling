@@ -290,6 +290,7 @@ namespace CrazyBowling.Core
             RefreshFloorLook();
 
             ballController.SetFloorSampler(BuildFloorSampler());
+            ballController.SetFrictionSampler(BuildFrictionSampler());
             ballController.ApplyLaneSettings(data.MaxAngleDegrees);
             ballController.ReturnToSpawn();
 
@@ -332,6 +333,20 @@ namespace CrazyBowling.Core
                 lane != null && lane.TrySampleFloor(worldPosition, out height, out _)
                     ? true
                     : Fail(out height);
+        }
+
+        /// <summary>
+        /// 今のレーンに摩擦を聞く役を作る。レーンが無ければ null を返し、全域が乾いた扱いになる。
+        /// </summary>
+        private BallController.FrictionSampler BuildFrictionSampler()
+        {
+            if (_laneBehaviour == null)
+            {
+                return null;
+            }
+
+            LaneBehaviour lane = _laneBehaviour;
+            return worldPosition => lane != null ? lane.GetFrictionScale(worldPosition) : 1f;
         }
 
         /// <summary>床の高さが分からなかったときの返し方をまとめる。</summary>

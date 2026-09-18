@@ -111,11 +111,12 @@ namespace CrazyBowling.Ball
         /// <param name="speed">初速（m/s）。</param>
         /// <param name="sideSpin">与える横回転（rad/s）。</param>
         /// <param name="initialSlip">投げた瞬間の接地点の滑り（m/s）。</param>
-        /// <param name="slipDecayRate">滑りが減る割合（1/秒）。</param>
+        /// <param name="slipDecayRate">滑りが減る割合（1/秒）。摩擦が弱いところでは緩む。</param>
         /// <param name="settings">調整値。</param>
         /// <param name="duration">何秒先まで予測するか。</param>
         /// <param name="stepCount">刻み数。</param>
         /// <param name="output">結果の点を入れる先。呼ぶ側が用意する。</param>
+        /// <param name="frictionSampler">その場所の摩擦の係数を返す役。null なら全域1。</param>
         public static void PredictPath(
             Vector3 startPosition,
             Vector3 direction,
@@ -126,7 +127,8 @@ namespace CrazyBowling.Ball
             BallCurveSettings settings,
             float duration,
             int stepCount,
-            List<Vector3> output)
+            List<Vector3> output,
+            System.Func<Vector3, float> frictionSampler = null)
         {
             if (output == null)
             {
@@ -148,14 +150,19 @@ namespace CrazyBowling.Ball
             output.Add(position);
             for (int i = 1; i < stepCount; i++)
             {
+                // その場所の摩擦。オイルの上では小さく、乾いた床では大きい
+                float friction = frictionSampler != null ? frictionSampler(position) : 1f;
+
                 if (IsSliding(slip, settings))
                 {
-                    velocity += CalculateLateralAcceleration(velocity, spin, settings) * dt;
+                    velocity += CalculateLateralAcceleration(velocity, spin, settings) * (friction * dt);
                 }
 
                 position += velocity * dt;
-                spin = DecaySideSpin(spin, dt, settings);
-                slip = Mathf.Max(0f, slip - slipDecayRate * dt);
+
+                // 摩擦が弱いところでは、横回転も滑りもほとんど失われない
+                spin = DecaySideSpin(spin, dt * friction, settings);
+                slip = Mathf.Max(0f, slip - slipDecayRate * friction * dt);
                 output.Add(position);
             }
         }

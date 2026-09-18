@@ -1027,9 +1027,10 @@ MonoBehaviour:
   maxThrowSpeed: 10
   invertDrag: 0
   maxSideSpin: 30
-  curveForce: 0.11
+  curveForce: 0.12
   sideSpinDecay: 1.5
   slipThreshold: 0.15
+  curveSlipDecay: 7
   maxAngularVelocity: 200
   releaseSpinRatio: 0.7
   stopVelocityThreshold: 0.2
@@ -3185,7 +3186,6 @@ MonoBehaviour:
   minLength: 0.5
   maxLength: 4
   pathStepCount: 24
-  slipDecayRate: 20
   heightOffset: 0.02
   headLength: 0.4
   headAngle: 25

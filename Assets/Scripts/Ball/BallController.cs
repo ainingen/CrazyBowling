@@ -34,6 +34,12 @@ namespace CrazyBowling.Ball
         /// </summary>
         public delegate bool FloorSampler(Vector3 worldPosition, out float height);
 
+        /// <summary>
+        /// その場所の摩擦の効き具合を返す役。オイル区画で小さく、乾いた床で大きい。
+        /// レーンが答える。渡されていなければ全域1として扱う。
+        /// </summary>
+        public delegate float FrictionSampler(Vector3 worldPosition);
+
         [Header("構え位置")]
         [Tooltip("ボールが構える基準になる Transform。この前方向へ投げる。")]
         [SerializeField] private Transform spawnPoint;
@@ -75,14 +81,19 @@ namespace CrazyBowling.Ball
         [Tooltip("カーブ最大のときに与える縦軸まわりの回転（rad/s）。")]
         [SerializeField] private float maxSideSpin = 30f;
 
-        [Tooltip("横回転1rad/s あたりに加える横向きの加速度（m/s^2）。曲がりの強さの主な調整項目。")]
-        [SerializeField] private float curveForce = 0.11f;
+        [Tooltip("横回転1rad/s あたりに加える横向きの加速度（m/s^2）。曲がりの強さの主な調整項目。" +
+                 "オイル区画があるので、実際に効くのは奥の乾いた区間だけ。")]
+        [SerializeField] private float curveForce = 0.12f;
 
         [Tooltip("横回転が失われる速さ（1/秒）。大きいほど早く曲がりが止まる。")]
         [SerializeField] private float sideSpinDecay = 1.5f;
 
         [Tooltip("接地点の滑りがこれ以下なら「転がっている」とみなす（m/s）。転がったら曲がりは止まる。")]
         [SerializeField] private float slipThreshold = 0.15f;
+
+        [Tooltip("滑りが失われる速さ（1/秒）。摩擦の強い所ほど速く失われる。" +
+                 "小さくするとオイル区画を越えても滑りが残り、奥で大きく曲がる。")]
+        [SerializeField] private float curveSlipDecay = 7f;
 
         [Header("転がり")]
         [Tooltip("回転の速さの上限（rad/s）。既定の50では、半径0.11mのボールは5.5m/sまでしか転がれず、" +
@@ -131,11 +142,14 @@ namespace CrazyBowling.Ball
         /// <summary>入力を止めているか。下見の間は投げられないようにする。</summary>
         private bool _inputBlocked;
 
+        /// <summary>その場所の摩擦を調べる手段。オイルのあるレーンでだけ入る。</summary>
+        private FrictionSampler _frictionSampler;
+
         /// <summary>
-        /// 転がりに変わって、曲がりが終わったか。
-        /// 一度終わったら、そのあと滑りが増えても曲げ直さない。
+        /// 曲がりの計算に使う滑り（m/s）。
+        /// 物理の滑りではなく自前で持つ。摩擦の弱いオイルの上では減らない。
         /// </summary>
-        private bool _curveFinished;
+        private float _curveSlip;
 
         /// <summary>現在の状態。</summary>
         public BallState State => _state;
@@ -365,7 +379,7 @@ namespace CrazyBowling.Ball
             _rigidbody.AddForce(direction * result.speed, ForceMode.VelocityChange);
 
             ApplyReleaseSpin(direction, result.speed);
-            ApplySideSpin(result.curve);
+            ApplySideSpin(result.curve, result.speed);
 
             _state = BallState.Rolling;
             _rollingTimer = 0f;
@@ -381,10 +395,10 @@ namespace CrazyBowling.Ball
         /// 縦軸まわりの回転を与える。見た目の回転と、カーブの計算に使う値の両方を用意する。
         /// 右へ曲がるボールは、上から見て時計回りに回る。
         /// </summary>
-        private void ApplySideSpin(float curve)
+        private void ApplySideSpin(float curve, float speed)
         {
             _sideSpin = curve * maxSideSpin;
-            _curveFinished = false;
+            _curveSlip = EstimateInitialSlip(speed);
             _rigidbody.angularVelocity += Vector3.up * (-_sideSpin);
         }
 
@@ -415,26 +429,23 @@ namespace CrazyBowling.Ball
 
             BallCurveSettings settings = BuildCurveSettings();
 
-            // 進む向きの滑りだけを見る。横向きの速度が増えたぶんを数えると、
-            // 曲がるほど滑りが増えて永久に曲がり続けてしまう
-            float forwardSlip = BallCurveModel.CalculateForwardSlip(
-                _rigidbody.linearVelocity, _rigidbody.angularVelocity, settings.radius);
+            // その場所の摩擦。オイルの上では小さい。
+            // 横向きの力は摩擦から生まれるので、手前では曲がらず、奥の乾いた床で曲がる
+            float friction = SampleFrictionScale(transform.position);
+            float dt = Time.fixedDeltaTime;
 
-            if (!_curveFinished && !BallCurveModel.IsSliding(forwardSlip, settings))
-            {
-                _curveFinished = true;
-            }
+            // 滑りは摩擦に応じて失われる。オイルの上ではほとんど減らない
+            _curveSlip = Mathf.Max(0f, _curveSlip - curveSlipDecay * friction * dt);
 
-            // 転がりに変わったら、そこで曲がりを止める
-            if (!_curveFinished)
+            if (BallCurveModel.IsSliding(_curveSlip, settings))
             {
                 Vector3 acceleration = BallCurveModel.CalculateLateralAcceleration(
                     _rigidbody.linearVelocity, _sideSpin, settings);
-                _rigidbody.AddForce(acceleration, ForceMode.Acceleration);
+                _rigidbody.AddForce(acceleration * friction, ForceMode.Acceleration);
             }
 
-            // 横回転を減らす。見た目の回転も同じ割合で落とす
-            float decayed = BallCurveModel.DecaySideSpin(_sideSpin, Time.fixedDeltaTime, settings);
+            // 横回転を減らす。これも摩擦に応じて失われる。見た目の回転も同じ割合で落とす
+            float decayed = BallCurveModel.DecaySideSpin(_sideSpin, dt * friction, settings);
             float removed = _sideSpin - decayed;
             _rigidbody.angularVelocity += Vector3.up * removed;
             _sideSpin = decayed;
@@ -577,7 +588,7 @@ namespace CrazyBowling.Ball
             _rollingTimer = 0f;
             _stopTimer = 0f;
             _sideSpin = 0f;
-            _curveFinished = false;
+            _curveSlip = 0f;
 
             if (logEvents)
             {
@@ -594,6 +605,24 @@ namespace CrazyBowling.Ball
             _floorSampler = sampler;
             ApplySpawnPosition();
         }
+
+        /// <summary>
+        /// 摩擦を調べる手段を渡す。GameManager がレーンを差し替えるたびに呼ぶ。
+        /// null を渡すと、全域が乾いた床として扱われる。
+        /// </summary>
+        public void SetFrictionSampler(FrictionSampler sampler)
+        {
+            _frictionSampler = sampler;
+        }
+
+        /// <summary>その場所の摩擦の係数。予測線が同じ式を使うために公開している。</summary>
+        public float SampleFrictionScale(Vector3 worldPosition)
+        {
+            return _frictionSampler != null ? _frictionSampler(worldPosition) : 1f;
+        }
+
+        /// <summary>滑りが失われる速さ（1/秒）。予測線が同じ値を使う。</summary>
+        public float CurveSlipDecay => curveSlipDecay;
 
         /// <summary>構え位置と左右のずれを実際の座標に反映する。</summary>
         private void ApplySpawnPosition()

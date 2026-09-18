@@ -832,6 +832,11 @@ MonoBehaviour:
   gravityScale: 1
   overrideBallFriction: 0
   ballFriction: 0.2
+  useOil: 1
+  oilEndZ: 10
+  oilTransitionLength: 3
+  oilFriction: 0.03
+  dryFriction: 1
   tiltRoot: {fileID: 6119370800037402282}
   tiltDegrees: 0
 --- !u!1 &7273328482674425504
