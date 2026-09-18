@@ -8,6 +8,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 65553881342431095, guid: 4a1ff78bb397c2b4bbc8643d7ec6383f, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 21c6b95e013bb194691c794d9213692d, type: 2}
     - target: {fileID: 5746223034066113167, guid: 4a1ff78bb397c2b4bbc8643d7ec6383f, type: 3}
       propertyPath: tiltDegrees
       value: 1.5
@@ -59,5 +63,33 @@ PrefabInstance:
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 1539823112461782701, guid: 4a1ff78bb397c2b4bbc8643d7ec6383f, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 5086773637260410806}
   m_SourcePrefab: {fileID: 100100000, guid: 4a1ff78bb397c2b4bbc8643d7ec6383f, type: 3}
+--- !u!33 &2338958551540951497 stripped
+MeshFilter:
+  m_CorrespondingSourceObject: {fileID: 1256514497499803682, guid: 4a1ff78bb397c2b4bbc8643d7ec6383f, type: 3}
+  m_PrefabInstance: {fileID: 3532422095892863467}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2619727020432021318 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1539823112461782701, guid: 4a1ff78bb397c2b4bbc8643d7ec6383f, type: 3}
+  m_PrefabInstance: {fileID: 3532422095892863467}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &5086773637260410806
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2619727020432021318}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cd2c596d200850744a3a16c87db67c62, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Lanes.LaneFloorGrid
+  cellSizeMeters: 0.35
+  snapToWholeCells: 1
+  meshFilter: {fileID: 2338958551540951497}
