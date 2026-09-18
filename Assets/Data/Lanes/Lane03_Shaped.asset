@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8427364fa15d80d47b7d50e77a548177, type: 3}
   m_Name: Lane03_Shaped
   m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Data.LaneData
-  laneName: "\u3046\u306D\u308B\u5E8A"
-  description: "\u5E8A\u304C\u5834\u6240\u3054\u3068\u306B\u50BE\u3044\u3066\u3044\u308B\u3002\u624B\u524D\u306F\u53F3\u4E0B\u304C\u308A\u3001\u5965\u306F\u5DE6\u4E0B\u304C\u308A\u3002"
-  hintText: "\u5E8A\u304C\u3046\u306D\u3063\u3066\u3044\u307E\u3059"
+  laneName: ROLLING FLOOR
+  description: "\u5E8A\u306E\u9AD8\u3055\u306F\u5834\u6240\u306B\u3088\u3063\u3066\u5909\u5316\u3057\u307E\u3059\u3002\u624B\u524D\u3068\u5965\u3067\u306F\u50BE\u304D\u304C\u7570\u306A\u308A\u307E\u3059\u3002"
+  hintText: 
   lanePrefab: {fileID: 1961956216590800389, guid: 64e394cab94e4184486d0e98c6b3caa5, type: 3}
   maxAngleDegrees: 2
   throwCount: 2

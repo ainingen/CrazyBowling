@@ -43,10 +43,10 @@ namespace CrazyBowling.UI
 
         [Header("文字")]
         [Tooltip("初速の書き方。{0} に数値が入る。")]
-        [SerializeField] private string speedFormat = "{0:F1} m/s";
+        [SerializeField] private string speedFormat = UIText.SpeedFormat;
 
         [Tooltip("投げない範囲のときに出す文字。")]
-        [SerializeField] private string cancelText = "キャンセル";
+        [SerializeField] private string cancelText = UIText.Cancel;
 
         private void LateUpdate()
         {

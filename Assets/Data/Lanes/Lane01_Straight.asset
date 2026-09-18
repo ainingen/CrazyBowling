@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8427364fa15d80d47b7d50e77a548177, type: 3}
   m_Name: Lane01_Straight
   m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Data.LaneData
-  laneName: "\u307E\u3063\u3059\u3050"
-  description: "\u30C1\u30E5\u30FC\u30C8\u30EA\u30A2\u30EB\u3002\u666E\u901A\u306E\u30EC\u30FC\u30F3\u3002"
+  laneName: STRAIGHT
+  description: "\u6A19\u6E96\u306E\u30EC\u30FC\u30F3\u3067\u3059\u3002\u7279\u5225\u306A\u4ED5\u639B\u3051\u306F\u7528\u610F\u3055\u308C\u3066\u304A\u308A\u307E\u305B\u3093\u3002"
   hintText: 
   lanePrefab: {fileID: 6309402574153263227, guid: 4a1ff78bb397c2b4bbc8643d7ec6383f, type: 3}
   maxAngleDegrees: 2

@@ -12,9 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8427364fa15d80d47b7d50e77a548177, type: 3}
   m_Name: Lane02_Tilted
   m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Data.LaneData
-  laneName: "\u50BE\u3044\u305F\u5E8A"
-  description: "\u5E8A\u304C\u53F3\u306B\u50BE\u3044\u3066\u3044\u308B\u3002\u653E\u3063\u3066\u304A\u304F\u3068\u5DE6\u3078\u6D41\u308C\u308B\u3002"
-  hintText: "\u5E8A\u304C\u50BE\u3044\u3066\u3044\u307E\u3059"
+  laneName: TILTED FLOOR
+  description: "\u3053\u306E\u5E8A\u306F\u53F3\u306B\u50BE\u3044\u3066\u3044\u307E\u3059\u3002\u30DC\u30FC\u30EB\u306E\u9032\u8DEF\u306B\u3054\u6CE8\u610F\u304F\u3060\u3055\u3044\u3002"
+  hintText: 
   lanePrefab: {fileID: 7388769920243757456, guid: 2a393bea366223a47ac9137933071dfb, type: 3}
   maxAngleDegrees: 2
   throwCount: 2

@@ -34,13 +34,13 @@ namespace CrazyBowling.UI
 
         [Header("文字")]
         [Tooltip("左カーブのときの書き方。{0} に強さのパーセントが入る。")]
-        [SerializeField] private string leftFormat = "◀ 左カーブ {0:F0}%";
+        [SerializeField] private string leftFormat = UIText.CurveLeftFormat;
 
         [Tooltip("右カーブのときの書き方。{0} に強さのパーセントが入る。")]
-        [SerializeField] private string rightFormat = "右カーブ {0:F0}% ▶";
+        [SerializeField] private string rightFormat = UIText.CurveRightFormat;
 
         [Tooltip("カーブ無しのときに出す文字。")]
-        [SerializeField] private string noCurveText = "ストレート";
+        [SerializeField] private string noCurveText = UIText.CurveNone;
 
         /// <summary>スライダーの値を反映している最中か。二重に反映しないための印。</summary>
         private bool _applying;

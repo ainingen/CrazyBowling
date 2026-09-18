@@ -32,7 +32,7 @@ namespace CrazyBowling.UI
 
         [Header("文字")]
         [Tooltip("進み具合の書き方。{0} が今のレーン、{1} が全部の数。")]
-        [SerializeField] private string progressFormat = "{0} / {1}";
+        [SerializeField] private string progressFormat = UIText.ProgressFormat;
 
         /// <summary>一言を出し始めてからの経過（秒）。</summary>
         private float _hintTimer;

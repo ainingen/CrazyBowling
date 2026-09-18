@@ -48,16 +48,16 @@ namespace CrazyBowling.UI
 
         [Header("文字")]
         [Tooltip("まだ遊んでいないレーンに出す文字。")]
-        [SerializeField] private string emptyText = "-";
+        [SerializeField] private string emptyText = UIText.NotPlayed;
 
         [Tooltip("ストライクに出す文字。")]
-        [SerializeField] private string strikeText = "X";
+        [SerializeField] private string strikeText = UIText.StrikeMark;
 
         [Tooltip("スペアに出す文字。")]
-        [SerializeField] private string spareText = "/";
+        [SerializeField] private string spareText = UIText.SpareMark;
 
         [Tooltip("合計の書き方。{0} が合計、{1} が満点。")]
-        [SerializeField] private string totalFormat = "合計 {0}";
+        [SerializeField] private string totalFormat = UIText.TotalFormat;
 
         /// <summary>升目1つぶんの部品。</summary>
         private struct Cell

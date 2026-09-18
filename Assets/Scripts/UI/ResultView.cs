@@ -35,19 +35,19 @@ namespace CrazyBowling.UI
 
         [Header("文字")]
         [Tooltip("合計点の書き方。{0} が合計、{1} が満点。")]
-        [SerializeField] private string totalFormat = "{0} / {1}";
+        [SerializeField] private string totalFormat = UIText.ResultTotalFormat;
 
         [Tooltip("内訳1行の書き方。{0} がレーン番号、{1} がレーン名、{2} が結果、{3} が得点。")]
-        [SerializeField] private string lineFormat = "{0,2}  {1}  {2}  {3}";
+        [SerializeField] private string lineFormat = UIText.ResultLineFormat;
 
         [Tooltip("ストライクに出す文字。")]
-        [SerializeField] private string strikeText = "ストライク";
+        [SerializeField] private string strikeText = UIText.Strike;
 
         [Tooltip("スペアに出す文字。")]
-        [SerializeField] private string spareText = "スペア";
+        [SerializeField] private string spareText = UIText.Spare;
 
         [Tooltip("それ以外に出す文字。{0} が倒した本数。")]
-        [SerializeField] private string fallenFormat = "{0}本";
+        [SerializeField] private string fallenFormat = UIText.PinsFormat;
 
         /// <summary>終わってからの経過（秒）。</summary>
         private float _timer;
@@ -138,7 +138,7 @@ namespace CrazyBowling.UI
                 LaneData data = gameManager.GetLaneData(i);
                 LaneScore score = gameManager.GetLaneScore(i);
 
-                string kind = !gameManager.IsLanePlayed(i) ? "-"
+                string kind = !gameManager.IsLanePlayed(i) ? UIText.NotPlayed
                     : score.isStrike ? strikeText
                     : score.isSpare ? spareText
                     : string.Format(fallenFormat, score.fallen);
@@ -147,7 +147,7 @@ namespace CrazyBowling.UI
                     i + 1,
                     data != null ? data.LaneName : string.Empty,
                     kind,
-                    gameManager.IsLanePlayed(i) ? score.score.ToString() : "-"));
+                    gameManager.IsLanePlayed(i) ? score.score.ToString() : UIText.NotPlayed));
             }
 
             breakdownLabel.text = builder.ToString();

@@ -564,7 +564,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u304A\u308F\u308A"
+  m_text: RESULT
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 36b63c1f35133d643bb1dccb285eae13, type: 2}
   m_sharedMaterial: {fileID: -7966603187397129208, guid: 36b63c1f35133d643bb1dccb285eae13, type: 2}
@@ -758,7 +758,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u30B9\u30C8\u30EC\u30FC\u30C8"
+  m_text: STRAIGHT
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 36b63c1f35133d643bb1dccb285eae13, type: 2}
   m_sharedMaterial: {fileID: -7966603187397129208, guid: 36b63c1f35133d643bb1dccb285eae13, type: 2}
@@ -2014,7 +2014,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u3082\u3046\u4E00\u5EA6"
+  m_text: PLAY AGAIN
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 36b63c1f35133d643bb1dccb285eae13, type: 2}
   m_sharedMaterial: {fileID: -7966603187397129208, guid: 36b63c1f35133d643bb1dccb285eae13, type: 2}
@@ -2857,7 +2857,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u5965\u3092\u898B\u308B"
+  m_text: LOOK AHEAD
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 36b63c1f35133d643bb1dccb285eae13, type: 2}
   m_sharedMaterial: {fileID: -7966603187397129208, guid: 36b63c1f35133d643bb1dccb285eae13, type: 2}
@@ -2994,7 +2994,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u753B\u9762\u3092\u6A2A\u5411\u304D\u306B\u3057\u3066\u304F\u3060\u3055\u3044"
+  m_text: PLEASE ROTATE YOUR DEVICE
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 36b63c1f35133d643bb1dccb285eae13, type: 2}
   m_sharedMaterial: {fileID: -7966603187397129208, guid: 36b63c1f35133d643bb1dccb285eae13, type: 2}
@@ -3697,7 +3697,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "\u5408\u8A08 0"
+  m_text: TOTAL 0
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 36b63c1f35133d643bb1dccb285eae13, type: 2}
   m_sharedMaterial: {fileID: -7966603187397129208, guid: 36b63c1f35133d643bb1dccb285eae13, type: 2}
@@ -3853,7 +3853,7 @@ MonoBehaviour:
   cancelColor: {r: 0.55, g: 0.55, b: 0.55, a: 1}
   mediumThreshold: 0.5
   speedFormat: '{0:F1} m/s'
-  cancelText: "\u30AD\u30E3\u30F3\u30BB\u30EB"
+  cancelText: CANCEL
 --- !u!114 &1195164673
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3944,9 +3944,9 @@ MonoBehaviour:
   curveColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
   noCurveColor: {r: 0.55, g: 0.55, b: 0.55, a: 1}
   lockedColor: {r: 0.4, g: 0.4, b: 0.4, a: 1}
-  leftFormat: "\u25C0 \u5DE6\u30AB\u30FC\u30D6 {0:F0}%"
-  rightFormat: "\u53F3\u30AB\u30FC\u30D6 {0:F0}% \u25B6"
-  noCurveText: "\u30B9\u30C8\u30EC\u30FC\u30C8"
+  leftFormat: "\u25C0 LEFT {0:F0}%"
+  rightFormat: "RIGHT {0:F0}% \u25B6"
+  noCurveText: STRAIGHT
 --- !u!114 &1195164677
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3998,9 +3998,9 @@ MonoBehaviour:
   delaySeconds: 1.5
   totalFormat: '{0} / {1}'
   lineFormat: '{0,2}  {1}  {2}  {3}'
-  strikeText: "\u30B9\u30C8\u30E9\u30A4\u30AF"
-  spareText: "\u30B9\u30DA\u30A2"
-  fallenFormat: "{0}\u672C"
+  strikeText: STRIKE
+  spareText: SPARE
+  fallenFormat: '{0} PINS'
 --- !u!1 &1212703079
 GameObject:
   m_ObjectHideFlags: 0
@@ -4244,7 +4244,7 @@ MonoBehaviour:
   emptyText: '-'
   strikeText: X
   spareText: /
-  totalFormat: "\u5408\u8A08 {0}"
+  totalFormat: TOTAL {0}
 --- !u!1001 &1417304998
 PrefabInstance:
   m_ObjectHideFlags: 0
