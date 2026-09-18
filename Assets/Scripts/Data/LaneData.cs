@@ -22,9 +22,9 @@ namespace CrazyBowling.Data
         [SerializeField] private GameObject lanePrefab;
 
         [Header("操作")]
-        [Tooltip("このレーンで左右に振れる最大角度（度）。" +
+        [Tooltip("このレーンで左右に振れる最大角度（度）。既定は2度で、中央からレーンの端に届く。" +
                  "斜めや回転するレーンでは流れを打ち消すために広い角度が要るので、レーンごとに変えられる。")]
-        [SerializeField] private float maxAngleDegrees = 4f;
+        [SerializeField] private float maxAngleDegrees = 2f;
 
         [Header("物理（段階4で適用する）")]
         [Tooltip("重力の倍率。段階4で適用する。")]

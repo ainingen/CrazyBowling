@@ -49,8 +49,9 @@ namespace CrazyBowling.Ball
         [SerializeField] private float maxAnglePixels = 250f;
 
         [Tooltip("左右に振れる最大角度（度）。レーンごとに上書きできる。" +
-                 "15.7m先では1度で27cm動くので、4度あればレーンの端から端まで届く。")]
-        [SerializeField] private float maxAngleDegrees = 4f;
+                 "15.7m先では1度で約28cm動く。レーンは中心から±0.53mなので、" +
+                 "2度で中央からレーンの端にちょうど届く。")]
+        [SerializeField] private float maxAngleDegrees = 2f;
 
         [Tooltip("この横ずれまでは角度を付けない（ピクセル）。手ブレ対策。")]
         [SerializeField] private float angleDeadZonePixels = 10f;

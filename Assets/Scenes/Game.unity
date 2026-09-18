@@ -554,7 +554,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -758,7 +758,7 @@ MonoBehaviour:
   maxPullPixels: 300
   minPullPixels: 20
   maxAnglePixels: 250
-  maxAngleDegrees: 4
+  maxAngleDegrees: 2
   angleDeadZonePixels: 10
   minThrowSpeed: 3
   maxThrowSpeed: 10
@@ -2587,12 +2587,6 @@ MonoBehaviour:
   gaugeRoot: {fileID: 808832237}
   fillImage: {fileID: 1472647033}
   speedLabel: {fileID: 2019628022}
-  curveRoot: {fileID: 0}
-  curveLeftImage: {fileID: 0}
-  curveRightImage: {fileID: 0}
-  curveLabel: {fileID: 0}
-  curveColor: {r: 0.35, g: 0.85, b: 0.45, a: 1}
-  noCurveColor: {r: 0.55, g: 0.55, b: 0.55, a: 1}
   weakColor: {r: 0.2, g: 0.55, b: 1, a: 1}
   mediumColor: {r: 1, g: 0.85, b: 0.1, a: 1}
   strongColor: {r: 1, g: 0.25, b: 0.2, a: 1}
@@ -2600,9 +2594,6 @@ MonoBehaviour:
   mediumThreshold: 0.5
   speedFormat: '{0:F1} m/s'
   cancelText: "\u30AD\u30E3\u30F3\u30BB\u30EB"
-  curveLeftFormat: "\u25C0 \u5DE6\u30AB\u30FC\u30D6 {0:F0}%"
-  curveRightFormat: "\u53F3\u30AB\u30FC\u30D6 {0:F0}% \u25B6"
-  noCurveText: "\u30B9\u30C8\u30EC\u30FC\u30C8"
 --- !u!114 &1195164673
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2644,7 +2635,7 @@ Canvas:
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
   m_VertexColorAlwaysGammaSpace: 0
-  m_AdditionalShaderChannelsFlag: 0
+  m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0
