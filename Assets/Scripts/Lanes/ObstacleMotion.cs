@@ -65,5 +65,41 @@ namespace CrazyBowling.Lanes
 
             return Mathf.Abs(settings.travel) * 2f * Mathf.PI / settings.period;
         }
+
+        /// <summary>
+        /// 回り続ける角度（度）。0〜360 に収まる。
+        ///
+        /// GetWave と違い、負の period は「止まっている」ではなく逆回りとして扱う。
+        /// 往復には向きの区別が無いが、回転には時計回り・反時計回りの区別があるため。
+        /// </summary>
+        /// <param name="time">レーンに入ってからの経過（秒）。</param>
+        /// <param name="period">一周にかかる時間（秒）。負なら逆回り。</param>
+        /// <param name="phase">開始角度のずらし（1で一周ぶん）。</param>
+        public static float GetAngle(float time, float period, float phase)
+        {
+            if (Mathf.Abs(period) <= Mathf.Epsilon)
+            {
+                return 0f;
+            }
+
+            return Mathf.Repeat((time / period + phase) * 360f, 360f);
+        }
+
+        /// <summary>
+        /// 回る速さ（ラジアン/秒）。正で上から見て反時計回り、負で時計回り。
+        ///
+        /// 見た目の回転と、ボールに与える力の両方でこの値を使う。
+        /// 二か所で別々に計算すると、片方だけ直したときにずれるため、ここから配る。
+        /// </summary>
+        /// <param name="period">一周にかかる時間（秒）。負なら逆回り。</param>
+        public static float GetAngularSpeed(float period)
+        {
+            if (Mathf.Abs(period) <= Mathf.Epsilon)
+            {
+                return 0f;
+            }
+
+            return 2f * Mathf.PI / period;
+        }
     }
 }

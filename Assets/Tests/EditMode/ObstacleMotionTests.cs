@@ -172,5 +172,74 @@ namespace CrazyBowling.Tests.EditMode
                 Assert.LessOrEqual(Mathf.Abs(wave), 1f + 0.0001f, $"t={t} で1を超えた");
             }
         }
+
+        // ---- 回転 ----
+
+        [Test]
+        public void 回転は0度から始まる()
+        {
+            Assert.AreEqual(0f, ObstacleMotion.GetAngle(0f, 1f, 0f), 0.0001f);
+        }
+
+        [Test]
+        public void 半周で180度になる()
+        {
+            Assert.AreEqual(180f, ObstacleMotion.GetAngle(0.5f, 1f, 0f), 0.0001f);
+        }
+
+        [Test]
+        public void 一周すると角度が一巡する()
+        {
+            Assert.AreEqual(
+                0f,
+                Mathf.DeltaAngle(
+                    ObstacleMotion.GetAngle(0.3f, 1f, 0f),
+                    ObstacleMotion.GetAngle(0.3f + 1f, 1f, 0f)),
+                0.001f);
+        }
+
+        [Test]
+        public void 角度は0から360の間に収まる()
+        {
+            for (float t = 0f; t < 10f; t += 0.01f)
+            {
+                float angle = ObstacleMotion.GetAngle(t, 1f, 0.3f);
+
+                Assert.GreaterOrEqual(angle, 0f, $"t={t} で負になった");
+                Assert.Less(angle, 360f, $"t={t} で360以上になった");
+            }
+        }
+
+        [Test]
+        public void 負の周期は逆回りになる()
+        {
+            // 往復と違い、回転には向きの区別があるので、負は「止まっている」ではなく逆回り
+            Assert.AreEqual(
+                -Mathf.DeltaAngle(0f, ObstacleMotion.GetAngle(0.25f, 1f, 0f)),
+                Mathf.DeltaAngle(0f, ObstacleMotion.GetAngle(0.25f, -1f, 0f)),
+                0.001f);
+        }
+
+        [Test]
+        public void 周期が0なら回らない()
+        {
+            Assert.AreEqual(0f, ObstacleMotion.GetAngle(3f, 0f, 0f), 0.0001f);
+            Assert.AreEqual(0f, ObstacleMotion.GetAngularSpeed(0f), 0.0001f);
+        }
+
+        [Test]
+        public void 一周1秒なら回る速さは約6283ミリラジアン毎秒()
+        {
+            Assert.AreEqual(6.283f, ObstacleMotion.GetAngularSpeed(1f), 0.001f);
+        }
+
+        [Test]
+        public void 負の周期なら回る速さも負になる()
+        {
+            Assert.AreEqual(
+                -ObstacleMotion.GetAngularSpeed(1f),
+                ObstacleMotion.GetAngularSpeed(-1f),
+                0.0001f);
+        }
     }
 }
