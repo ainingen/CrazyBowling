@@ -102,6 +102,17 @@ namespace CrazyBowling.Lanes
             return false;
         }
 
+        /// <summary>
+        /// その位置で受ける横向きの加速度を返す。
+        /// 回る円盤を持たないレーンは何も答えず false を返し、呼ぶ側は何もしない。
+        /// 円盤のあるレーンだけが答える。
+        /// </summary>
+        public virtual bool TryGetDrift(Vector3 worldPosition, Vector3 worldVelocity, out Vector3 acceleration)
+        {
+            acceleration = Vector3.zero;
+            return false;
+        }
+
         /// <summary>このレーンのオイルの設定。</summary>
         public LaneOilSettings OilSettings => new LaneOilSettings
         {

@@ -40,6 +40,12 @@ namespace CrazyBowling.Ball
         /// </summary>
         public delegate float FrictionSampler(Vector3 worldPosition);
 
+        /// <summary>
+        /// その場所で受ける横向きの加速度を返す役。回る円盤の上でだけ答える。
+        /// レーンが答える。渡されていなければ流れない。
+        /// </summary>
+        public delegate bool DriftSampler(Vector3 worldPosition, Vector3 worldVelocity, out Vector3 acceleration);
+
         [Header("構え位置")]
         [Tooltip("ボールが構える基準になる Transform。この前方向へ投げる。")]
         [SerializeField] private Transform spawnPoint;
@@ -144,6 +150,15 @@ namespace CrazyBowling.Ball
 
         /// <summary>その場所の摩擦を調べる手段。オイルのあるレーンでだけ入る。</summary>
         private FrictionSampler _frictionSampler;
+
+        /// <summary>横へ流す力を調べる手段。回る円盤のあるレーンでだけ入る。</summary>
+        private DriftSampler _driftSampler;
+
+        /// <summary>
+        /// この1投で円盤に横へ流された量（m/s）。調整用のログにだけ使う。
+        /// 効いていないのか弱すぎるのかを切り分けるために持っている。
+        /// </summary>
+        private float _driftAccumulated;
 
         /// <summary>
         /// 曲がりの計算に使う滑り（m/s）。
@@ -384,6 +399,7 @@ namespace CrazyBowling.Ball
             _state = BallState.Rolling;
             _rollingTimer = 0f;
             _stopTimer = 0f;
+            _driftAccumulated = 0f;
 
             if (logEvents)
             {
@@ -403,8 +419,12 @@ namespace CrazyBowling.Ball
         }
 
         /// <summary>
-        /// 転がり中のカーブ。滑っている間だけ横向きの力を加え、横回転は徐々に失う。
+        /// 転がり中に加える力。回る円盤の横流れと、カーブの2つ。
         /// Unity の物理は縦軸の回転でボールを曲げてくれないので、ここで補う。
+        ///
+        /// 円盤の処理は、必ずカーブの早期 return より前に置くこと。
+        /// カーブ0のストレート投球では横回転が0なので、後ろに書くと
+        /// ストレートでだけ円盤が効かなくなり、原因が分かりにくい。
         /// </summary>
         private void FixedUpdate()
         {
@@ -413,16 +433,21 @@ namespace CrazyBowling.Ball
                 return;
             }
 
-            if (Mathf.Approximately(_sideSpin, 0f))
+            // 投げた直後の1回目は、まだ速度が反映されていない（AddForce は次のステップで効く）。
+            // ここで判定すると「速度0＝転がっている」と誤解して、曲がる前に終わってしまう。
+            // 円盤にも同じ事情があるので、カーブと共通の門にしてある
+            Vector3 horizontalVelocity = _rigidbody.linearVelocity;
+            horizontalVelocity.y = 0f;
+            if (horizontalVelocity.sqrMagnitude < 0.01f)
             {
                 return;
             }
 
-            // 投げた直後の1回目は、まだ速度が反映されていない（AddForce は次のステップで効く）。
-            // ここで判定すると「速度0＝転がっている」と誤解して、曲がる前に終わってしまう
-            Vector3 horizontalVelocity = _rigidbody.linearVelocity;
-            horizontalVelocity.y = 0f;
-            if (horizontalVelocity.sqrMagnitude < 0.01f)
+            float dt = Time.fixedDeltaTime;
+
+            ApplyDiscDrift(dt);
+
+            if (Mathf.Approximately(_sideSpin, 0f))
             {
                 return;
             }
@@ -432,7 +457,6 @@ namespace CrazyBowling.Ball
             // その場所の摩擦。オイルの上では小さい。
             // 横向きの力は摩擦から生まれるので、手前では曲がらず、奥の乾いた床で曲がる
             float friction = SampleFrictionScale(transform.position);
-            float dt = Time.fixedDeltaTime;
 
             // 滑りは摩擦に応じて失われる。オイルの上ではほとんど減らない
             _curveSlip = Mathf.Max(0f, _curveSlip - curveSlipDecay * friction * dt);
@@ -449,6 +473,31 @@ namespace CrazyBowling.Ball
             float removed = _sideSpin - decayed;
             _rigidbody.angularVelocity += Vector3.up * removed;
             _sideSpin = decayed;
+        }
+
+        /// <summary>
+        /// 回る円盤の上にいるなら、横向きに流す。
+        /// 力の中身はレーン側（SpinningDiscField）が決める。ここは受け取って加えるだけ。
+        ///
+        /// オイルの摩擦は掛けない。効き具合は円盤側が influence で持っているし、
+        /// 円盤は床と面一なので、手前と奥で効き方を変える理由がない。
+        /// </summary>
+        private void ApplyDiscDrift(float dt)
+        {
+            if (_driftSampler == null)
+            {
+                return;
+            }
+
+            if (!_driftSampler(transform.position, _rigidbody.linearVelocity, out Vector3 acceleration))
+            {
+                return;
+            }
+
+            _rigidbody.AddForce(acceleration, ForceMode.Acceleration);
+
+            // 調整用に積み上げる。レーンは奥（+z）へ伸びているので、流れたぶんは x に出る
+            _driftAccumulated += acceleration.x * dt;
         }
 
         /// <summary>Inspector の値をカーブの計算用にまとめる。</summary>
@@ -558,6 +607,12 @@ namespace CrazyBowling.Ball
             {
                 Debug.Log($"決着：{reason}", this);
             }
+
+            // 円盤のあるレーンでだけ、1投につき1回出す。毎フレーム出すと Console が埋まる
+            if (logEvents && !Mathf.Approximately(_driftAccumulated, 0f))
+            {
+                Debug.Log($"円盤：横に {_driftAccumulated:F2} m/s 流れた", this);
+            }
         }
 
         /// <summary>構え位置に戻して、次の投球を受け付ける。進行役（ThrowSequencer）が呼ぶ。</summary>
@@ -589,6 +644,7 @@ namespace CrazyBowling.Ball
             _stopTimer = 0f;
             _sideSpin = 0f;
             _curveSlip = 0f;
+            _driftAccumulated = 0f;
 
             if (logEvents)
             {
@@ -613,6 +669,16 @@ namespace CrazyBowling.Ball
         public void SetFrictionSampler(FrictionSampler sampler)
         {
             _frictionSampler = sampler;
+        }
+
+        /// <summary>
+        /// 横へ流す力を調べる手段を渡す。GameManager がレーンを差し替えるたびに呼ぶ。
+        /// null を渡すと、円盤の無いレーンとして扱われる（流れない）。
+        /// 前のレーンの円盤が次のレーンで効き続けないよう、必ず渡し直すこと。
+        /// </summary>
+        public void SetDriftSampler(DriftSampler sampler)
+        {
+            _driftSampler = sampler;
         }
 
         /// <summary>その場所の摩擦の係数。予測線が同じ式を使うために公開している。</summary>

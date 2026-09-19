@@ -291,6 +291,7 @@ namespace CrazyBowling.Core
 
             ballController.SetFloorSampler(BuildFloorSampler());
             ballController.SetFrictionSampler(BuildFrictionSampler());
+            ballController.SetDriftSampler(BuildDriftSampler());
             ballController.ApplyLaneSettings(data.MaxAngleDegrees);
             ballController.ReturnToSpawn();
 
@@ -349,10 +350,35 @@ namespace CrazyBowling.Core
             return worldPosition => lane != null ? lane.GetFrictionScale(worldPosition) : 1f;
         }
 
+        /// <summary>
+        /// 今のレーンに横流れを聞く役を作る。レーンが無ければ null を返し、流れない扱いになる。
+        /// 差し替えのたびに作り直すので、前のレーンの円盤が次のレーンで効き続けることはない。
+        /// </summary>
+        private BallController.DriftSampler BuildDriftSampler()
+        {
+            if (_laneBehaviour == null)
+            {
+                return null;
+            }
+
+            LaneBehaviour lane = _laneBehaviour;
+            return (Vector3 worldPosition, Vector3 worldVelocity, out Vector3 acceleration) =>
+                lane != null && lane.TryGetDrift(worldPosition, worldVelocity, out acceleration)
+                    ? true
+                    : Fail(out acceleration);
+        }
+
         /// <summary>床の高さが分からなかったときの返し方をまとめる。</summary>
         private static bool Fail(out float height)
         {
             height = 0f;
+            return false;
+        }
+
+        /// <summary>横流れが無かったときの返し方をまとめる。</summary>
+        private static bool Fail(out Vector3 acceleration)
+        {
+            acceleration = Vector3.zero;
             return false;
         }
 
