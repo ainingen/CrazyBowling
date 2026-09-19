@@ -2765,7 +2765,7 @@ GameObject:
   - component: {fileID: 1864509894511978486}
   - component: {fileID: 4947998811637866522}
   m_Layer: 0
-  m_Name: Lane_Jump
+  m_Name: Lane_Mogul
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

@@ -114,7 +114,7 @@ namespace CrazyBowling.UI
         public const string LaneSCurveName = "S-CURVE";
         public const string LaneMovingWallName = "MOVING WALL";
         public const string LaneSpinningDiscName = "SPINNING DISC";
-        public const string LaneJumpName = "JUMP";
+        public const string LaneMogulName = "MOGUL";
         public const string LaneRotatingTubeName = "ROTATING TUBE";
         public const string LaneLowGravityName = "LOW GRAVITY";
         public const string LaneMovingPinsName = "MOVING PINS";
@@ -141,8 +141,8 @@ namespace CrazyBowling.UI
         public const string LaneSpinningDiscDescription =
             "円盤が回転しております。ボールは意図した方向へ進まない場合があります。";
 
-        public const string LaneJumpDescription =
-            "レーンの中央に空間があります。速度が不足した場合、ボールは落下します。";
+        public const string LaneMogulDescription =
+            "床に起伏があります。通過する所をよくお計りください。";
 
         public const string LaneRotatingTubeDescription =
             "レーン全体がゆっくりと回転いたします。床の傾きは常に変化しています。";
