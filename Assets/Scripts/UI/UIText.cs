@@ -145,7 +145,7 @@ namespace CrazyBowling.UI
             "床に起伏があります。通過する所をよくお計りください。";
 
         public const string LaneRotatingTubeDescription =
-            "レーン全体がゆっくりと回転いたします。床の傾きは常に変化しています。";
+            "中で激しく回転いたします。進路は保証いたしません。";
 
         public const string LaneLowGravityDescription =
             "重力が弱く設定されています。ボールとピンはよく跳ねます。";
