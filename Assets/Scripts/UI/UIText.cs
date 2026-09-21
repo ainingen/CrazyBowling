@@ -148,7 +148,7 @@ namespace CrazyBowling.UI
             "中で激しく回転いたします。進路は保証いたしません。";
 
         public const string LaneLowGravityDescription =
-            "重力が弱く設定されています。ボールとピンはよく跳ねます。";
+            "重力が弱く設定されています。障害物で大きく跳ねます。";
 
         public const string LaneMovingPinsDescription =
             "ピンの台が左右に移動します。停止することはございません。";
