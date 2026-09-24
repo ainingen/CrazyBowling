@@ -198,6 +198,28 @@ namespace CrazyBowling.Pins
             _blastGeneration = -1;
         }
 
+        /// <summary>
+        /// いま居る場所を「立っていた位置」として覚え直す。位置は動かさない。
+        ///
+        /// ── 何のためにあるか ────────────────────────────
+        ///
+        /// 倒れ判定は「立っていた位置から水平に0.3m以上動いたら倒れた」で見ている。
+        /// ピン台が動くレーン（9本目）では、乗って動いただけで全部「倒れた」になる。
+        ///
+        /// そこで台を止めた瞬間にここを呼び、その場所を基準に測り直す。
+        /// 以降はまったく普通のピン台と同じ扱いになるので、
+        /// **判定そのものには一切手を入れなくて済む。**
+        ///
+        /// ★呼ばない限り何も変わらない。1〜8本目はこれを呼ばない。
+        /// ★レーンを移るときは GameManager が ApplyLayout を呼ぶので、
+        ///   覚え直しは自動的に三角配置へ戻る。
+        /// </summary>
+        public void RebaseInitialPose()
+        {
+            _initialPosition = transform.position;
+            _initialRotation = transform.rotation;
+        }
+
         /// <summary>PinSet が並べ直したあとに、その場所を初期姿勢として覚える。</summary>
         public void SetInitialPose(Vector3 position, Quaternion rotation)
         {

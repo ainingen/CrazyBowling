@@ -63,6 +63,14 @@ namespace CrazyBowling.Pins
         /// <summary>ピンの本数。</summary>
         public int PinCount => pins == null ? 0 : pins.Length;
 
+        /// <summary>
+        /// 並んでいるピン。読み取り専用。
+        /// 動くピン台のレーン（9本目）が、ピンを席に着かせるために読む。
+        /// 中身を差し替える口は出さない。並べ直しは ApplyLayout を通すこと。
+        /// </summary>
+        public IReadOnlyList<Pin> Pins =>
+            pins ?? (IReadOnlyList<Pin>)System.Array.Empty<Pin>();
+
         /// <summary>1投目で倒れた本数。段階3のスコア計算が読む。</summary>
         public int FirstThrowFallen { get; private set; }
 

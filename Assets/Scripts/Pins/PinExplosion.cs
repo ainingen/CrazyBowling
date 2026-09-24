@@ -107,6 +107,21 @@ namespace CrazyBowling.Pins
             }
         }
 
+        /// <summary>
+        /// 厚い当たりを測るときの基準点。
+        ///
+        /// ── 何のためにあるか ────────────────────────────
+        ///
+        /// 通常は「ヘッドピンが立っていた位置」からの横ずれで厚みを測る。
+        /// ピン台が回るレーン（9本目）では並びが散らばり、ヘッドピンに意味がなくなる。
+        /// そこで円盤の中心などを差し込めるようにしてある。
+        ///
+        /// ★null なら今までどおりヘッドピンの立っていた位置を使う。
+        ///   1〜8本目は null のままなので、式も結果も変わらない。
+        /// ★差し込むレーンは、出るときに必ず null へ戻すこと（LaneBlastReference が行う）。
+        /// </summary>
+        public Transform BlastReference { get; set; }
+
         /// <summary>Inspector の値を計算用の設定にまとめる。</summary>
         public PinBlastSettings BuildSettings()
         {
@@ -167,11 +182,16 @@ namespace CrazyBowling.Pins
                     return;
                 }
 
-                // 厚く当たったかを、ボールの進む向きに対するヘッドピンからの横ずれで見る
-                if (fromBall && headPin != null)
+                // 厚く当たったかを、ボールの進む向きに対する基準点からの横ずれで見る。
+                // 基準点は通常ヘッドピンの立っていた位置。差し替えられていればそちらを使う
+                bool hasReference = BlastReference != null || headPin != null;
+                if (fromBall && hasReference)
                 {
+                    Vector3 referencePosition = BlastReference != null
+                        ? BlastReference.position
+                        : headPin.InitialPosition;
                     float offset = PinBlastCalculator.CalculateLateralOffset(
-                        other.position, other.linearVelocity, headPin.InitialPosition);
+                        other.position, other.linearVelocity, referencePosition);
                     strengthScale = PinBlastCalculator.OriginStrengthScale(offset, settings);
 
                     if (strengthScale <= 0f)
