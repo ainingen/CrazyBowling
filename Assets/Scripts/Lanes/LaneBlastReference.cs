@@ -18,6 +18,9 @@ namespace CrazyBowling.Lanes
     /// ピン台が回るレーンでは並びが散らばり、ヘッドピンに意味がなくなる。
     /// 円盤の中心などを基準にしたいときに使う。
     ///
+    /// あわせて「kinematic の相手をボールとみなさない」切り替えも入れる。
+    /// 動かされる壁を持つレーンで、ピンが壁にぶつかっただけで爆発しないようにするため。
+    ///
     /// 物理には一切触らない。
     /// </summary>
     public class LaneBlastReference : MonoBehaviour
@@ -26,14 +29,19 @@ namespace CrazyBowling.Lanes
                  "空なら何もしない（ヘッドピンの立っていた位置のまま）。")]
         [SerializeField] private Transform reference;
 
+        [Tooltip("kinematic の相手（動かされる壁など）を、起点の判定でボールとみなさないか。" +
+                 "9本目はオン。オフだと、ピンがカップの壁にぶつかっただけで満威力の爆発になりうる。")]
+        [SerializeField] private bool kinematicIsNotBall = true;
+
         /// <summary>元に戻すために覚えておく。</summary>
         private Pins.PinExplosion _explosion;
         private Transform _previous;
+        private bool _previousKinematicIsNotBall;
         private bool _applied;
 
         private void OnEnable()
         {
-            if (reference == null || _applied)
+            if ((reference == null && !kinematicIsNotBall) || _applied)
             {
                 return;
             }
@@ -45,7 +53,12 @@ namespace CrazyBowling.Lanes
             }
 
             _previous = _explosion.BlastReference;
-            _explosion.BlastReference = reference;
+            _previousKinematicIsNotBall = _explosion.KinematicIsNotBall;
+            if (reference != null)
+            {
+                _explosion.BlastReference = reference;
+            }
+            _explosion.KinematicIsNotBall = kinematicIsNotBall;
             _applied = true;
         }
 
@@ -59,7 +72,7 @@ namespace CrazyBowling.Lanes
             Restore();
         }
 
-        /// <summary>基準点を元に戻す。戻し忘れると次のレーンに持ち越してしまう。</summary>
+        /// <summary>基準点と判定の切り替えを元に戻す。戻し忘れると次のレーンに持ち越してしまう。</summary>
         private void Restore()
         {
             if (!_applied)
@@ -70,6 +83,7 @@ namespace CrazyBowling.Lanes
             if (_explosion != null)
             {
                 _explosion.BlastReference = _previous;
+                _explosion.KinematicIsNotBall = _previousKinematicIsNotBall;
             }
 
             _explosion = null;

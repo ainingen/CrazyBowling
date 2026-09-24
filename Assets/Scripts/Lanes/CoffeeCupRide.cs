@@ -38,6 +38,12 @@ namespace CrazyBowling.Lanes
     /// 降ろした後（停止後）は一切動かさないので、**ボールが当たるときには静止している。**
     /// 4本目・7本目で苦労した「動いている当たり判定に当たる」は起きない。
     /// 乗車中のピンと壁はどちらも kinematic なので、互いにぶつからない。
+    ///
+    /// ── 外周の囲い（神殿の柱など） ─────────────────────────
+    ///
+    /// 円盤の外周に立てた囲い。円盤と一緒に回る。
+    /// 小さなカップの壁と違い、**ボールにも当てる**（すり抜けの対象に入れない）。
+    /// 柱の間が手前に来ていればボールは中へ入れ、柱が来ていれば止められる／弾かれる。
     /// </summary>
     public class CoffeeCupRide : MonoBehaviour
     {
@@ -68,6 +74,14 @@ namespace CrazyBowling.Lanes
         [Tooltip("カップを円盤と逆向きに回すか。逆にすると並びの変化が読みにくくなる。")]
         [SerializeField] private bool cupReversed = true;
 
+        [Tooltip("レーンに入るたびに、円盤とカップの回転角を乱数で決めるか。" +
+                 "切ると毎回同じ角度から始まり、すぐ投げる人には毎回同じ柱の向きが来る。")]
+        [SerializeField] private bool randomStartAngle = true;
+
+        [Tooltip("2投目の再開時にも、回転角を乱数で決め直すか。" +
+                 "座り直しの時間の中で、新しい向きまで回しながら席へ戻す。")]
+        [SerializeField] private bool randomOnReseat = true;
+
         [Header("座り直し")]
         [Tooltip("2投目に入るとき、残ったピンを席へ戻すのにかける秒数。" +
                  "0にすると瞬間移動になり、カクッと見える。")]
@@ -85,6 +99,10 @@ namespace CrazyBowling.Lanes
                  "親 Transform は回さず、世界座標の姿勢を MovePosition / MoveRotation で渡す。" +
                  "空なら壁なし（段階3の状態）。")]
         [SerializeField] private Rigidbody[] cupWalls;
+
+        [Tooltip("外周の囲い（神殿の柱など）。円盤の中心に置いた kinematic の Rigidbody。円盤と一緒に回す。" +
+                 "ボールにも当てるので、すり抜けの対象には入れない。空なら囲いなし。")]
+        [SerializeField] private Rigidbody outerWall;
 
         /// <summary>回した角度（度）。止めても巻き戻さないので、再開しても位相が飛ばない。</summary>
         private float _discAngle;
@@ -111,6 +129,12 @@ namespace CrazyBowling.Lanes
         private Vector3[] _reseatFromPosition;
         private Quaternion[] _reseatFromRotation;
 
+        /// <summary>座り直しの間に回す角度の、出発と行き先（度）。</summary>
+        private float _reseatFromDisc;
+        private float _reseatFromCup;
+        private float _reseatToDisc;
+        private float _reseatToCup;
+
         /// <summary>いま運んでいる最中か。</summary>
         public bool IsRiding => _riding;
 
@@ -125,6 +149,21 @@ namespace CrazyBowling.Lanes
             Release(false);
             _seated = null;
             _wasKinematic = null;
+        }
+
+        /// <summary>
+        /// 円盤とカップの回転角を乱数で決め直す。レーンに入るときに、席に着かせる前に呼ぶ。
+        /// すぐ投げる人に毎回同じ柱の向きが来ないようにするため。
+        /// </summary>
+        public void RandomizeStartAngle()
+        {
+            if (!randomStartAngle)
+            {
+                return;
+            }
+
+            _discAngle = Random.Range(0f, 360f);
+            _cupAngle = Random.Range(0f, 360f);
         }
 
         /// <summary>
@@ -251,6 +290,13 @@ namespace CrazyBowling.Lanes
                 body.isKinematic = true;
             }
 
+            // 再開時の乱数：行き先の角度を決めておき、座り直しの間に回していく。
+            // 一瞬で飛ばすと壁と円盤がパッと切り替わって見えるため
+            _reseatFromDisc = _discAngle;
+            _reseatFromCup = _cupAngle;
+            _reseatToDisc = randomOnReseat ? Random.Range(0f, 360f) : _discAngle;
+            _reseatToCup = randomOnReseat ? Random.Range(0f, 360f) : _cupAngle;
+
             _reseatRemaining = Mathf.Max(reseatSeconds, 0.0001f);
         }
 
@@ -297,6 +343,14 @@ namespace CrazyBowling.Lanes
 
             // 端で滑らかに止まるよう、直線ではなく滑らかな曲線で寄せる
             float eased = progress * progress * (3f - 2f * progress);
+
+            // 角度も新しい向きへ回す（近いほうの向きで）。壁と見た目はここで動く。
+            // 運転中ではない（_riding が false）ので、Apply はピンに触らない
+            _discAngle = Mathf.Repeat(
+                _reseatFromDisc + Mathf.DeltaAngle(_reseatFromDisc, _reseatToDisc) * eased, 360f);
+            _cupAngle = Mathf.Repeat(
+                _reseatFromCup + Mathf.DeltaAngle(_reseatFromCup, _reseatToCup) * eased, 360f);
+            Apply(false, deltaTime);
 
             for (int i = 0; i < _seated.Length; i++)
             {
@@ -426,6 +480,25 @@ namespace CrazyBowling.Lanes
             {
                 discVisual.localPosition = new Vector3(0f, seatY, discCenterZ);
                 discVisual.localRotation = Quaternion.Euler(0f, _discAngle, 0f);
+            }
+
+            // 外周の囲いも当たり判定を持つので、世界座標の姿勢を直接渡す
+            if (outerWall != null)
+            {
+                Vector3 outerWorld = transform.TransformPoint(new Vector3(0f, seatY, discCenterZ));
+                Quaternion outerRotation = transform.rotation * Quaternion.Euler(0f, _discAngle, 0f);
+
+                if (warp)
+                {
+                    outerWall.position = outerWorld;
+                    outerWall.rotation = outerRotation;
+                    outerWall.transform.SetPositionAndRotation(outerWorld, outerRotation);
+                }
+                else
+                {
+                    outerWall.MovePosition(outerWorld);
+                    outerWall.MoveRotation(outerRotation);
+                }
             }
 
             if (_seated == null || !_riding)

@@ -122,6 +122,20 @@ namespace CrazyBowling.Pins
         /// </summary>
         public Transform BlastReference { get; set; }
 
+        /// <summary>
+        /// kinematic の相手（動かされる壁など）を、起点の判定で「ボール」とみなさないか。
+        ///
+        /// 起点はボールに当てられたピンだけだが、判定は「相手がピンでなければボール」と見ている。
+        /// 9本目ではピンがカップの壁にぶつかると、それがボール扱いになり、
+        /// 壁の Rigidbody の位置から横ずれを測る。外周の囲い（柱）の体は円盤の中心（＝基準点）にあるので、
+        /// ピンが柱にぶつかっただけで横ずれ0の満威力の爆発になってしまう
+        /// （前の作業で実測：横ずれ 0.0cm の起点）。
+        ///
+        /// ★false なら今までどおり。1〜8本目は false のままなので判定は変わらない。
+        /// ★入れるレーンは、出るときに必ず false へ戻すこと（LaneBlastReference が行う）。
+        /// </summary>
+        public bool KinematicIsNotBall { get; set; }
+
         /// <summary>Inspector の値を計算用の設定にまとめる。</summary>
         public PinBlastSettings BuildSettings()
         {
@@ -176,7 +190,8 @@ namespace CrazyBowling.Pins
                     return;
                 }
 
-                bool fromBall = other != null && !_pinBodyIds.Contains(other.GetInstanceID());
+                bool fromBall = other != null && !_pinBodyIds.Contains(other.GetInstanceID())
+                                && !(KinematicIsNotBall && other.isKinematic);
                 if (originFromBallOnly && !fromBall)
                 {
                     return;
@@ -213,6 +228,66 @@ namespace CrazyBowling.Pins
             }
 
             Explode(origin, generation, strengthScale, settings);
+        }
+
+        /// <summary>
+        /// 指定した点を起点に、1回きりの強い爆発を起こす（9本目：ボールが神殿に入ったとき）。
+        ///
+        /// 威力・範囲・上向きの割合は、この呼び出しだけに使う引数で受け取る。
+        /// 共有の設定（Inspector の値）は書き換えないので、戻す必要のある上書きは起きない。
+        /// 1〜8本目はこの関数を呼ばないので、挙動は変わらない。
+        ///
+        /// ★飛ばしたピンは、それ以上連鎖の起点にしない（連鎖の最大回数に達した扱い）。
+        ///   連鎖させると、いろいろな向きから何度も吹き飛ばされて横向きは打ち消し合い、
+        ///   上向きだけが積み重なって真上に4m以上飛ぶピンが出た。場外として空中で止まると、
+        ///   水平にはほとんど動いていないので「立っている」と数えられてしまう（実測：入ったのに9本）。
+        ///   1回の爆風だけなら、どのピンも外向きに飛ぶので必ず倒れる。
+        /// kinematic のピンは対象外（CanBeBlasted）なので、呼ぶ前に降ろしておくこと。
+        /// </summary>
+        /// <returns>吹き飛ばしたピンの本数。</returns>
+        public int ExplodeAt(Vector3 center, float blastForce, float blastRadius, float blastUpwardRatio)
+        {
+            if (!enableEffect || _pins == null)
+            {
+                return 0;
+            }
+
+            PinBlastSettings settings = BuildSettings();
+            settings.force = blastForce;
+            settings.radius = blastRadius;
+            settings.upwardRatio = blastUpwardRatio;
+
+            // この投球の起点はここで使い切る。あとからボールが触れても二重に起点を作らない
+            _originUsed = true;
+
+            float spin = PinBlastCalculator.SpinAt(0, settings);
+            int blasted = 0;
+
+            for (int i = 0; i < _pins.Length; i++)
+            {
+                Pin target = _pins[i];
+                if (target == null || !target.CanBeBlasted)
+                {
+                    continue;
+                }
+
+                if (!PinBlastCalculator.TryCalculateBlast(
+                        center, target.transform.position, 0, 1f, settings, out Vector3 velocityChange))
+                {
+                    continue;
+                }
+
+                // 世代を連鎖の上限にして、この先で起点にならないようにする
+                target.ApplyBlast(velocityChange, Random.onUnitSphere * spin, settings.maxChainCount);
+                blasted++;
+            }
+
+            if (logEvents)
+            {
+                Debug.Log($"爆発（指定の点）：{blasted}本を吹き飛ばした", this);
+            }
+
+            return blasted;
         }
 
         /// <summary>起点のピンの周りを吹き飛ばす。</summary>

@@ -51,6 +51,13 @@ namespace CrazyBowling.Lanes
     /// 段階4でカップに壁の当たり判定を付ける。壁はピンより手前に出るので、
     /// 「ピンの手前」で止めると壁に当たるときにまだ動いている。
     /// 基準は**壁のいちばん手前**に取る。
+    ///
+    /// ── 神殿（実験） ───────────────────────────────
+    ///
+    /// ピン台を柱で囲んだ神殿にし、入り口を1か所だけ開ける。神殿ごと回る。
+    /// ボールが入り口から中へ入ったら、神殿ごと吹き飛ばしてピンを全部倒す（TempleBlast）。
+    /// 入れなければ柱に阻まれて倒れない。
+    /// 吹き飛ぶのは入ったときだけなので、2投目に入るとき（1投目で入れなかったとき）の神殿は無傷。
     /// </summary>
     public class CoffeeCupLane : BasicLane
     {
@@ -78,6 +85,10 @@ namespace CrazyBowling.Lanes
                  "切ると壁がボールにも当たり、打ち上げや停止が起きる（段階4で確認済み）。")]
         [SerializeField] private bool ballIgnoresCupWalls = true;
 
+        [Header("神殿")]
+        [Tooltip("ボールが中へ入ったら神殿ごと吹き飛ばしてピンを全部倒す。空なら神殿なし。")]
+        [SerializeField] private TempleBlast temple;
+
         [Header("確認用")]
         [Tooltip("止めた瞬間と、その理由を Console に出す。調整が済んだら切る。")]
         [SerializeField] private bool logEvents = true;
@@ -92,6 +103,10 @@ namespace CrazyBowling.Lanes
         private readonly System.Collections.Generic.List<Collider> _ignoredWalls =
             new System.Collections.Generic.List<Collider>();
         private Collider[] _ignoredBall;
+
+        /// <summary>共有の連鎖爆発。神殿に入ったときの爆発に使う。</summary>
+        private Pins.PinExplosion _explosion;
+        private Rigidbody _ballBody;
 
         /// <summary>
         /// 乗り物の速さに掛ける率。1で通常、0で停止。
@@ -110,9 +125,15 @@ namespace CrazyBowling.Lanes
             base.OnLaneStart(context);
             Arm();
 
-            // レーンに入った時点で席に着かせ、以降ずっと回す
+            _explosion = Object.FindFirstObjectByType<Pins.PinExplosion>();
+            _ballBody = context.ball != null ? context.ball.GetComponent<Rigidbody>() : null;
+
+            // レーンに入った時点で席に着かせ、以降ずっと回す。
+            // 開始角は入るたびに乱数で決める。すぐ投げる人に毎回同じ柱の向きが来ないように
+            // （2投目の再開時の乱数は、座り直しの中で乗り物が行う）
             if (ride != null)
             {
+                ride.RandomizeStartAngle();
                 ride.Seat(context.pinSet);
             }
 
@@ -209,6 +230,14 @@ namespace CrazyBowling.Lanes
             if (ball == null)
             {
                 return;
+            }
+
+            // 神殿：ボールが中へ入ったら吹き飛ばす（吹き飛んだ後は何もしない）。
+            // 位置は描画用の補間ではなく、物理の位置で見る
+            Vector3 ballPosition = _ballBody != null ? _ballBody.position : ball.transform.position;
+            if (temple != null && !temple.HasExploded && temple.IsInside(ballPosition))
+            {
+                BlowUpTemple();
             }
 
             if (_stopped)
@@ -320,6 +349,38 @@ namespace CrazyBowling.Lanes
                 count++;
             }
             return count;
+        }
+
+        /// <summary>
+        /// ボールが神殿に入った。神殿ごと吹き飛ばして、ピンを全部倒す。
+        ///
+        /// ★爆発の対象は動的なピンだけ（kinematic は対象外）。
+        ///   入り口は停止の合図（z=15.0）より奥なので、ふつうはもう降ろしてある。
+        ///   念のため、まだ運転中なら先に止めて降ろす。
+        /// </summary>
+        private void BlowUpTemple()
+        {
+            StopRide("ボールが神殿に入った");
+
+            int kinematic = 0;
+            Pins.PinSet pinSet = Context.pinSet;
+            if (pinSet != null)
+            {
+                foreach (Pins.Pin pin in pinSet.Pins)
+                {
+                    if (pin != null && pin.IsStandingInPlay && pin.GetComponent<Rigidbody>().isKinematic)
+                    {
+                        kinematic++;
+                    }
+                }
+            }
+
+            temple.Explode(_explosion);
+
+            if (logEvents)
+            {
+                Debug.Log($"9本目：神殿の爆発の瞬間、kinematic のピン {kinematic} 本（0であること）", this);
+            }
         }
 
         /// <summary>次の投球に備えて、停止の合図を張り直す。</summary>

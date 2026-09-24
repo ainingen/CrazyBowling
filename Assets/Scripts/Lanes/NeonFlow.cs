@@ -114,6 +114,27 @@ namespace CrazyBowling.Lanes
         private Lamp[] _lamps;
         private MaterialPropertyBlock _block;
 
+        /// <summary>弾けさせる演出が終わる時刻と、その長さ。Burst() で決まる。</summary>
+        private float _burstUntil = -1f;
+        private float _burstSeconds = 1f;
+
+        [Header("弾ける演出（Burst）")]
+        [Tooltip("Burst() を呼んだ瞬間の明るさの倍率。時間とともに1へ戻る。")]
+        [SerializeField] private float burstBrightness = 3f;
+
+        [Tooltip("Burst() の間、色の輪を何倍の速さで回すか。")]
+        [SerializeField] private float burstHueSpeedScale = 8f;
+
+        /// <summary>
+        /// 数秒だけ、明るさと色の回りを跳ね上げる（9本目：神殿が吹き飛んだ瞬間）。
+        /// 呼ばなければ何も変わらない。8本目は呼ばない。
+        /// </summary>
+        public void Burst(float seconds)
+        {
+            _burstSeconds = Mathf.Max(seconds, 0.01f);
+            _burstUntil = Time.time + _burstSeconds;
+        }
+
         private void OnEnable()
         {
             Collect();
@@ -258,6 +279,11 @@ namespace CrazyBowling.Lanes
 
             float time = Time.time;
 
+            // 弾ける演出の残り（1から0へ）。呼ばれていなければ0で、下の式は元のまま
+            float burst = _burstUntil > time ? (_burstUntil - time) / _burstSeconds : 0f;
+            float burstLevel = 1f + (burstBrightness - 1f) * burst;
+            float hueTime = time + burst * burst * _burstSeconds * (burstHueSpeedScale - 1f);
+
             for (int i = 0; i < _lamps.Length; i++)
             {
                 Lamp lamp = _lamps[i];
@@ -267,14 +293,14 @@ namespace CrazyBowling.Lanes
                 }
 
                 float band = BandFor(lamp, time);
-                float level = Mathf.Lerp(dimLevel, brightLevel, band);
+                float level = Mathf.Lerp(dimLevel, brightLevel, band) * burstLevel;
                 if (lamp.Channel == Channel.Panel)
                 {
                     level *= panelLevelScale;
                 }
 
                 float hue = Mathf.Repeat(
-                    lamp.HueOffset + lamp.Position * hueSpread - time * hueSpeed, 1f);
+                    lamp.HueOffset + lamp.Position * hueSpread - hueTime * hueSpeed, 1f);
                 Color color = Color.HSVToRGB(hue, saturation, 1f);
 
                 _block.Clear();
