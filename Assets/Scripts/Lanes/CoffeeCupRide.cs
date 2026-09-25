@@ -111,9 +111,6 @@ namespace CrazyBowling.Lanes
         /// <summary>席に着かせたピン。</summary>
         private Pins.Pin[] _seated;
 
-        /// <summary>席に着かせる前の kinematic の状態。レーンを出るときに戻す。</summary>
-        private bool[] _wasKinematic;
-
         /// <summary>
         /// いま運んでいる最中か。降ろしたら false になり、
         /// kinematic の張り直しも姿勢の上書きも止まる。
@@ -148,7 +145,6 @@ namespace CrazyBowling.Lanes
             // ボールが壁に当たったように跳ね返る
             Release(false);
             _seated = null;
-            _wasKinematic = null;
         }
 
         /// <summary>
@@ -173,34 +169,24 @@ namespace CrazyBowling.Lanes
         {
             Release(false);
             _seated = null;
-            _wasKinematic = null;
 
             if (pinSet == null)
             {
                 return;
             }
 
+            // ★席に着かせる前の kinematic の状態は覚えない。
+            //   前のレーンで遠くへ飛んだピンは kinematic のまま来ることがあり、
+            //   それを「元の状態」として降ろすときに戻すと、そのピンが動かなくなる
+            //   （8本目で散らしてから入ると、中まで通しても3本しか倒れなかった）
             var pins = pinSet.Pins;
             _seated = new Pins.Pin[pins.Count];
-            _wasKinematic = new bool[pins.Count];
             _previousSeat = new Vector3[pins.Count];
             _seatVelocity = new Vector3[pins.Count];
 
             for (int i = 0; i < pins.Count; i++)
             {
                 _seated[i] = pins[i];
-                if (pins[i] == null)
-                {
-                    continue;
-                }
-
-                var body = pins[i].GetComponent<Rigidbody>();
-                if (body == null)
-                {
-                    continue;
-                }
-
-                _wasKinematic[i] = body.isKinematic;
             }
 
             _riding = true;
@@ -215,6 +201,10 @@ namespace CrazyBowling.Lanes
         ///
         /// ★ここで _riding を false にするのが要点。
         ///   これ以降、kinematic の張り直しも姿勢の上書きも起きない。
+        /// ★降ろすときは、元の状態に関係なく必ず kinematic を外す。
+        ///   すでに降ろし終えたあと（運転も座り直しもしていない）に呼ばれたときは、
+        ///   ピンはもう乗り物の手を離れているので触らない。
+        ///   飛んで消えたピン（kinematic で隠れている）を動かし直さないため。
         /// </summary>
         /// <param name="handOverVelocity">
         /// 台の速度をピンに渡すか。減速し切っていればほぼ0だが、
@@ -222,10 +212,11 @@ namespace CrazyBowling.Lanes
         /// </param>
         public void Release(bool handOverVelocity)
         {
+            bool carrying = _riding || _reseatRemaining > 0f;
             _riding = false;
             _reseatRemaining = 0f;
 
-            if (_seated == null)
+            if (_seated == null || !carrying)
             {
                 return;
             }
@@ -243,9 +234,9 @@ namespace CrazyBowling.Lanes
                     continue;
                 }
 
-                body.isKinematic = _wasKinematic[i];
+                body.isKinematic = false;
 
-                if (handOverVelocity && !body.isKinematic
+                if (handOverVelocity
                     && _seatVelocity != null && i < _seatVelocity.Length)
                 {
                     body.linearVelocity = _seatVelocity[i];
@@ -284,9 +275,13 @@ namespace CrazyBowling.Lanes
                     continue;
                 }
 
-                // 戻している間に倒れないよう、先に kinematic にする
-                body.linearVelocity = Vector3.zero;
-                body.angularVelocity = Vector3.zero;
+                // 戻している間に倒れないよう、先に kinematic にする。
+                // kinematic の相手に速度を書くと警告が出るので、動いているピンだけ止める
+                if (!body.isKinematic)
+                {
+                    body.linearVelocity = Vector3.zero;
+                    body.angularVelocity = Vector3.zero;
+                }
                 body.isKinematic = true;
             }
 
