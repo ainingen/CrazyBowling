@@ -203,6 +203,18 @@ namespace CrazyBowling.Ball
         /// <summary>転がり終わって決着したか。判定はここから始まる。</summary>
         public bool IsSettled => _state == BallState.Settled;
 
+        /// <summary>
+        /// 外から動かしている最中か（10本目：ボールをレールに乗せて宙返りさせる間）。
+        ///
+        /// レールの上ではボールを kinematic にして位置を直接渡すので、速度が0に見える。
+        /// そのままだと1秒で「停止した」と決着してしまうため、true の間は止まったかの判定を休む。
+        /// 場外に落ちた・時間切れの判定は続ける。
+        ///
+        /// ★false なら今までどおり。1〜9本目は誰も true にしないので挙動は変わらない。
+        /// ★構えに戻すときに必ず false に戻す（入れっぱなしを残さない）。
+        /// </summary>
+        public bool IsExternallyDriven { get; set; }
+
         /// <summary>投球中か（転がり中または決着待ち）。カメラの追従に使う。</summary>
         public bool IsInPlay => _state == BallState.Rolling || _state == BallState.Settled;
 
@@ -357,7 +369,12 @@ namespace CrazyBowling.Ball
                 return;
             }
 
-            if (_rigidbody.linearVelocity.magnitude < stopVelocityThreshold)
+            if (IsExternallyDriven)
+            {
+                // 外から動かしている間は、速度が0に見えても止まってはいない
+                _stopTimer = 0f;
+            }
+            else if (_rigidbody.linearVelocity.magnitude < stopVelocityThreshold)
             {
                 _stopTimer += Time.deltaTime;
                 if (_stopTimer >= stopWaitSeconds)
@@ -642,6 +659,7 @@ namespace CrazyBowling.Ball
             _state = BallState.Aiming;
             _rollingTimer = 0f;
             _stopTimer = 0f;
+            IsExternallyDriven = false;
             _sideSpin = 0f;
             _curveSlip = 0f;
             _driftAccumulated = 0f;
