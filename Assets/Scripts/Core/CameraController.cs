@@ -44,6 +44,13 @@ namespace CrazyBowling.Core
         public bool ExternalControl { get; set; }
 
         /// <summary>
+        /// 追従中のずれを、レーンの都合で上書きする。null なら Inspector の followOffset を使う。
+        /// 輪をくぐるレーンなどで、カメラが見た目の中を通り抜けないようにするため。
+        /// 使うレーンは、入ったときに入れて、出るときに null へ戻すこと（前の値は覚えない）。
+        /// </summary>
+        public Vector3? FollowOffsetOverride { get; set; }
+
+        /// <summary>
         /// 構え中の視点を、レーンの目印に合わせる。GameManager がレーンを差し替えたときに呼ぶ。
         /// レーンをまたぐときは滑らかに動かす意味が無いので、その場で切り替える。
         /// </summary>
@@ -102,7 +109,8 @@ namespace CrazyBowling.Core
                 return;
             }
 
-            Vector3 desiredPosition = target.position + followOffset;
+            Vector3 offset = FollowOffsetOverride ?? followOffset;
+            Vector3 desiredPosition = target.position + offset;
             transform.position = Vector3.SmoothDamp(
                 transform.position, desiredPosition, ref _positionVelocity, followSmoothTime);
 

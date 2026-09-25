@@ -125,6 +125,12 @@ namespace CrazyBowling.Lanes
         [Tooltip("Burst() の間、色の輪を何倍の速さで回すか。")]
         [SerializeField] private float burstHueSpeedScale = 8f;
 
+        [Header("集める相手")]
+        [Tooltip("入れると、このマテリアルを使っている見た目だけを光らせる。" +
+                 "空なら子の見た目をすべて光らせる（8本目・9本目はこちら）。" +
+                 "ガラスや磁石と同じ入れ物にネオンを混ぜるとき（10本目）に使う。")]
+        [SerializeField] private Material onlyMaterial;
+
         /// <summary>
         /// 数秒だけ、明るさと色の回りを跳ね上げる（9本目：神殿が吹き飛んだ瞬間）。
         /// 呼ばなければ何も変わらない。8本目は呼ばない。
@@ -172,6 +178,12 @@ namespace CrazyBowling.Lanes
 
             foreach (Renderer meshRenderer in GetComponentsInChildren<Renderer>(true))
             {
+                // マテリアルを指定したときは、それ以外（ガラス・磁石など）には触らない
+                if (onlyMaterial != null && meshRenderer.sharedMaterial != onlyMaterial)
+                {
+                    continue;
+                }
+
                 string partName = meshRenderer.gameObject.name;
                 Channel channel = ClassifyName(partName, out int order, out int group);
 

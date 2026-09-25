@@ -20,6 +20,10 @@ namespace CrazyBowling.Lanes
         [Tooltip("輪の区間でボールを運ぶレール。")]
         [SerializeField] private CoasterRail rail;
 
+        [Header("見た目")]
+        [Tooltip("ピンに当たった瞬間の閃光（見た目だけ）。空でもよい。")]
+        [SerializeField] private CoasterImpactFlash impactFlash;
+
         public override void OnLaneStart(LaneContext context)
         {
             base.OnLaneStart(context);
@@ -37,6 +41,12 @@ namespace CrazyBowling.Lanes
             if (rail != null)
             {
                 rail.ResetState();
+            }
+
+            // 閃光は投げるたびに1回ぶん用意する（判定・物理には関わらない）
+            if (impactFlash != null)
+            {
+                impactFlash.Arm();
             }
         }
 

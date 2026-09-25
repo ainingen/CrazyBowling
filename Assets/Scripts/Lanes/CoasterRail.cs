@@ -80,6 +80,9 @@ namespace CrazyBowling.Lanes
 
             [Tooltip("左右の揺れの周期（秒）。輪と割り切れない値にする。")]
             public float swayPeriod = 4.3f;
+
+            [Tooltip("床と一緒に動かす見た目の飾り（磁石など）。当たり判定は付けないこと。空でもよい。")]
+            public Transform visual;
         }
 
         [Header("輪")]
@@ -152,6 +155,7 @@ namespace CrazyBowling.Lanes
         /// <summary>動く床と見た目の、揺れていないときの位置（レーン基準）。</summary>
         private Vector3[] _floorBase;
         private Vector3[] _visualBase;
+        private Vector3[] _floorVisualBase;
 
         /// <summary>この投球で落ちた輪（落ちていなければ −1）。確認用。</summary>
         public int FailedLoop { get; private set; } = -1;
@@ -173,11 +177,16 @@ namespace CrazyBowling.Lanes
         {
             int nf = movingFloors == null ? 0 : movingFloors.Length;
             _floorBase = new Vector3[nf];
+            _floorVisualBase = new Vector3[nf];
             for (int i = 0; i < nf; i++)
             {
                 if (movingFloors[i].body != null)
                 {
                     _floorBase[i] = transform.InverseTransformPoint(movingFloors[i].body.position);
+                }
+                if (movingFloors[i].visual != null)
+                {
+                    _floorVisualBase[i] = movingFloors[i].visual.localPosition;
                 }
             }
 
@@ -209,6 +218,9 @@ namespace CrazyBowling.Lanes
 
             _time = 0f;
         }
+
+        private float LoopPhase(int k) => _loopPhase != null && k < _loopPhase.Length ? _loopPhase[k] : 0f;
+        private float FloorPhase(int i) => _floorPhase != null && i < _floorPhase.Length ? _floorPhase[i] : 0f;
 
         private static float Wave(float amplitude, float period, float phase, float time)
             => period <= 0f ? 0f : amplitude * Mathf.Sin(2f * Mathf.PI * time / period + phase);
@@ -272,7 +284,7 @@ namespace CrazyBowling.Lanes
             return false;
         }
 
-        /// <summary>時刻を進め、動く床と輪の見た目を動かす。</summary>
+        /// <summary>時刻を進め、動く床（当たり判定のある体）を動かす。見た目は LateUpdate で動かす。</summary>
         private void AdvanceSway(float deltaTime)
         {
             _time += deltaTime;
@@ -292,12 +304,41 @@ namespace CrazyBowling.Lanes
                     body.MovePosition(transform.TransformPoint(target));
                 }
             }
+        }
+
+        /// <summary>
+        /// 輪と動く床の見た目を、描画のたびに動かす。
+        /// 物理の刻み（50回／秒）で動かすと、補間して滑らかに動くボールや床に対して
+        /// 見た目だけがカクついてずれて見える。Rigidbody の補間と同じく
+        /// 「ひとつ前のステップから今のステップまでの途中」の時刻で揺れを計算する。
+        /// 物理には一切触らない（当たり判定のある床の体は AdvanceSway が動かす）。
+        /// </summary>
+        private void LateUpdate()
+        {
+            float step = Time.fixedDeltaTime;
+            float alpha = step > 0f ? Mathf.Clamp01((Time.time - Time.fixedTime) / step) : 1f;
+            float drawTime = _time - step * (1f - alpha);
 
             for (int k = 0; k < loops.Length; k++)
             {
                 if (loops[k].visual != null)
                 {
-                    loops[k].visual.localPosition = _visualBase[k] + Vector3.right * LoopSway(k);
+                    float sway = Wave(loops[k].swayAmplitude, loops[k].swayPeriod, LoopPhase(k), drawTime);
+                    loops[k].visual.localPosition = _visualBase[k] + Vector3.right * sway;
+                }
+            }
+
+            if (movingFloors == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < movingFloors.Length; i++)
+            {
+                if (movingFloors[i].visual != null)
+                {
+                    float sway = Wave(movingFloors[i].swayAmplitude, movingFloors[i].swayPeriod, FloorPhase(i), drawTime);
+                    movingFloors[i].visual.localPosition = _floorVisualBase[i] + Vector3.right * sway;
                 }
             }
         }
