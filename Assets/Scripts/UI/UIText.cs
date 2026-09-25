@@ -118,7 +118,7 @@ namespace CrazyBowling.UI
         public const string LaneRotatingTubeName = "ROTATING TUBE";
         public const string LaneLowGravityName = "LOW GRAVITY";
         public const string LaneTempleOfStrikeName = "TEMPLE OF STRIKE";
-        public const string LaneCoasterName = "ROLLER COASTER";
+        public const string LaneBallColliderName = "BALL COLLIDER";
 
         // ======== レーンの一言（日本語・翻訳調） ========
         // 上の方針に従うこと。文法は正しく、語の選び方だけをわずかに硬くする。
@@ -153,7 +153,7 @@ namespace CrazyBowling.UI
         public const string LaneTempleOfStrikeDescription =
             "台が回転しております。中まで通ると大変なことになります。";
 
-        public const string LaneCoasterDescription =
-            "起伏の激しい経路です。ボールの安全は保証されません。";
+        public const string LaneBallColliderDescription =
+            "本装置はボウリングの球を加速するために建設されました。ほかの用途はございません。";
     }
 }
