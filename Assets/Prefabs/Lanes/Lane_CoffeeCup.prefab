@@ -22177,7 +22177,7 @@ GameObject:
   m_Component:
   - component: {fileID: 624868914047555567}
   m_Layer: 0
-  m_Name: Parthenon
+  m_Name: TempleFacade
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -50399,6 +50399,8 @@ MonoBehaviour:
   debrisSpin: 540
   debrisGravity: 9.81
   groundHeight: 0.05
+  laneHalfWidth: 0.8
+  outsideGroundHeight: -0.3
   debrisBounce: 0.3
   debrisGroundDamping: 0.6
   flashLight: {fileID: 3297603749674277678}
