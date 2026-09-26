@@ -100265,6 +100265,13 @@ MonoBehaviour:
   railBPhase: 0
   rotationPeriod: -1
   rotationPhase: 0
+  thrustStartZ: 6.9
+  thrustRampLength: 0.2
+  thrustEndZ: 9
+  thrustAcceleration: 6
+  thrustFadeSpeed: 2.5
+  thrustGlow: {fileID: 243961313696843432}
+  thrustGlowSeconds: 1.5
   laneLength: 18
   laneWidth: 1.05
   floorThickness: 0.1
@@ -143113,8 +143120,8 @@ MonoBehaviour:
   pulseSpeed: 0.5
   hueSpeed: 0.25
   hueSpread: 0.5
-  burstBrightness: 3
-  burstHueSpeedScale: 8
+  burstBrightness: 2
+  burstHueSpeedScale: 4
   onlyMaterial: {fileID: 2100000, guid: 4a7b0422dd69fe1458b95b0b69d5d707, type: 2}
 --- !u!1 &6609439450595943530
 GameObject:

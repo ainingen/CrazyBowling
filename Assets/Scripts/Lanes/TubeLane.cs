@@ -1,4 +1,5 @@
 using UnityEngine;
+using CrazyBowling.Ball;
 
 namespace CrazyBowling.Lanes
 {
@@ -228,6 +229,30 @@ namespace CrazyBowling.Lanes
 
         [Tooltip("開始角度のずらし（1で一回転ぶん）。")]
         [SerializeField] private float rotationPhase = 0f;
+
+        [Header("推力（筒で止まりかけたボールを出口へ押し出す）")]
+        [Tooltip("推力が効き始める奥行き（m）。羽根1組目が終わるところ（壁を駆け上がって回り終えたあと）に置く。")]
+        [SerializeField] private float thrustStartZ = 6.9f;
+
+        [Tooltip("効き始めてから全力になるまでの長さ（m）。")]
+        [SerializeField] private float thrustRampLength = 0.2f;
+
+        [Tooltip("推力が終わる奥行き（m）。筒の出口。")]
+        [SerializeField] private float thrustEndZ = 9f;
+
+        [Tooltip("いちばん強いときの加速度（m/s²）。0で推力なし。" +
+                 "止まる球が出てこられる最低限にする。強すぎると、筒を出た球が速すぎる。")]
+        [SerializeField] private float thrustAcceleration = 3f;
+
+        [Tooltip("この前向きの速さ（m/s）以上の球には推力が効かない。" +
+                 "止まりかけの遅い球に強く効き、速い球にはあまり効かない。")]
+        [SerializeField] private float thrustFadeSpeed = 2.5f;
+
+        [Tooltip("推力が強く効き始めたときに、ひと呼吸強める排気の光。空なら何もしない。")]
+        [SerializeField] private NeonFlow thrustGlow;
+
+        [Tooltip("排気の光を強める長さ（秒）。点滅ではなく、この長さをかけて元に戻る。")]
+        [SerializeField] private float thrustGlowSeconds = 1.5f;
 
         [Header("レーンの実寸")]
         [Tooltip("レーンの長さ（m）。")]
@@ -948,11 +973,88 @@ namespace CrazyBowling.Lanes
                 ? 2f * Mathf.PI * railTrackRadius / Mathf.Abs(rotationPeriod)
                 : 0f;
 
-        /// <summary>レーンの毎フレーム更新。見た目の筒とレールを回す。</summary>
+        /// <summary>レーンの毎フレーム更新。見た目の筒とレールを回し、筒の後半の球を推力で押す。</summary>
         protected override void OnLaneFixedUpdate(float deltaTime)
         {
             _time += deltaTime;
             ApplyRotation();
+            ApplyThrust();
+        }
+
+        /// <summary>推力の設定をまとめる。</summary>
+        public TubeThrustSettings ThrustSettings => new TubeThrustSettings
+        {
+            startZ = thrustStartZ,
+            rampLength = thrustRampLength,
+            endZ = thrustEndZ,
+            acceleration = thrustAcceleration,
+            fadeSpeed = thrustFadeSpeed,
+        };
+
+        /// <summary>この投球で、もう排気の光を強めたか。</summary>
+        private bool _thrustGlowFired;
+
+        /// <summary>推力をかける相手（ボールの Rigidbody）。</summary>
+        private Rigidbody _ballBody;
+
+        /// <summary>
+        /// 筒の後半にいる転がり中のボールを、出口の向き（レーンの +z）へ押す。
+        ///
+        /// BallController の横流しの差し込み口（TryGetDrift）は使わない。
+        /// あちらは水平の速さが 0.1m/s 未満だと力をかけない門があり、
+        /// 止まる寸前の球（ここで押したい球）に効かなくなるため。
+        /// 7本目だけの処理なので、ほかのレーンの物理は変わらない。
+        /// </summary>
+        private void ApplyThrust()
+        {
+            BallController ball = Context.ball;
+            if (ball == null)
+            {
+                return;
+            }
+
+            // 構え中は投球が変わったとみなす（次に強く効いたとき、また排気を強める）
+            if (!ball.IsInPlay)
+            {
+                _thrustGlowFired = false;
+                return;
+            }
+
+            if (ball.IsSettled || thrustAcceleration <= 0f)
+            {
+                return;
+            }
+
+            // ボールの Rigidbody はレーンにいる間ずっと同じなので、1回探して使い回す
+            if (_ballBody == null || _ballBody.gameObject != ball.gameObject)
+            {
+                _ballBody = ball.GetComponent<Rigidbody>();
+            }
+
+            Rigidbody body = _ballBody;
+            if (body == null || body.isKinematic)
+            {
+                return;
+            }
+
+            Vector3 forward = transform.forward;
+            float localZ = transform.InverseTransformPoint(body.position).z;
+            float forwardSpeed = Vector3.Dot(body.linearVelocity, forward);
+
+            float acceleration = TubeThrust.CalculateAcceleration(localZ, forwardSpeed, ThrustSettings);
+            if (acceleration <= 0f)
+            {
+                return;
+            }
+
+            body.AddForce(forward * acceleration, ForceMode.Acceleration);
+
+            // 強く効き始めた最初の1回だけ、排気の虹をひと呼吸強める（吹き出した合図）
+            if (!_thrustGlowFired && acceleration >= thrustAcceleration * 0.5f && thrustGlow != null)
+            {
+                thrustGlow.Burst(thrustGlowSeconds);
+                _thrustGlowFired = true;
+            }
         }
 
         /// <summary>
