@@ -101,6 +101,54 @@ namespace CrazyBowling.UI
         /// <summary>奥を見るボタン。</summary>
         public const string LookAhead = "LOOK AHEAD";
 
+        // ======== 演出（段階6） ========
+
+        /// <summary>レーンに入ったときの大見出しの上の小さな札。{0} がレーン番号。</summary>
+        public const string LaneTagFormat = "LANE {0:00}";
+
+        /// <summary>ストライクの大文字。</summary>
+        public const string CalloutStrike = "STRIKE!";
+
+        /// <summary>スペアの大文字。</summary>
+        public const string CalloutSpare = "SPARE!";
+
+        /// <summary>1本も倒れなかった投の大文字（情けない演出）。</summary>
+        public const string CalloutGutter = "GUTTER...";
+
+        /// <summary>得点が入ったときに浮かぶ数字。{0} が増えた点。</summary>
+        public const string ScoreGainFormat = "+{0}";
+
+        /// <summary>得点板の合計の見出し。</summary>
+        public const string TotalHeading = "TOTAL";
+
+        // ======== タイトル ========
+
+        /// <summary>タイトルのロゴ（上の段）。</summary>
+        public const string TitleLogoTop = "CRAZY";
+
+        /// <summary>タイトルのロゴ（下の段）。</summary>
+        public const string TitleLogoBottom = "BOWLING";
+
+        /// <summary>タイトルの一言。説明書口調（上の方針に従う）。</summary>
+        public const string TitleTagline =
+            "本製品には、少々変わったレーンが10本収録されております。";
+
+        /// <summary>タイトルの注意書き。説明書口調。</summary>
+        public const string TitleNotice =
+            "安全のため、投球は画面の中でのみ行ってください。";
+
+        /// <summary>始めるボタン。</summary>
+        public const string TitleStart = "CLICK TO START";
+
+        // ======== リザルト（段階6） ========
+
+        /// <summary>リザルトの評価。{0} が S〜D。</summary>
+        public const string RankFormat = "RANK {0}";
+
+        /// <summary>リザルトの締めの一言。説明書口調。</summary>
+        public const string ResultComment =
+            "以上で本日のボウリングは終了です。またのご利用をお待ちしております。";
+
         // ======== その他 ========
 
         /// <summary>縦画面のときの案内。</summary>

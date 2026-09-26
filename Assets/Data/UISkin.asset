@@ -1,0 +1,41 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 684e2af96b774d74289a85868f8fa798, type: 3}
+  m_Name: UISkin
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.UI.UISkin
+  boldFont: {fileID: 11400000, guid: 606c138ec109cde4e882eacc4ef06526, type: 2}
+  regularFont: {fileID: 11400000, guid: 36b63c1f35133d643bb1dccb285eae13, type: 2}
+  boldNeonMaterial: {fileID: 2100000, guid: 266583ea069e2354d8001e43967ea6c3, type: 2}
+  boldPlainMaterial: {fileID: 2100000, guid: 170a7b45b620a444aa0b9c3b36ababef, type: 2}
+  regularPlainMaterial: {fileID: 2100000, guid: 5791215849d46c24b9e8e7fc2f0b33b7, type: 2}
+  neonFrame: {fileID: 21300000, guid: 97eb7321e9d5640449ef9888c640f2ec, type: 3}
+  panel: {fileID: 21300000, guid: f4fc741299e35614e88205b86995ad33, type: 3}
+  glow: {fileID: 21300000, guid: 0a08a897a7f2f274c8ed3f5a721674b2, type: 3}
+  ray: {fileID: 21300000, guid: 1eab47c63a318bd48973fdef66871521, type: 3}
+  band: {fileID: 21300000, guid: 502635adf107f5646aae533610989c90, type: 3}
+  confetti: {fileID: 21300000, guid: c9c07fa3cdf360a428b9b15f191ae282, type: 3}
+  star: {fileID: 21300000, guid: 80d77c5989c4fbd4fbc598ac34d6f5fe, type: 3}
+  ring: {fileID: 21300000, guid: 5ec94e002aae51f4db25ae962c1c6067, type: 3}
+  laneAccents:
+  - {r: 1, g: 0.62, b: 0.15, a: 1}
+  - {r: 0.25, g: 0.75, b: 1, a: 1}
+  - {r: 1, g: 0.82, b: 0.35, a: 1}
+  - {r: 1, g: 0.25, b: 0.85, a: 1}
+  - {r: 1, g: 0.3, b: 0.25, a: 1}
+  - {r: 0.3, g: 0.95, b: 1, a: 1}
+  - {r: 1, g: 0.45, b: 0.5, a: 1}
+  - {r: 0.45, g: 1, b: 0.55, a: 1}
+  - {r: 1, g: 0.85, b: 0.2, a: 1}
+  - {r: 0.3, g: 0.6, b: 1, a: 1}
+  defaultAccent: {r: 1, g: 0.3, b: 0.8, a: 1}
+  gold: {r: 1, g: 0.82, b: 0.2, a: 1}
+  panelColor: {r: 0.02, g: 0.02, b: 0.06, a: 0.78}

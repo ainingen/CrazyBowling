@@ -5,6 +5,28 @@ using CrazyBowling.Pins;
 
 namespace CrazyBowling.Core
 {
+    /// <summary>1投を判定した結果。見た目の演出に渡す。</summary>
+    public struct ThrowJudgement
+    {
+        /// <summary>何投目か（1から数える）。</summary>
+        public int throwNumber;
+
+        /// <summary>この1投で倒した本数。</summary>
+        public int fallen;
+
+        /// <summary>このレーンで倒した合計本数。</summary>
+        public int totalFallen;
+
+        /// <summary>立っていたピンの本数。</summary>
+        public int pinCount;
+
+        /// <summary>ストライクか。</summary>
+        public bool isStrike;
+
+        /// <summary>スペアか。</summary>
+        public bool isSpare;
+    }
+
     /// <summary>
     /// レーン1本ぶんの投球進行。
     /// 投げる → ボールが決着 → ピンの静止を待つ → 倒れた本数を判定 → 次の投球 or レーン終了。
@@ -73,6 +95,12 @@ namespace CrazyBowling.Core
 
         /// <summary>1投が決着した瞬間に呼ばれる。</summary>
         public event System.Action ThrowEnded;
+
+        /// <summary>
+        /// 1投の倒れた本数を判定した瞬間に呼ばれる（STRIKE! などの見た目の演出に使う）。
+        /// 判定と進行はこれを待たない。聞く相手がいなければ何も起きない。
+        /// </summary>
+        public event System.Action<ThrowJudgement> ThrowJudged;
 
         /// <summary>
         /// レーン1本を始める。ピンを立て直し、1投目から数え直す。
@@ -237,6 +265,18 @@ namespace CrazyBowling.Core
             }
 
             _prepareTimer = 0f;
+
+            // 見た目の演出（STRIKE! など）のための知らせ。判定と流れには関わらない。
+            // 聞く相手がいなければ何も起きない
+            ThrowJudged?.Invoke(new ThrowJudgement
+            {
+                throwNumber = _throwNumber,
+                fallen = fallen,
+                totalFallen = total,
+                pinCount = pinSet.PinCount,
+                isStrike = ThrowProgress.IsStrike(_throwNumber, total, settings),
+                isSpare = ThrowProgress.IsSpare(_throwNumber, total, settings),
+            });
 
             if (ThrowProgress.HasNextThrow(_throwNumber, total, settings))
             {

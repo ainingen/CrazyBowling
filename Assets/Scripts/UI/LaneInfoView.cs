@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.UI;
 using TMPro;
 using CrazyBowling.Core;
 using CrazyBowling.Data;
@@ -7,6 +8,7 @@ namespace CrazyBowling.UI
 {
     /// <summary>
     /// 今どのレーンにいるかを出す。レーン名と進み具合、入ったときの一言。
+    /// 段階6：レーン名はそのレーンの差し色で光らせる。一言（説明文）は淡々と白い文字で出す。
     /// </summary>
     public class LaneInfoView : MonoBehaviour
     {
@@ -23,7 +25,18 @@ namespace CrazyBowling.UI
         [Tooltip("レーンに入ったときの一言を出すテキスト。")]
         [SerializeField] private TMP_Text hintLabel;
 
+        [Header("光（段階6）")]
+        [Tooltip("見た目の材料。空なら色を変えない。")]
+        [SerializeField] private UISkin skin;
+
+        [Tooltip("差し色に染める帯（空でもよい）。")]
+        [SerializeField] private Image accentBar;
+
         [Header("一言の出し方")]
+        [Tooltip("レーンに入ってから一言を出し始めるまでの間（秒）。" +
+                 "レーン名の大見出し（LaneIntroView）と重ならないようにする。0なら入った瞬間に出す。")]
+        [SerializeField] private float hintDelaySeconds = 0f;
+
         [Tooltip("一言を出しておく時間（秒）。" +
                  "説明は2文で最長35字あり、ゆっくり読むと5秒ほどかかる。" +
                  "下見カメラが流れている間と重なるので、短くしすぎないこと。")]
@@ -71,7 +84,31 @@ namespace CrazyBowling.UI
                 laneNameLabel.text = lane != null ? lane.LaneName : string.Empty;
             }
 
+            UpdateAccent();
             UpdateHint(lane);
+        }
+
+        /// <summary>レーンに入り直したときのように、一言を最初から出し直す（タイトルから始めたとき）。</summary>
+        public void Replay()
+        {
+            _shownLaneNumber = -1;
+        }
+
+        /// <summary>レーン名と帯を、そのレーンの差し色にする。</summary>
+        private void UpdateAccent()
+        {
+            if (skin == null)
+            {
+                return;
+            }
+
+            Color accent = skin.GetAccent(gameManager.LaneNumber);
+            float breath = NeonUI.Breath(2.4f);
+            NeonUI.SetNeonColor(laneNameLabel, accent, 0.35f + 0.2f * breath);
+            if (accentBar != null)
+            {
+                accentBar.color = Color.Lerp(accent, Color.white, 0.2f * breath);
+            }
         }
 
         /// <summary>レーンが変わったら一言を出し直し、時間が経ったら消す。</summary>
@@ -96,11 +133,13 @@ namespace CrazyBowling.UI
 
             _hintTimer += Time.deltaTime;
 
-            float alpha = 1f;
-            if (_hintTimer > hintSeconds)
+            // 出し始めるまでは消しておく。出てから hintSeconds のあいだ出し、ゆっくり消す
+            float shown = _hintTimer - hintDelaySeconds;
+            float alpha = shown < 0f ? 0f : Mathf.Clamp01(shown / 0.3f);
+            if (shown > hintSeconds)
             {
                 float fade = Mathf.Max(hintFadeSeconds, 0.01f);
-                alpha = Mathf.Clamp01(1f - (_hintTimer - hintSeconds) / fade);
+                alpha = Mathf.Clamp01(1f - (shown - hintSeconds) / fade);
             }
 
             Color color = hintLabel.color;
