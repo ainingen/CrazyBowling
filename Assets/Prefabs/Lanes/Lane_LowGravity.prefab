@@ -38858,7 +38858,6 @@ GameObject:
   - component: {fileID: 7695417116891709934}
   - component: {fileID: 3021686316425006599}
   - component: {fileID: 5746223034066113167}
-  - component: {fileID: 6207056463834396437}
   - component: {fileID: 2152877134439417933}
   - component: {fileID: 1770342424322064749}
   - component: {fileID: 1120272873768761433}
@@ -38928,21 +38927,6 @@ MonoBehaviour:
   dryFriction: 1
   tiltRoot: {fileID: 6119370800037402282}
   tiltDegrees: 0
---- !u!114 &6207056463834396437
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6309402574153263227}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: ad54b40b8a58edf459d71cb1748df796, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Lanes.LaneBallLook
-  ballMaterial: {fileID: 2100000, guid: 263d9767b136a364aaf383397c8a78d7, type: 2}
-  spinVisual: 0
-  spinDegreesPerSecond: 120
 --- !u!114 &2152877134439417933
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -54186,6 +54170,9 @@ MonoBehaviour:
   pulseSpeed: 0.5
   hueSpeed: 0.08
   hueSpread: 0.8
+  burstBrightness: 3
+  burstHueSpeedScale: 8
+  onlyMaterial: {fileID: 0}
 --- !u!1 &8978791274373239397
 GameObject:
   m_ObjectHideFlags: 0

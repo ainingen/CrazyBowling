@@ -15,7 +15,7 @@ MonoBehaviour:
   laneName: STRAIGHT
   description: "\u6A19\u6E96\u306E\u30EC\u30FC\u30F3\u3067\u3059\u3002\u7279\u5225\u306A\u4ED5\u639B\u3051\u306F\u7528\u610F\u3055\u308C\u3066\u304A\u308A\u307E\u305B\u3093\u3002"
   hintText: 
-  lanePrefab: {fileID: 6309402574153263227, guid: 4a1ff78bb397c2b4bbc8643d7ec6383f, type: 3}
+  lanePrefab: {fileID: 1877944741577505169, guid: 6474ed225799d56448d405749d10e3f9, type: 3}
   maxAngleDegrees: 2
   throwCount: 2
   scoreMultiplier: 1
