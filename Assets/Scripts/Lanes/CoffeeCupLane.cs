@@ -248,6 +248,11 @@ namespace CrazyBowling.Lanes
                 if (!_reseatStarted && ball.IsAiming && ride != null)
                 {
                     _reseatStarted = true;
+
+                    // ★速さの率を1に戻す。止めたときに0にしたままだと、
+                    //   座り直しが終わって運転を再開しても速さ0で、2投目の構え中に神殿が止まったままになる
+                    //   （投げた瞬間の Arm() でしか戻らなかった）。座り直しの間はこの率を使わない
+                    _rideSpeedScale = 1f;
                     ride.BeginReseat();
                     if (logEvents)
                     {
