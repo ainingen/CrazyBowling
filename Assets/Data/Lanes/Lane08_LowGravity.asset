@@ -19,3 +19,4 @@ MonoBehaviour:
   maxAngleDegrees: 2
   throwCount: 2
   scoreMultiplier: 1
+  pinLook: {fileID: 11400000, guid: 0cfde70f551fb494fb43c8a73bdf0d3e, type: 2}

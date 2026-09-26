@@ -13,6 +13,9 @@ namespace CrazyBowling.Pins
         [Tooltip("並べる対象。手前から 1, 2, 3, 4 列の順に10本入れる。")]
         [SerializeField] private Pin[] pins;
 
+        [Tooltip("レーンが見た目を持たないときに付ける、標準のピンの見た目（段階6）。")]
+        [SerializeField] private PinLook defaultLook;
+
         [Tooltip("横の間隔（m）。実際のボウリングは 0.3048（12インチ）。")]
         [SerializeField] private float pinSpacing = 0.3048f;
 
@@ -70,6 +73,28 @@ namespace CrazyBowling.Pins
         /// </summary>
         public IReadOnlyList<Pin> Pins =>
             pins ?? (IReadOnlyList<Pin>)System.Array.Empty<Pin>();
+
+        /// <summary>
+        /// 10本のピンに見た目を付ける（段階6）。GameManager がレーンに入るたびに呼ぶ。
+        /// look が null なら、標準の見た目（defaultLook）を付ける。
+        /// ★毎回明示的に上書きする。前の見た目を覚えて戻すことはしない。
+        /// </summary>
+        public void ApplyLook(PinLook look)
+        {
+            PinLook chosen = look != null ? look : defaultLook;
+            if (pins == null || chosen == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < pins.Length; i++)
+            {
+                if (pins[i] != null)
+                {
+                    pins[i].ApplyLook(chosen, i);
+                }
+            }
+        }
 
         /// <summary>1投目で倒れた本数。段階3のスコア計算が読む。</summary>
         public int FirstThrowFallen { get; private set; }

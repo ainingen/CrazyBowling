@@ -285,6 +285,13 @@ namespace CrazyBowling.Core
                 _laneBehaviour.OnLaneStart(BuildContext(data));
             }
 
+            // ピンの見た目を、そのレーンのものに明示的に付ける（無ければ標準のピン）。
+            // 前の見た目を覚えて戻す作りにはしない。見た目だけで、物理には関わらない
+            if (pinSet != null)
+            {
+                pinSet.ApplyLook(data.PinLook);
+            }
+
             PlaceByAnchors();
             AlignToFloor();
             RefreshFloorLook();

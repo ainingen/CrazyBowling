@@ -38858,7 +38858,6 @@ GameObject:
   - component: {fileID: 7695417116891709934}
   - component: {fileID: 3021686316425006599}
   - component: {fileID: 5746223034066113167}
-  - component: {fileID: 2152877134439417933}
   - component: {fileID: 1770342424322064749}
   - component: {fileID: 1120272873768761433}
   m_Layer: 0
@@ -38927,29 +38926,6 @@ MonoBehaviour:
   dryFriction: 1
   tiltRoot: {fileID: 6119370800037402282}
   tiltDegrees: 0
---- !u!114 &2152877134439417933
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6309402574153263227}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5ad5f39721fc8a7419b100329b274068, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Lanes.LanePinLook
-  pinMaterials:
-  - {fileID: 2100000, guid: 7b9336ff5d45efe469af4ac2d0021483, type: 2}
-  - {fileID: 2100000, guid: 911d58350afdac0458416ba58e9bd023, type: 2}
-  - {fileID: 2100000, guid: 75dd0d588d5d9314c9447f59667792ed, type: 2}
-  - {fileID: 2100000, guid: f28e3ed3cd061774cb9a44ab45e26f90, type: 2}
-  - {fileID: 2100000, guid: 23de199dbd9678149a3d2630b778e58f, type: 2}
-  - {fileID: 2100000, guid: e4d7f799228e36247b08494eb742eae3, type: 2}
-  - {fileID: 2100000, guid: f91b2463db03fae4a91e76d1ff2569f2, type: 2}
-  - {fileID: 2100000, guid: 56c6cb268784d1f458d00e5f5af269ba, type: 2}
-  - {fileID: 2100000, guid: 0f3c5e4b9859b74408fa4f2abb206bc3, type: 2}
-  - {fileID: 2100000, guid: e3246fb564ed157418a9bc32b867fed0, type: 2}
 --- !u!114 &1770342424322064749
 MonoBehaviour:
   m_ObjectHideFlags: 0

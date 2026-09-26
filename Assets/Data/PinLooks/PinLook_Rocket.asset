@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535c0698d33f91149ae56e603d3ae0a4, type: 3}
+  m_Name: PinLook_Rocket
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Pins.PinLook
+  mesh: {fileID: 4300000, guid: fb888527e08441b41965dbacf8ff44ee, type: 2}
+  materials:
+  - {fileID: 2100000, guid: a520494a6ba6209409e19720db737ba5, type: 2}
+  - {fileID: 2100000, guid: 9f822c01980301445aeb886dc252c1a1, type: 2}
+  - {fileID: 2100000, guid: 7ee13b726314b084aa841a1dab6f0af8, type: 2}
+  - {fileID: 2100000, guid: d6d3cc5a99deef64482eaf0f63c514de, type: 2}
+  - {fileID: 2100000, guid: dd936e796c708104dba5efacbe233ada, type: 2}
+  variantSubmesh: 0
+  variantMaterials:
+  - {fileID: 2100000, guid: a520494a6ba6209409e19720db737ba5, type: 2}
+  - {fileID: 2100000, guid: fe0b5b32aeaaad34185d68249b482841, type: 2}
+  - {fileID: 2100000, guid: 0f5ae22b0e3feb54d9a83c8e05e99143, type: 2}
+  - {fileID: 2100000, guid: f711ae8f20f6d7648a981854b52dafc2, type: 2}
+  - {fileID: 2100000, guid: 6009e2b3ee926b247a380d95bd0503e4, type: 2}
+  - {fileID: 2100000, guid: f68cb65d7c3b5fa4e931ed5371eadb33, type: 2}

@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535c0698d33f91149ae56e603d3ae0a4, type: 3}
+  m_Name: PinLook_Snowman
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Pins.PinLook
+  mesh: {fileID: 4300000, guid: edb1bc02b6da61740a6655d428934e32, type: 2}
+  materials:
+  - {fileID: 2100000, guid: d1cfdd3b9bd131b45bba11f5d40f534b, type: 2}
+  - {fileID: 2100000, guid: a909487041ac1f841aff363b3af9fd3f, type: 2}
+  - {fileID: 2100000, guid: f61f35090962bc04fb6397c3ef35f8de, type: 2}
+  - {fileID: 2100000, guid: a909487041ac1f841aff363b3af9fd3f, type: 2}
+  - {fileID: 2100000, guid: 27e4520b8fc9cbc44b4bfab673f6c791, type: 2}
+  variantSubmesh: -1
+  variantMaterials: []

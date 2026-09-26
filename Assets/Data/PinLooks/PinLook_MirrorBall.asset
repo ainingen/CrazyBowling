@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535c0698d33f91149ae56e603d3ae0a4, type: 3}
+  m_Name: PinLook_MirrorBall
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Pins.PinLook
+  mesh: {fileID: 4300000, guid: 133fc6b68e43775449c4e29b6cf3662d, type: 2}
+  materials:
+  - {fileID: 2100000, guid: 6ef51491e2b5fce41bc38adad0fda6c6, type: 2}
+  variantSubmesh: -1
+  variantMaterials: []

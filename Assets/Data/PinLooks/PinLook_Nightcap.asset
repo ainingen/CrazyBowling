@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535c0698d33f91149ae56e603d3ae0a4, type: 3}
+  m_Name: PinLook_Nightcap
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Pins.PinLook
+  mesh: {fileID: 4300000, guid: 3902f9d738a460a4bb578e547b3e218a, type: 2}
+  materials:
+  - {fileID: 2100000, guid: ad41558c04c86b94cb33e00295f7297c, type: 2}
+  - {fileID: 2100000, guid: 0427ddf5c2bb29a419f28ffc098b764e, type: 2}
+  - {fileID: 2100000, guid: 94d60d3c421db6c42a8772c1342e0bfe, type: 2}
+  - {fileID: 2100000, guid: 53eaa7295a81120448d871652c9cf4c5, type: 2}
+  variantSubmesh: -1
+  variantMaterials: []

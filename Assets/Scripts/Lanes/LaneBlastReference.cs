@@ -12,7 +12,7 @@ namespace CrazyBowling.Lanes
     ///
     /// そこでレーンのプレハブにこの部品を置き、
     /// レーンが現れたときに差し替え、消えるときに必ず元へ戻す。
-    /// 考え方は LaneBallLook・LanePinLook・LaneLighting・LanePostFx と同じ。
+    /// 考え方は LaneBallLook・LaneLighting・LanePostFx と同じ。
     ///
     /// 通常は「ヘッドピンが立っていた位置」からの横ずれで厚みを測るが、
     /// ピン台が回るレーンでは並びが散らばり、ヘッドピンに意味がなくなる。

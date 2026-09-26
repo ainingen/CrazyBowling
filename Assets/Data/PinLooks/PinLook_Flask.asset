@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535c0698d33f91149ae56e603d3ae0a4, type: 3}
+  m_Name: PinLook_Flask
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Pins.PinLook
+  mesh: {fileID: 4300000, guid: 92efbc4eca14b1f45830c3bf7f362b43, type: 2}
+  materials:
+  - {fileID: 2100000, guid: ac1ad028164840c42a8faaa223d6b97c, type: 2}
+  - {fileID: 2100000, guid: 2c3cc7a84ab596b4fa5332d2f2445aa3, type: 2}
+  - {fileID: 2100000, guid: 4532fe8dae159ab429caadfc7d38c7a8, type: 2}
+  - {fileID: 2100000, guid: 77485fc9d12aeae49ac5b69032c649b0, type: 2}
+  variantSubmesh: 2
+  variantMaterials:
+  - {fileID: 2100000, guid: 4532fe8dae159ab429caadfc7d38c7a8, type: 2}
+  - {fileID: 2100000, guid: 8868fa17a31ada04ca2b64acfedb1c6c, type: 2}
+  - {fileID: 2100000, guid: 69427dce88b90774a94a8d5355a467df, type: 2}
+  - {fileID: 2100000, guid: f918be6c6bd12614a8ca569c8f7db46f, type: 2}

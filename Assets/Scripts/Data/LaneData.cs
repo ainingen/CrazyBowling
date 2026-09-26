@@ -39,6 +39,10 @@ namespace CrazyBowling.Data
         [Tooltip("このレーンの得点にかける倍率。小数点以下は切り捨てる。")]
         [SerializeField] private float scoreMultiplier = 1f;
 
+        [Header("見た目")]
+        [Tooltip("このレーンのピンの見た目（段階6）。空なら標準のピン。見た目だけで、当たり判定・重さは変わらない。")]
+        [SerializeField] private Pins.PinLook pinLook;
+
         /// <summary>画面に出すレーンの名前。</summary>
         public string LaneName => laneName;
 
@@ -59,5 +63,8 @@ namespace CrazyBowling.Data
 
         /// <summary>このレーンの得点にかける倍率。</summary>
         public float ScoreMultiplier => scoreMultiplier;
+
+        /// <summary>このレーンのピンの見た目。空なら標準のピン。</summary>
+        public Pins.PinLook PinLook => pinLook;
     }
 }

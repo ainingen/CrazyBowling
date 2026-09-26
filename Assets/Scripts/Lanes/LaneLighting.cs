@@ -13,7 +13,7 @@ namespace CrazyBowling.Lanes
     ///
     /// そこでレーンのプレハブにこの部品を置き、
     /// レーンが現れたときに変え、消えるときに必ず元へ戻す。
-    /// 考え方は LaneBallLook・LanePinLook・LanePostFx と同じ。
+    /// 考え方は LaneBallLook・LanePostFx と同じ。
     ///
     /// ネオンは暗い場所でしか読めない。明るい昼間の月面では、
     /// どれだけ光らせても白く飛ぶだけで、光っているように見えない。

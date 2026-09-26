@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 535c0698d33f91149ae56e603d3ae0a4, type: 3}
+  m_Name: PinLook_Classic
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Pins.PinLook
+  mesh: {fileID: 4300000, guid: e9a8c281f4d6bbf41820233cc673933e, type: 2}
+  materials:
+  - {fileID: 2100000, guid: d09d812eeab6aa24faa63a84ce7e371d, type: 2}
+  - {fileID: 2100000, guid: ecfef44590db3d0469111ce653f8e05a, type: 2}
+  variantSubmesh: -1
+  variantMaterials: []

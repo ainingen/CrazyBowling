@@ -54,6 +54,10 @@ namespace CrazyBowling.Pins
         /// <summary>場外へ飛んだので物理を止めたか。</summary>
         private bool _culled;
 
+        /// <summary>見た目の部品（Visual の子の Look）。PinSet.ApplyLook が形とマテリアルを付ける。</summary>
+        private MeshFilter _lookFilter;
+        private MeshRenderer _lookRenderer;
+
         /// <summary>立っていたときの位置。</summary>
         public Vector3 InitialPosition => _initialPosition;
 
@@ -153,6 +157,42 @@ namespace CrazyBowling.Pins
             if (_visual != null)
             {
                 _visual.gameObject.SetActive(false);
+            }
+        }
+
+        /// <summary>
+        /// 見た目を付ける（段階6）。形とマテリアルを、そのつど明示的に書き込む。
+        /// ★前の見た目を覚えて戻すことはしない。レーンに入るたびに PinSet から呼ばれ、必ず上書きされる。
+        /// 見た目の部品は Visual の子なので、場外へ飛んで Visual を隠す仕組みはそのまま効く。
+        /// 当たり判定・重さ・重心には一切触らない。
+        /// </summary>
+        /// <param name="look">付ける見た目。null なら何もしない。</param>
+        /// <param name="index">並び順（色違いを配るのに使う）。</param>
+        public void ApplyLook(PinLook look, int index)
+        {
+            if (look == null || look.Mesh == null)
+            {
+                return;
+            }
+
+            if (_lookFilter == null || _lookRenderer == null)
+            {
+                Transform part = transform.Find("Visual/Look");
+                if (part == null)
+                {
+                    return;
+                }
+                _lookFilter = part.GetComponent<MeshFilter>();
+                _lookRenderer = part.GetComponent<MeshRenderer>();
+            }
+
+            if (_lookFilter != null)
+            {
+                _lookFilter.sharedMesh = look.Mesh;
+            }
+            if (_lookRenderer != null)
+            {
+                _lookRenderer.sharedMaterials = look.BuildMaterials(index);
             }
         }
 
