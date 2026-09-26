@@ -30,6 +30,11 @@
 *.wav       binary
 *.mp3       binary
 *.ogg       binary
+*.aif       binary
+*.aiff      binary
+*.flac      binary
+*.m4a       binary
+*.zip       binary
 *.ttf       binary
 *.otf       binary
 *.dll       binary
