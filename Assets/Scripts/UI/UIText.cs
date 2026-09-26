@@ -140,6 +140,12 @@ namespace CrazyBowling.UI
         /// <summary>始めるボタン。</summary>
         public const string TitleStart = "CLICK TO START";
 
+        /// <summary>タイトルの名義（上の段・細く控えめに）。英字・日本語・英字の混在はわざと。</summary>
+        public const string CreditPrefix = "produced by";
+
+        /// <summary>タイトルの名義（下の段・太いネオン）。</summary>
+        public const string CreditName = "夜中のBBQ";
+
         // ======== リザルト（段階6） ========
 
         /// <summary>リザルトの評価。{0} が S〜D。</summary>

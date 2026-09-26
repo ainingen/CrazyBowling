@@ -12,6 +12,8 @@ namespace CrazyBowling.UI
     ///   ・その下に説明書口調の一言と注意書き（淡々と）
     ///   ・「CLICK TO START」はゆっくり呼吸する（点滅させない）
     ///   ・下を10本のレーン名が流れ続ける
+    ///   ・右下に作り手の名乗り「produced by 夜中のBBQ」。ネオン管の署名のように、1文字ずつ灯りがともって現れる
+    ///     （ロゴより小さく控えめに。主役はロゴ。一度ともったら消えず、点滅もしない）
     ///
     /// GameManager は今までどおり起動と同時に1本目を始める（後ろでうっすら見える）。
     /// 始めるボタンを押すと消えて、1本目を最初からやり直す（結果画面の PLAY AGAIN と同じ呼び出し）。
@@ -48,6 +50,28 @@ namespace CrazyBowling.UI
 
         [Tooltip("光の筋を回す入れ物。")]
         [SerializeField] private RectTransform raysParent;
+
+        [Header("名義（右下の署名）")]
+        [Tooltip("「produced by」（細く控えめに）。")]
+        [SerializeField] private TMP_Text creditPrefix;
+
+        [Tooltip("「夜中のBBQ」（太いネオン）。")]
+        [SerializeField] private TMP_Text creditName;
+
+        [Tooltip("名義の下に引くネオン管の線。左から右へ伸びる。")]
+        [SerializeField] private Image creditLine;
+
+        [Tooltip("名義の後ろの光の玉。")]
+        [SerializeField] private Image creditGlow;
+
+        [Tooltip("タイトルが出てから名義がともり始めるまで（秒）。ロゴが飛び込んだあとにする。")]
+        [SerializeField] private float creditDelay = 1.2f;
+
+        [Tooltip("名義が左から右へ全部ともるまで（秒）。")]
+        [SerializeField] private float creditRevealSeconds = 1.4f;
+
+        [Tooltip("名義の色（炭火の橙〜赤）の色相の範囲。色相はこの間をゆっくり行き来する。")]
+        [SerializeField] private Vector2 creditHueRange = new Vector2(0.97f, 1.07f);
 
         [Header("動き")]
         [Tooltip("起動したときに出すか。")]
@@ -188,6 +212,8 @@ namespace CrazyBowling.UI
             if (taglineLabel != null) taglineLabel.text = UIText.TitleTagline;
             if (noticeLabel != null) noticeLabel.text = UIText.TitleNotice;
             if (startLabel != null) startLabel.text = UIText.TitleStart;
+            if (creditPrefix != null) creditPrefix.text = UIText.CreditPrefix;
+            if (creditName != null) creditName.text = UIText.CreditName;
 
             if (tickerLabel != null && gameManager != null)
             {
@@ -261,6 +287,7 @@ namespace CrazyBowling.UI
             float enter = NeonUI.EaseOutBack(t / 0.6f);
             AnimateLogo(logoTop, enter, now, 0f, -4f);
             AnimateLogo(logoBottom, NeonUI.EaseOutBack((t - 0.15f) / 0.6f), now, 0.5f, 3f);
+            AnimateCredit(t, now);
 
             if (startLabel != null && skin != null)
             {
@@ -279,6 +306,74 @@ namespace CrazyBowling.UI
                 }
                 NeonUI.SetNeonColor(tickerLabel, NeonUI.Hue(now * 0.05f + 0.5f, 0.7f), 0.3f);
             }
+        }
+
+        /// <summary>
+        /// 右下の名義：左から1文字ずつ灯りがともり、下の線が伸びる。ともったあとは炭火のように色がゆっくり揺らぎ、光が呼吸する。
+        /// 明るさは0から上がるだけで、消えたり点滅したりはしない。
+        /// </summary>
+        private void AnimateCredit(float t, float now)
+        {
+            if (skin == null || creditName == null)
+            {
+                return;
+            }
+
+            float reveal = (t - creditDelay) / Mathf.Max(creditRevealSeconds, 0.01f);
+            float wave = 0.5f + 0.5f * Mathf.Sin(now * 0.7f);
+            Color fire = NeonUI.Hue(Mathf.Lerp(creditHueRange.x, creditHueRange.y, wave), 0.85f);
+            float breath = NeonUI.Breath(3f);
+
+            // 「produced by」が先に、「夜中のBBQ」が少し遅れてともる
+            RevealCharacters(creditPrefix, reveal * 1.6f);
+            RevealCharacters(creditName, reveal - 0.25f);
+            NeonUI.SetNeonColor(creditName, fire, Mathf.Clamp01(reveal) * (0.45f + 0.25f * breath));
+
+            if (creditLine != null)
+            {
+                float grow = NeonUI.EaseOutCubic(reveal - 0.2f);
+                creditLine.rectTransform.localScale = new Vector3(grow, 1f, 1f);
+                creditLine.color = Color.Lerp(fire, Color.white, 0.3f * breath);
+            }
+            if (creditGlow != null)
+            {
+                creditGlow.color = NeonUI.WithAlpha(fire, Mathf.Clamp01(reveal) * (0.16f + 0.08f * breath));
+            }
+        }
+
+        /// <summary>
+        /// 文字を左から順にともす。progress が 0 で全部暗く、1 で全部ともる。
+        /// 1文字ずつ、なめらかに明るくなる（ぱっと点いたり消えたりしない）。
+        /// </summary>
+        private static void RevealCharacters(TMP_Text label, float progress)
+        {
+            if (label == null)
+            {
+                return;
+            }
+
+            label.ForceMeshUpdate();
+            TMP_TextInfo info = label.textInfo;
+            int count = Mathf.Max(info.characterCount, 1);
+            for (int i = 0; i < info.characterCount; i++)
+            {
+                TMP_CharacterInfo character = info.characterInfo[i];
+                if (!character.isVisible)
+                {
+                    continue;
+                }
+
+                // その文字の番が来てから、文字2つぶんの間でなめらかに明るくなる
+                float lit = Mathf.Clamp01((progress * (count + 2f) - i) / 2f);
+                byte alpha = (byte)Mathf.RoundToInt(lit * label.color.a * 255f);
+                Color32[] colors = info.meshInfo[character.materialReferenceIndex].colors32;
+                int v = character.vertexIndex;
+                for (int k = 0; k < 4; k++)
+                {
+                    colors[v + k].a = alpha;
+                }
+            }
+            label.UpdateVertexData(TMP_VertexDataUpdateFlags.Colors32);
         }
 
         /// <summary>ロゴの1段：飛び込んでから、ゆっくり揺れて呼吸する。</summary>
