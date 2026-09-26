@@ -101,6 +101,10 @@ namespace CrazyBowling.Lanes
         [Tooltip("光の球が広がる大きさ（直径・m）。")]
         [SerializeField] private float flashBallSize = 3f;
 
+        [Tooltip("光の球のいちばん明るいときの発光の倍率。強すぎると画面全体が一瞬白く飛ぶ" +
+                 "（光に敏感な人への配慮で、画面全体を真っ白にしないこと）。")]
+        [SerializeField] private float flashBallGlow = 12f;
+
         [Tooltip("衝撃波の輪（光るだけの見た目）。床に沿って、色を変えながら広がる。")]
         [SerializeField] private Renderer shockRing;
 
@@ -405,7 +409,7 @@ namespace CrazyBowling.Lanes
             {
                 float grow = 1f - flash;
                 flashBall.transform.localScale = Vector3.one * Mathf.Lerp(0.2f, flashBallSize, Mathf.Sqrt(grow));
-                SetGlow(flashBall, flashColor, 12f * flash * flash);
+                SetGlow(flashBall, flashColor, flashBallGlow * flash * flash);
                 if (flash <= 0f)
                 {
                     flashBall.gameObject.SetActive(false);

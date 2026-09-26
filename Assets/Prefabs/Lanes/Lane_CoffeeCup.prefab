@@ -5945,8 +5945,9 @@ MonoBehaviour:
   pulseSpeed: 0.5
   hueSpeed: 0.08
   hueSpread: 0.8
-  burstBrightness: 3
+  burstBrightness: 1.8
   burstHueSpeedScale: 8
+  onlyMaterial: {fileID: 0}
 --- !u!1 &1306742958324730117
 GameObject:
   m_ObjectHideFlags: 0
@@ -14887,8 +14888,9 @@ MonoBehaviour:
   pulseSpeed: 0.5
   hueSpeed: 0.08
   hueSpread: 0.8
-  burstBrightness: 3
+  burstBrightness: 1.8
   burstHueSpeedScale: 8
+  onlyMaterial: {fileID: 0}
 --- !u!1 &2976581067861999824
 GameObject:
   m_ObjectHideFlags: 0
@@ -25721,8 +25723,9 @@ MonoBehaviour:
   pulseSpeed: 0.5
   hueSpeed: 0.08
   hueSpread: 0.8
-  burstBrightness: 3
+  burstBrightness: 1.8
   burstHueSpeedScale: 8
+  onlyMaterial: {fileID: 0}
 --- !u!1 &3917455311189827787
 GameObject:
   m_ObjectHideFlags: 0
@@ -50404,10 +50407,11 @@ MonoBehaviour:
   debrisBounce: 0.3
   debrisGroundDamping: 0.6
   flashLight: {fileID: 3297603749674277678}
-  flashIntensity: 60
+  flashIntensity: 20
   flashSeconds: 0.6
   flashBall: {fileID: 3669796269608275522}
-  flashBallSize: 3
+  flashBallSize: 2
+  flashBallGlow: 3
   shockRing: {fileID: 1726236630462656023}
   shockRingSize: 8
   shockSeconds: 0.9
@@ -62969,8 +62973,9 @@ MonoBehaviour:
   pulseSpeed: 0.5
   hueSpeed: 0.08
   hueSpread: 0.8
-  burstBrightness: 3
+  burstBrightness: 1.8
   burstHueSpeedScale: 8
+  onlyMaterial: {fileID: 0}
 --- !u!1 &8726851554224197982
 GameObject:
   m_ObjectHideFlags: 0
@@ -64229,8 +64234,9 @@ MonoBehaviour:
   pulseSpeed: 0.5
   hueSpeed: 0.08
   hueSpread: 0.8
-  burstBrightness: 3
+  burstBrightness: 1.8
   burstHueSpeedScale: 8
+  onlyMaterial: {fileID: 0}
 --- !u!1 &9023332279009075186
 GameObject:
   m_ObjectHideFlags: 0
