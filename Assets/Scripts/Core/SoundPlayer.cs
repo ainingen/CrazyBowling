@@ -82,6 +82,9 @@ namespace CrazyBowling.Core
         private int _bgmCurrent;
         private AudioClip _bgmClip;
         private float _bgmTargetVolume;
+
+        /// <summary>曲を切り替えた瞬間の、前の曲の大きさ（消える速さを決めるためだけに使う）。</summary>
+        private readonly float[] _bgmFadeFrom = new float[2];
         private bool _muted;
         private bool _unlocked;
         private AudioSource _narration;
@@ -178,6 +181,7 @@ namespace CrazyBowling.Core
             foreach (AudioSource source in _bgm)
             {
                 source.loop = true;
+                source.volume = 0f;
             }
 
             _pinGate = new PinHitGate(0f, 0f, 0f, 0);
@@ -653,6 +657,8 @@ namespace CrazyBowling.Core
 
             if (clip != _bgmClip)
             {
+                // 前の曲は、この瞬間の大きさから「曲が変わるときの時間」で 0 まで小さくする
+                _bgmFadeFrom[_bgmCurrent] = _bgm[_bgmCurrent].volume;
                 _bgmClip = clip;
                 _bgmCurrent = 1 - _bgmCurrent;
                 AudioSource next = _bgm[_bgmCurrent];
@@ -676,12 +682,16 @@ namespace CrazyBowling.Core
             float duckSeconds = duckTarget < _bgmDuck ? 0.3f : Mathf.Max(table.bgmDuckReleaseSeconds, 0.01f);
             _bgmDuck = Mathf.MoveTowards(_bgmDuck, duckTarget, Time.unscaledDeltaTime / duckSeconds);
 
+            // 大きくする曲は目標の大きさまで、小さくする曲は切り替えた瞬間の大きさから、どちらも「曲が変わるときの時間」で動かす
+            // （次のレーンが真空で目標が 0 でも、前の曲が決めた時間で消えるように）
             float step = Time.unscaledDeltaTime / Mathf.Max(table.bgmCrossfadeSeconds, 0.01f);
             for (int i = 0; i < _bgm.Length; i++)
             {
                 AudioSource source = _bgm[i];
-                float target = i == _bgmCurrent && _bgmClip != null ? _bgmTargetVolume * _bgmDuck : 0f;
-                source.volume = Mathf.MoveTowards(source.volume, target, step * Mathf.Max(_bgmTargetVolume, 0.01f));
+                bool current = i == _bgmCurrent;
+                float target = current && _bgmClip != null ? _bgmTargetVolume * _bgmDuck : 0f;
+                float span = current ? Mathf.Max(_bgmTargetVolume, 0.01f) : Mathf.Max(_bgmFadeFrom[i], 0.01f);
+                source.volume = Mathf.MoveTowards(source.volume, target, step * span);
                 if (i != _bgmCurrent && source.isPlaying && source.volume <= 0f)
                 {
                     source.Stop();
