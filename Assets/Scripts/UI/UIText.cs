@@ -101,6 +101,12 @@ namespace CrazyBowling.UI
         /// <summary>奥を見るボタン。</summary>
         public const string LookAhead = "LOOK AHEAD";
 
+        /// <summary>音のボタン：音が出ているとき（段階6）。</summary>
+        public const string SoundOn = "SOUND ON";
+
+        /// <summary>音のボタン：音を消しているとき（段階6）。</summary>
+        public const string SoundOff = "SOUND OFF";
+
         // ======== 演出（段階6） ========
 
         /// <summary>レーンに入ったときの大見出しの上の小さな札。{0} がレーン番号。</summary>

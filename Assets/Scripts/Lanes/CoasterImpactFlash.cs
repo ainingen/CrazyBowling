@@ -153,12 +153,21 @@ namespace CrazyBowling.Lanes
             return false;
         }
 
+        /// <summary>
+        /// 閃光を出した瞬間（ボールがピンに当たった瞬間）に呼ばれる（段階6。音に使う）。
+        /// 聞く相手がいなければ何も起きない。
+        /// </summary>
+        public event System.Action Fired;
+
         private void Fire(Vector3 position)
         {
             // 閃光の置き場所だけを動かす（この部品の子なので、共有物には触らない）
             transform.position = position;
             _elapsed = 0f;
             Show(true);
+
+            // 音のための知らせ（聞く相手がいなければ何も起きない）
+            Fired?.Invoke();
 
             if (neons != null)
             {

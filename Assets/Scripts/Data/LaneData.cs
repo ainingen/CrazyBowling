@@ -43,6 +43,10 @@ namespace CrazyBowling.Data
         [Tooltip("このレーンのピンの見た目（段階6）。空なら標準のピン。見た目だけで、当たり判定・重さは変わらない。")]
         [SerializeField] private Pins.PinLook pinLook;
 
+        [Header("音")]
+        [Tooltip("真空のレーン（段階6。8本目の月面）。ボール・ピン・観客の歓声の音と BGM を鳴らさない。画面の音は鳴らす。")]
+        [SerializeField] private bool vacuum;
+
         /// <summary>画面に出すレーンの名前。</summary>
         public string LaneName => laneName;
 
@@ -66,5 +70,8 @@ namespace CrazyBowling.Data
 
         /// <summary>このレーンのピンの見た目。空なら標準のピン。</summary>
         public Pins.PinLook PinLook => pinLook;
+
+        /// <summary>真空のレーンか。ボール・ピン・歓声の音と BGM を鳴らさない。</summary>
+        public bool Vacuum => vacuum;
     }
 }

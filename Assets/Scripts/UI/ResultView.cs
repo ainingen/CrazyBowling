@@ -97,6 +97,16 @@ namespace CrazyBowling.UI
         /// <summary>画面を出した時刻（動きの起点）。</summary>
         private float _shownTime;
 
+        /// <summary>RANK を出すのを遅らせる時間（秒。ドラムロールを入れるときだけ、その長さ。段階6）。</summary>
+        private float _rankDelay;
+
+        /// <summary>前のフレームに出した合計（数え上げの音に使う。段階6）。</summary>
+        private int _lastShownTotal = -1;
+
+        /// <summary>この結果画面で、もうドラムロール・RANK の音を鳴らしたか（段階6）。</summary>
+        private bool _drumrollPlayed;
+        private bool _rankPlayed;
+
         [System.NonSerialized] private Image[] _rays;
 
         /// <summary>内訳1行ぶんの部品。</summary>
@@ -183,6 +193,14 @@ namespace CrazyBowling.UI
         /// <summary>合計と内訳を作る。</summary>
         private void Build()
         {
+            // 音（段階6）：数え上げ・ドラムロール・RANK の音を鳴らし直せるようにする。
+            // ドラムロールを入れるときだけ、RANK が出るのをその長さぶん遅らせる（見た目の時間だけ。得点には関わらない）
+            SoundPlayer player = SoundPlayer.Instance;
+            _rankDelay = player != null ? player.RankRevealDelay : 0f;
+            _lastShownTotal = -1;
+            _drumrollPlayed = false;
+            _rankPlayed = false;
+
             if (totalLabel != null)
             {
                 totalLabel.text = string.Format(totalFormat,
@@ -355,16 +373,42 @@ namespace CrazyBowling.UI
                 float count = NeonUI.EaseOutCubic((t - 0.3f) / Mathf.Max(totalCountSeconds, 0.01f));
                 int shown = Mathf.RoundToInt(gameManager.TotalScore * count);
                 totalLabel.text = string.Format(totalFormat, shown, gameManager.PerfectScore);
+
+                // 数え上げている間、数字が増えたら音を鳴らす（間隔の下限は鳴らし係が守る）
+                if (count < 1f && _lastShownTotal >= 0 && shown > _lastShownTotal && SoundPlayer.Instance != null)
+                {
+                    SoundPlayer.Instance.PlayScoreTick();
+                }
+                _lastShownTotal = shown;
                 float counting = count < 1f ? 1f : NeonUI.Breath(2.4f) * 0.4f;
                 NeonUI.SetNeonColor(totalLabel, skin.Gold, 0.45f + 0.45f * counting);
                 float pop = 1f + 0.08f * Mathf.Sin(Mathf.Clamp01((t - 0.3f) / Mathf.Max(totalCountSeconds, 0.01f)) * Mathf.PI);
                 totalLabel.rectTransform.localScale = new Vector3(pop, pop, 1f);
             }
 
-            // RANK：数え終わったら大きく飛び込む
+            // 数え終わったらドラムロール（入れるときだけ。段階6）
+            if (!_drumrollPlayed && t >= 0.3f + totalCountSeconds)
+            {
+                _drumrollPlayed = true;
+                if (SoundPlayer.Instance != null)
+                {
+                    SoundPlayer.Instance.PlayDrumroll();
+                }
+            }
+
+            // RANK：数え終わったら（ドラムロールを入れるときはそのあとに）大きく飛び込む。出た瞬間に音を鳴らす
+            if (!_rankPlayed && t >= 0.3f + totalCountSeconds + _rankDelay)
+            {
+                _rankPlayed = true;
+                if (SoundPlayer.Instance != null)
+                {
+                    SoundPlayer.Instance.PlayRank();
+                }
+            }
+
             if (rankLabel != null)
             {
-                float rankT = (t - 0.3f - totalCountSeconds) / 0.4f;
+                float rankT = (t - 0.3f - totalCountSeconds - _rankDelay) / 0.4f;
                 rankLabel.alpha = Mathf.Clamp01(rankT * 3f);
                 float scale = rankT <= 0f ? 3f : Mathf.LerpUnclamped(3f, 1f, NeonUI.EaseOutBack(rankT));
                 rankLabel.rectTransform.localScale = new Vector3(scale, scale, 1f);
@@ -387,7 +431,7 @@ namespace CrazyBowling.UI
             // 締めの一言：淡々と出るだけ
             if (commentLabel != null)
             {
-                commentLabel.alpha = Mathf.Clamp01((t - 0.6f - totalCountSeconds) / 0.5f);
+                commentLabel.alpha = Mathf.Clamp01((t - 0.6f - totalCountSeconds - _rankDelay) / 0.5f);
             }
         }
 

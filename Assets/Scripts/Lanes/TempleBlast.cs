@@ -146,6 +146,12 @@ namespace CrazyBowling.Lanes
         /// <summary>もう吹き飛んだか。</summary>
         public bool HasExploded => _exploded;
 
+        /// <summary>
+        /// 神殿が吹き飛んだ瞬間に呼ばれる（段階6。音に使う）。
+        /// 聞く相手がいなければ何も起きない。爆発の計算とは関わらない。
+        /// </summary>
+        public event System.Action Exploded;
+
         /// <summary>破片の数。確認用。</summary>
         public int DebrisCount => debris == null ? 0 : debris.Length;
 
@@ -253,6 +259,9 @@ namespace CrazyBowling.Lanes
                 : 0;
 
             StartEffects(origin);
+
+            // 音のための知らせ（聞く相手がいなければ何も起きない）
+            Exploded?.Invoke();
 
             if (logEvents)
             {

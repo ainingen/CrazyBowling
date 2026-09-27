@@ -109,6 +109,9 @@ namespace CrazyBowling.UI
             public int target = -1;
             public float from;
             public float startTime = -10f;
+
+            /// <summary>前のフレームに出した数字（数え上げの音に使う。段階6）。</summary>
+            public int lastShown = -1;
         }
 
         [System.NonSerialized] private Cell[] _cells;
@@ -117,6 +120,9 @@ namespace CrazyBowling.UI
         private int _totalTarget;
         private float _totalFrom;
         private float _totalStart = -10f;
+
+        /// <summary>前のフレームに出した合計（数え上げの音に使う。段階6）。</summary>
+        private int _lastTotalShown = -1;
 
         /// <summary>得点板の枠の上を走る光の粒（2つ。反対向きに走る）。</summary>
         [System.NonSerialized] private Image[] _comets;
@@ -253,6 +259,7 @@ namespace CrazyBowling.UI
 
                 if (!played)
                 {
+                    cell.lastShown = -1;
                     cell.target = -1;
                     cell.score.text = emptyText;
                     cell.score.color = normalTextColor;
@@ -276,6 +283,13 @@ namespace CrazyBowling.UI
                 float t = (now - cell.startTime) / Mathf.Max(countUpSeconds, 0.01f);
                 int shown = Mathf.RoundToInt(Mathf.Lerp(cell.from, cell.target, NeonUI.EaseOutCubic(t)));
                 cell.score.text = shown.ToString();
+
+                // 数え上げている間、数字が増えたら音を鳴らす（間隔の下限は鳴らし係が守る）
+                if (t < 1f && cell.lastShown >= 0 && shown > cell.lastShown)
+                {
+                    PlayCountSound();
+                }
+                cell.lastShown = shown;
                 cell.score.color = mark ? highlightTextColor : normalTextColor;
 
                 // 入った瞬間だけ、ふくらんで戻る
@@ -366,6 +380,13 @@ namespace CrazyBowling.UI
             int shown = Mathf.RoundToInt(CurrentTotal(now));
             totalLabel.text = string.Format(totalFormat, shown, gameManager.PerfectScore);
 
+            // 数え上げている間、合計が増えたら音を鳴らす（間隔の下限は鳴らし係が守る）
+            if (now - _totalStart < totalCountUpSeconds && _lastTotalShown >= 0 && shown > _lastTotalShown)
+            {
+                PlayCountSound();
+            }
+            _lastTotalShown = shown;
+
             if (skin != null)
             {
                 // 数え上げ中は光を強くし、終わったらゆっくり戻す（点滅ではない）
@@ -378,6 +399,16 @@ namespace CrazyBowling.UI
             }
 
             UpdateGain(now);
+        }
+
+        /// <summary>数え上げの音（段階6）。数字が1つ増えるたびではなく、間隔の下限を空けて鳴らす。</summary>
+        private static void PlayCountSound()
+        {
+            Core.SoundPlayer player = Core.SoundPlayer.Instance;
+            if (player != null)
+            {
+                player.PlayScoreTick();
+            }
         }
 
         /// <summary>数え上げ途中の合計。</summary>

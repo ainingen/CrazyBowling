@@ -59,6 +59,12 @@ namespace CrazyBowling.Lanes
         /// <summary>実行時に作ったメッシュ。レーンを出るときに捨てる。</summary>
         private Mesh _runtimeMesh;
 
+        /// <summary>
+        /// 床の形を数える基準の Transform（床のメッシュが乗っている所）。
+        /// ボールの位置をこの中の座標に直すと、Shape の高さと比べられる。読むだけ（段階6の音で使う）。
+        /// </summary>
+        public Transform FloorBasis => floorMeshFilter != null ? floorMeshFilter.transform : transform;
+
         /// <summary>今の形の設定。</summary>
         public LaneShapeSettings Shape => new LaneShapeSettings
         {

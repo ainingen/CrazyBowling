@@ -994,6 +994,15 @@ namespace CrazyBowling.Lanes
         /// <summary>この投球で、もう排気の光を強めたか。</summary>
         private bool _thrustGlowFired;
 
+        /// <summary>この投球で、もう「推力が効き始めた」を知らせたか。</summary>
+        private bool _thrustStartReported;
+
+        /// <summary>
+        /// 推力が強く効き始めた瞬間（1投に1回。排気の光を強めるのと同じ瞬間）に呼ばれる（段階6。音に使う）。
+        /// 聞く相手がいなければ何も起きない。推力の計算とは関わらない。
+        /// </summary>
+        public event System.Action ThrustStarted;
+
         /// <summary>推力をかける相手（ボールの Rigidbody）。</summary>
         private Rigidbody _ballBody;
 
@@ -1017,6 +1026,7 @@ namespace CrazyBowling.Lanes
             if (!ball.IsInPlay)
             {
                 _thrustGlowFired = false;
+                _thrustStartReported = false;
                 return;
             }
 
@@ -1054,6 +1064,13 @@ namespace CrazyBowling.Lanes
             {
                 thrustGlow.Burst(thrustGlowSeconds);
                 _thrustGlowFired = true;
+            }
+
+            // 同じ瞬間を音にも知らせる（聞く相手がいなければ何も起きない）
+            if (!_thrustStartReported && acceleration >= thrustAcceleration * 0.5f)
+            {
+                _thrustStartReported = true;
+                ThrustStarted?.Invoke();
             }
         }
 

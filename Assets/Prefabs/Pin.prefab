@@ -45,6 +45,7 @@ GameObject:
   - component: {fileID: 6555287328217249392}
   - component: {fileID: 8681697910191377576}
   - component: {fileID: 7072467868384849804}
+  - component: {fileID: 5786920278555468956}
   m_Layer: 0
   m_Name: Pin
   m_TagString: Untagged
@@ -157,6 +158,18 @@ MonoBehaviour:
   collisionDetection: 3
   cullDistance: 4
   cullBelowY: -1.5
+--- !u!114 &5786920278555468956
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5907844283909051703}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 902a659f2078414489852dc57afc8cd3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Pins.PinHitSound
 --- !u!1 &6362116259770753193
 GameObject:
   m_ObjectHideFlags: 0

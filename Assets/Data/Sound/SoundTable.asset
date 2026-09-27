@@ -1,0 +1,188 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 149ed88fa7d37344d8402d1552d6449f, type: 3}
+  m_Name: SoundTable
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Data.SoundTable
+  seMaster: 1
+  bgmMaster: 1
+  ballRelease:
+    clips:
+    - {fileID: 8300000, guid: a8302242b65683544b2f8557fc04685a, type: 3}
+    volume: 0.9
+    pitchRandom: 0.03
+  ballRoll:
+    clips:
+    - {fileID: 8300000, guid: 6ffc269e84ccdab44a6b93909cf2bf98, type: 3}
+    volume: 1
+    pitchRandom: 0
+  rollMinSpeed: 0.4
+  rollMaxSpeed: 9
+  rollVolumeAtMin: 0.25
+  rollPitchAtMin: 0.75
+  rollPitchAtMax: 1.15
+  rollVolumeInAir: 0
+  rollVolumeResponse: 12
+  rollFloorNormalMinY: 0.55
+  rollAirGraceSeconds: 0.08
+  pinHitStrong:
+    clips:
+    - {fileID: 8300000, guid: 8dd23968b96e74a478a3621d8b5c292e, type: 3}
+    volume: 1
+    pitchRandom: 0.04
+  pinHitWeak:
+    clips:
+    - {fileID: 8300000, guid: 718560e3be190564ab5e3e82baa06b18, type: 3}
+    volume: 1
+    pitchRandom: 0.06
+  pinMinSpeed: 0.8
+  pinStrongSpeed: 3
+  pinMaxVoices: 4
+  pinCooldownSeconds: 0.15
+  pinStrongMaxSeconds: 1.4
+  pinWeakMaxSeconds: 0.6
+  pinFadeSeconds: 0.25
+  strike:
+    clips:
+    - {fileID: 8300000, guid: efaad28f7adc7034e89bf2d4d3c54c5a, type: 3}
+    volume: 0.8
+    pitchRandom: 0
+  spare:
+    clips:
+    - {fileID: 8300000, guid: 01585ae66cca9f64a87eab3d49699118, type: 3}
+    volume: 1
+    pitchRandom: 0
+  gutter:
+    clips:
+    - {fileID: 8300000, guid: 4e0e82025e7f22f40b9163d35c3df704, type: 3}
+    volume: 0.3
+    pitchRandom: 0
+  uiButton:
+    clips:
+    - {fileID: 8300000, guid: beda244d7a8a2cb409755726e3f9b88b, type: 3}
+    volume: 1
+    pitchRandom: 0.03
+  scoreCount:
+    clips:
+    - {fileID: 8300000, guid: 6426d939b82011c4f82a0f3e4cc3eaa1, type: 3}
+    volume: 0.12
+    pitchRandom: 0.02
+  scoreCountMinInterval: 0.09
+  drumroll:
+    clips:
+    - {fileID: 8300000, guid: fa60270006ec60d4d9915e21d8b33a1a, type: 3}
+    volume: 0.8
+    pitchRandom: 0
+  useDrumroll: 1
+  rank:
+    clips:
+    - {fileID: 8300000, guid: dea5ee0b79ffa3c49af549753de7bf97, type: 3}
+    volume: 1
+    pitchRandom: 0
+  lane02Horn:
+    clips:
+    - {fileID: 8300000, guid: 29ea600ee40911b459636a4ecd50ad67, type: 3}
+    volume: 0.6
+    pitchRandom: 0
+  lane02FirstHornDelay: 1.2
+  lane02HornInterval: {x: 16, y: 24}
+  lane03Water:
+    clips:
+    - {fileID: 8300000, guid: 784a81158b315254ebd7f2e897b712c4, type: 3}
+    volume: 0.5
+    pitchRandom: 0.08
+  lane06Jump:
+    clips:
+    - {fileID: 8300000, guid: 2d798009227a30c40be6f925611d91b0, type: 3}
+    volume: 0.5
+    pitchRandom: 0.03
+  lane07Jet:
+    clips:
+    - {fileID: 8300000, guid: 439e5c703c59c524eb1cbb1cb1144799, type: 3}
+    volume: 0.25
+    pitchRandom: 0
+  lane09Blast:
+    clips:
+    - {fileID: 8300000, guid: 0ddc83a5bbd2a0f4a8a5e4018d80fbf9, type: 3}
+    volume: 0.75
+    pitchRandom: 0
+  lane10Zap:
+    clips:
+    - {fileID: 8300000, guid: 9a69b99a474ef7d49be291f0559ed243, type: 3}
+    volume: 0.65
+    pitchRandom: 0.04
+  lane08Noise:
+    clips:
+    - {fileID: 8300000, guid: 697b37688748b824f950e68462087c0c, type: 3}
+    volume: 0.4
+    pitchRandom: 0
+  lane08Sweep:
+    clips:
+    - {fileID: 8300000, guid: 8b3f67a4c6717644bb352ef0616f1244, type: 3}
+    - {fileID: 8300000, guid: a9b186161ec9fda4685e26c05fdbd005, type: 3}
+    - {fileID: 8300000, guid: 935d8a158d463f2449eb83b1272183fa, type: 3}
+    - {fileID: 8300000, guid: 8e4f3400649d80e4d82421c145da4f73, type: 3}
+    volume: 0.4
+    pitchRandom: 0
+  lane08Beep:
+    clips:
+    - {fileID: 8300000, guid: 842a1b96e5c53e14987bb66f92967dbb, type: 3}
+    volume: 0.2
+    pitchRandom: 0
+  lane08Voice:
+    clips:
+    - {fileID: 8300000, guid: 695aa20c7dcdeca469e30cea3b9917ce, type: 3}
+    - {fileID: 8300000, guid: e5e1b7a5ab9b2aa408e6d40f49333af0, type: 3}
+    - {fileID: 8300000, guid: 1411ebbc58ced0445b8bfcb4762568b3, type: 3}
+    - {fileID: 8300000, guid: ffcb521f697852b40b1673e2a82acd00, type: 3}
+    - {fileID: 8300000, guid: aad03bfa8c32b7d48a585f359df54570, type: 3}
+    - {fileID: 8300000, guid: 38b0bf042e04b684698e6583ea400b8e, type: 3}
+    volume: 0.6
+    pitchRandom: 0
+  lane08FirstDelay: {x: 3, y: 6}
+  lane08Interval: {x: 12, y: 25}
+  lane08Gap: 0.15
+  titleBgm: {fileID: 0}
+  titleBgmVolume: 0.6
+  resultBgm: {fileID: 0}
+  resultBgmVolume: 0.6
+  laneBgm:
+  - lane: {fileID: 11400000, guid: 6c2a8c33e21e32440865d974f41928e1, type: 2}
+    clip: {fileID: 0}
+    volume: 0.6
+  - lane: {fileID: 11400000, guid: f94c2cf13db18d64395f7b4c97a708e4, type: 2}
+    clip: {fileID: 0}
+    volume: 0.6
+  - lane: {fileID: 11400000, guid: 598ec1756ba08b045bd7fc70bf5f85a9, type: 2}
+    clip: {fileID: 0}
+    volume: 0.6
+  - lane: {fileID: 11400000, guid: cf013329292db8f4b8bc0fddba2b95fb, type: 2}
+    clip: {fileID: 0}
+    volume: 0.6
+  - lane: {fileID: 11400000, guid: 45f4dc98fef746c4b8f722eb7dfed26c, type: 2}
+    clip: {fileID: 0}
+    volume: 0.6
+  - lane: {fileID: 11400000, guid: 95b0fd0394abc27468f16a0dea4e2769, type: 2}
+    clip: {fileID: 0}
+    volume: 0.6
+  - lane: {fileID: 11400000, guid: e8751f715585a1b4cb6bfc1608144526, type: 2}
+    clip: {fileID: 0}
+    volume: 0.6
+  - lane: {fileID: 11400000, guid: f89b53f6eeac9624aaccc777d7f78fa5, type: 2}
+    clip: {fileID: 0}
+    volume: 0.6
+  - lane: {fileID: 11400000, guid: e72ebd7803cb98a4a90fab066f33459c, type: 2}
+    clip: {fileID: 0}
+    volume: 0.6
+  - lane: {fileID: 11400000, guid: fa2a6548a942eec428a16efba89a7029, type: 2}
+    clip: {fileID: 0}
+    volume: 0.6
+  bgmCrossfadeSeconds: 1.5

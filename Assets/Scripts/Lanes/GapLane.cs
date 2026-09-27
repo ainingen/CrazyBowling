@@ -207,6 +207,15 @@ namespace CrazyBowling.Lanes
         /// <summary>隙間が終わる位置（m）。</summary>
         public float GapEndZ => gapStartZ + Mathf.Max(0f, gapWidth);
 
+        /// <summary>踏切の端（ここから先は床が無い）の位置（m）。段階6の音で、跳んだ瞬間を知るのに使う。</summary>
+        public float TakeoffZ => gapStartZ;
+
+        /// <summary>
+        /// 踏切・コブの位置（奥行き）を数える基準の Transform。
+        /// ボールの位置をこの中の座標に直すと、TakeoffZ と比べられる。読むだけ。
+        /// </summary>
+        public Transform FloorBasis => lip != null && lip.parent != null ? lip.parent : transform;
+
         /// <summary>コブの数。</summary>
         public int BumpCount => bumps != null ? bumps.Length : 0;
 
