@@ -2101,6 +2101,7 @@ MonoBehaviour:
   throwSequencer: {fileID: 539789172}
   ballController: {fileID: 404580366}
   titleView: {fileID: 1904163209}
+  tuneInView: {fileID: 1718987722}
   oneShotVoices: 10
   pinVoicePool: 8
   logEachSound: 0
@@ -6210,6 +6211,7 @@ RectTransform:
   - {fileID: 575154548}
   - {fileID: 2065419881}
   - {fileID: 1904163208}
+  - {fileID: 1718987724}
   - {fileID: 1213056775}
   - {fileID: 360690236}
   m_Father: {fileID: 0}
@@ -8201,6 +8203,74 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1718987721
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1718987724}
+  - component: {fileID: 1718987723}
+  - component: {fileID: 1718987722}
+  m_Layer: 0
+  m_Name: TuneIn
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1718987722
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1718987721}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 28949c84ed694c1479e28de0ac0b650e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.UI.TuneInView
+  skin: {fileID: 11400000, guid: d614df0b28c3dbd4e92dfd4b8add36e1, type: 2}
+  titleView: {fileID: 1904163209}
+  sequencer: {fileID: 539789172}
+  showOnLaunch: 1
+  hideSeconds: 0.5
+  breathSeconds: 2.6
+  needleSeconds: 14
+--- !u!225 &1718987723
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1718987721}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
+--- !u!224 &1718987724
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1718987721}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1195164675}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1001 &1745065022
 PrefabInstance:
   m_ObjectHideFlags: 0

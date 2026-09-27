@@ -152,6 +152,23 @@ MonoBehaviour:
   lane08FirstDelay: {x: 3, y: 6}
   lane08Interval: {x: 12, y: 25}
   lane08Gap: 0.15
+  titleNarration:
+    clips:
+    - {fileID: 8300000, guid: cfa6835d508bd9b4ab9265087a06cea4, type: 3}
+    volume: 1
+    pitchRandom: 0
+  tuneInSweep:
+    clips:
+    - {fileID: 8300000, guid: 8b3f67a4c6717644bb352ef0616f1244, type: 3}
+    - {fileID: 8300000, guid: a9b186161ec9fda4685e26c05fdbd005, type: 3}
+    - {fileID: 8300000, guid: 935d8a158d463f2449eb83b1272183fa, type: 3}
+    - {fileID: 8300000, guid: 8e4f3400649d80e4d82421c145da4f73, type: 3}
+    volume: 0.25
+    pitchRandom: 0
+  narrationDelayAfterSweep: 0.1
+  narrationFadeSeconds: 0.5
+  bgmDuckDb: -10
+  bgmDuckReleaseSeconds: 1
   titleBgm: {fileID: 0}
   titleBgmVolume: 0.6
   resultBgm: {fileID: 0}

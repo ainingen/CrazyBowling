@@ -210,6 +210,25 @@ namespace CrazyBowling.Data
         [Tooltip("交信の中の音と音の間（秒）。ヒュイーン→ピッ、ピッ→声、声→ピッ。")]
         public float lane08Gap = 0.15f;
 
+        [Header("タイトル（CLICK TO TUNE IN とナレーション）")]
+        [Tooltip("タイトルのナレーション（昔のラジオ風の声）。CLICK TO TUNE IN のあと、タイトルが出たら1回流す。")]
+        public SoundEntry titleNarration = new SoundEntry();
+
+        [Tooltip("CLICK TO TUNE IN を押したときの「ヒュイーン」（小さく）。入れた中から毎回選ぶ。")]
+        public SoundEntry tuneInSweep = new SoundEntry();
+
+        [Tooltip("ヒュイーンが終わってから、ナレーションを始めるまでの間（秒）。")]
+        public float narrationDelayAfterSweep = 0.1f;
+
+        [Tooltip("CLICK TO START を押したとき（タイトルが閉じるとき）に、ナレーションを小さくして止める時間（秒）。")]
+        public float narrationFadeSeconds = 0.5f;
+
+        [Tooltip("ナレーションが流れている間、BGM をどれだけ小さくするか（dB。-10 で約3分の1）。")]
+        public float bgmDuckDb = -10f;
+
+        [Tooltip("ナレーションが終わってから、BGM を元の大きさに戻す時間（秒）。")]
+        public float bgmDuckReleaseSeconds = 1f;
+
         [Header("BGM（曲は揃ってから入れる。空なら流さない）")]
         [Tooltip("タイトル画面の曲。")]
         public AudioClip titleBgm;

@@ -56,6 +56,9 @@ namespace CrazyBowling.Core
         [Tooltip("タイトル画面。出ている間はタイトルの曲にする。空なら探す。")]
         [SerializeField] private UI.TitleView titleView;
 
+        [Tooltip("タイトルの前の CLICK TO TUNE IN の画面。出ている間は BGM を流さない。空なら探す。")]
+        [SerializeField] private UI.TuneInView tuneInView;
+
         [Header("同時に鳴らせる数")]
         [Tooltip("画面・判定などの音を同時に鳴らせる数。")]
         [SerializeField] private int oneShotVoices = 10;
@@ -81,6 +84,12 @@ namespace CrazyBowling.Core
         private float _bgmTargetVolume;
         private bool _muted;
         private bool _unlocked;
+        private AudioSource _narration;
+        private bool _narrationFading;
+        private float _narrationFadeStart;
+        private float _narrationBaseVolume;
+        private float _bgmDuck = 1f;
+        private Coroutine _intro;
 
         /// <summary>音の表。</summary>
         public SoundTable Table => table;
@@ -96,6 +105,12 @@ namespace CrazyBowling.Core
 
         /// <summary>上限などで鳴らさなかったピンの当たりの数（遅すぎる当たりは数えない）。</summary>
         public int PinHitsSkipped { get; private set; }
+
+        /// <summary>タイトルのナレーションが流れているか（小さくして止めている途中も含む）。</summary>
+        public bool IsNarrationPlaying => _narration != null && _narration.isPlaying;
+
+        /// <summary>今の BGM にかけている倍率（ナレーションの間は小さくする）。確かめるとき用。</summary>
+        public float BgmDuck => _bgmDuck;
 
         /// <summary>今のレーンが真空か（8本目）。ボール・ピン・歓声の音と BGM を鳴らさない。</summary>
         public bool IsVacuum
@@ -159,6 +174,7 @@ namespace CrazyBowling.Core
                 _pinVoices.Add(new PinVoice { source = CreateSource("ピン " + (i + 1)) });
             }
             _bgm = new[] { CreateSource("BGM A"), CreateSource("BGM B") };
+            _narration = CreateSource("ナレーション");
             foreach (AudioSource source in _bgm)
             {
                 source.loop = true;
@@ -170,7 +186,11 @@ namespace CrazyBowling.Core
 
             if (titleView == null)
             {
-                titleView = FindFirstObjectByType<UI.TitleView>();
+                titleView = FindFirstObjectByType<UI.TitleView>(FindObjectsInactive.Include);
+            }
+            if (tuneInView == null)
+            {
+                tuneInView = FindFirstObjectByType<UI.TuneInView>(FindObjectsInactive.Include);
             }
         }
 
@@ -479,9 +499,118 @@ namespace CrazyBowling.Core
             }
         }
 
+        /// <summary>
+        /// CLICK TO TUNE IN を押した：音を鳴らせるようにして、小さな「ヒュイーン」のあとにナレーションを流す。
+        /// 音を消していたら流さない（途中で音を戻しても、途中からは流さない）。
+        /// </summary>
+        public void BeginTitleIntro()
+        {
+            Unlock();
+            if (table == null)
+            {
+                return;
+            }
+            if (_muted)
+            {
+                Record("ナレーション：音を消しているので流さない");
+                return;
+            }
+            if (_intro != null)
+            {
+                StopCoroutine(_intro);
+            }
+            _intro = StartCoroutine(TitleIntro());
+        }
+
+        private System.Collections.IEnumerator TitleIntro()
+        {
+            // 小さなヒュイーン（8本目の周波数を合わせる音から選ぶ）
+            int count = table.tuneInSweep.clips != null ? table.tuneInSweep.clips.Length : 0;
+            int index = SoundSchedule.PickIndex(count, -1, Random.value);
+            float length = 0f;
+            if (index >= 0)
+            {
+                length = PlayIndexOn(FindFreeSource(), table.tuneInSweep, index, "CLICK TO TUNE IN：ヒュイーン（" + (index + 1) + "）");
+            }
+            yield return new WaitForSecondsRealtime(length + Mathf.Max(0f, table.narrationDelayAfterSweep));
+            _intro = null;
+
+            bool visible = titleView != null && titleView.IsVisible;
+            bool closing = titleView != null && titleView.IsClosing;
+            if (!TitleNarrationRule.CanStart(_muted, visible, closing))
+            {
+                Record("ナレーション：タイトルが閉じた・音を消したので流さない");
+                yield break;
+            }
+            AudioClip clip = PickClip(table.titleNarration, 0);
+            if (clip == null)
+            {
+                yield break;
+            }
+            _narration.clip = clip;
+            _narration.loop = false;
+            _narration.pitch = 1f;
+            _narrationBaseVolume = SeVolume(table.titleNarration);
+            _narration.volume = _narrationBaseVolume;
+            _narrationFading = false;
+            _narration.Play();
+            Record("ナレーション：始めた");
+        }
+
+        /// <summary>ナレーション：タイトルが閉じたら小さくして止める。音を消したらすぐ止める。</summary>
+        private void UpdateNarration()
+        {
+            if (_narration == null || table == null)
+            {
+                return;
+            }
+
+            if (!_narration.isPlaying)
+            {
+                if (_narrationBaseVolume > 0f)
+                {
+                    // 止める処理を通らずに鳴り終わった＝最後まで流れた
+                    Record("ナレーション：最後まで流れた");
+                    _narrationBaseVolume = 0f;
+                }
+                return;
+            }
+
+            if (TitleNarrationRule.ShouldStopNow(_muted))
+            {
+                _narration.Stop();
+                _narrationBaseVolume = 0f;
+                Record("ナレーション：音を消したので止めた");
+                return;
+            }
+
+            bool visible = titleView != null && titleView.IsVisible;
+            bool closing = titleView != null && titleView.IsClosing;
+            if (!_narrationFading && TitleNarrationRule.ShouldFadeOut(visible, closing))
+            {
+                _narrationFading = true;
+                _narrationFadeStart = Time.unscaledTime;
+                Record("ナレーション：タイトルを閉じたので小さくし始めた");
+            }
+            if (_narrationFading)
+            {
+                float k = 1f - (Time.unscaledTime - _narrationFadeStart) / Mathf.Max(table.narrationFadeSeconds, 0.01f);
+                if (k <= 0f)
+                {
+                    _narration.Stop();
+                    _narrationBaseVolume = 0f;
+                    _narrationFading = false;
+                    Record("ナレーション：止めた");
+                    return;
+                }
+                _narration.volume = _narrationBaseVolume * k;
+            }
+        }
+
         private void Update()
         {
             UpdatePinVoices();
+            UpdateNarration();
             UpdateBgm();
         }
 
@@ -542,11 +671,16 @@ namespace CrazyBowling.Core
             }
             _bgmTargetVolume = volume * table.bgmMaster;
 
+            // ナレーションの間は BGM を小さくし、終わったらゆっくり戻す
+            float duckTarget = IsNarrationPlaying && !_narrationFading ? SoundLevel.DbToLinear(table.bgmDuckDb) : 1f;
+            float duckSeconds = duckTarget < _bgmDuck ? 0.3f : Mathf.Max(table.bgmDuckReleaseSeconds, 0.01f);
+            _bgmDuck = Mathf.MoveTowards(_bgmDuck, duckTarget, Time.unscaledDeltaTime / duckSeconds);
+
             float step = Time.unscaledDeltaTime / Mathf.Max(table.bgmCrossfadeSeconds, 0.01f);
             for (int i = 0; i < _bgm.Length; i++)
             {
                 AudioSource source = _bgm[i];
-                float target = i == _bgmCurrent && _bgmClip != null ? _bgmTargetVolume : 0f;
+                float target = i == _bgmCurrent && _bgmClip != null ? _bgmTargetVolume * _bgmDuck : 0f;
                 source.volume = Mathf.MoveTowards(source.volume, target, step * Mathf.Max(_bgmTargetVolume, 0.01f));
                 if (i != _bgmCurrent && source.isPlaying && source.volume <= 0f)
                 {
@@ -561,6 +695,11 @@ namespace CrazyBowling.Core
             clip = null;
             volume = 0f;
 
+            // CLICK TO TUNE IN の画面の間は、曲を流さない
+            if (tuneInView != null && tuneInView.IsVisible)
+            {
+                return;
+            }
             if (titleView != null && titleView.IsVisible)
             {
                 clip = table.titleBgm;

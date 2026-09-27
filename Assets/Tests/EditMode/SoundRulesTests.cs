@@ -282,6 +282,50 @@ namespace CrazyBowling.Tests.EditMode
             Assert.That(gate.TryThrust(4f), Is.True);
         }
 
+        // ======== タイトルのナレーション ========
+
+        [Test]
+        public void タイトルが出ていて音を消していなければ流す()
+        {
+            Assert.That(TitleNarrationRule.CanStart(false, true, false), Is.True);
+        }
+
+        [Test]
+        public void 音を消していたらナレーションを流さない()
+        {
+            Assert.That(TitleNarrationRule.CanStart(true, true, false), Is.False);
+        }
+
+        [Test]
+        public void タイトルが閉じ始めていたらナレーションを流さない()
+        {
+            Assert.That(TitleNarrationRule.CanStart(false, true, true), Is.False);
+            Assert.That(TitleNarrationRule.CanStart(false, false, false), Is.False);
+        }
+
+        [Test]
+        public void タイトルを閉じたら小さくして止める()
+        {
+            Assert.That(TitleNarrationRule.ShouldFadeOut(true, true), Is.True);
+            Assert.That(TitleNarrationRule.ShouldFadeOut(false, false), Is.True);
+            Assert.That(TitleNarrationRule.ShouldFadeOut(true, false), Is.False);
+        }
+
+        [Test]
+        public void 途中で音を消したらすぐ止める()
+        {
+            Assert.That(TitleNarrationRule.ShouldStopNow(true), Is.True);
+            Assert.That(TitleNarrationRule.ShouldStopNow(false), Is.False);
+        }
+
+        [Test]
+        public void dBを音量の倍率にする()
+        {
+            Assert.That(SoundLevel.DbToLinear(0f), Is.EqualTo(1f).Within(1e-5f));
+            Assert.That(SoundLevel.DbToLinear(-10f), Is.EqualTo(0.3162f).Within(1e-4f));
+            Assert.That(SoundLevel.DbToLinear(-20f), Is.EqualTo(0.1f).Within(1e-5f));
+        }
+
         // ======== 起伏の山 ========
 
         [Test]

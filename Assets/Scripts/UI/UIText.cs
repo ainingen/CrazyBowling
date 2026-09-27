@@ -101,6 +101,21 @@ namespace CrazyBowling.UI
         /// <summary>奥を見るボタン。</summary>
         public const string LookAhead = "LOOK AHEAD";
 
+        /// <summary>タイトルの前の画面：どこかをクリックしてもらう一言（段階6）。</summary>
+        public const string TuneInPrompt = "CLICK TO TUNE IN";
+
+        /// <summary>タイトルの前の画面：ラジオの上の札（段階6）。</summary>
+        public const string TuneInOnAir = "ON AIR";
+
+        /// <summary>タイトルの前の画面：ラジオの名前（段階6。架空の名前）。</summary>
+        public const string TuneInRadioName = "CRAZY BOWLING RADIO";
+
+        /// <summary>タイトルの前の画面：ダイヤルの単位（昔の AM ラジオの「キロサイクル」）。</summary>
+        public const string TuneInDialUnit = "KC";
+
+        /// <summary>タイトルの前の画面：ダイヤルの目盛りの数字（昔の AM ラジオの目盛り。×10 kc）。</summary>
+        public static readonly string[] TuneInDialNumbers = { "55", "60", "70", "80", "90", "100", "120", "140", "160" };
+
         /// <summary>音のボタン：音が出ているとき（段階6）。</summary>
         public const string SoundOn = "SOUND ON";
 

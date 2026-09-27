@@ -268,6 +268,44 @@ namespace CrazyBowling.Core
         }
     }
 
+    /// <summary>タイトルのナレーションを流す・止める決まり（段階6）。</summary>
+    public static class TitleNarrationRule
+    {
+        /// <summary>
+        /// ナレーションを流し始めてよいか。音を消していたら流さない。
+        /// タイトルが出ていない・閉じ始めていたら流さない。
+        /// </summary>
+        public static bool CanStart(bool muted, bool titleVisible, bool titleClosing)
+        {
+            return !muted && titleVisible && !titleClosing;
+        }
+
+        /// <summary>流れているナレーションを、小さくして止め始めるか（タイトルが閉じる・閉じ始めた）。</summary>
+        public static bool ShouldFadeOut(bool titleVisible, bool titleClosing)
+        {
+            return !titleVisible || titleClosing;
+        }
+
+        /// <summary>
+        /// 流れているナレーションを、すぐ止めるか（途中で音を消した）。
+        /// 音を戻しても、途中からは流さない。
+        /// </summary>
+        public static bool ShouldStopNow(bool muted)
+        {
+            return muted;
+        }
+    }
+
+    /// <summary>音量の数え方（段階6）。</summary>
+    public static class SoundLevel
+    {
+        /// <summary>dB を音量の倍率にする（-10dB → 約0.316、0dB → 1）。</summary>
+        public static float DbToLinear(float db)
+        {
+            return Mathf.Pow(10f, db / 20f);
+        }
+    }
+
     /// <summary>床の起伏の山（頂上）を探す（段階6。3本目の「ぽちゃん」に使う）。</summary>
     public static class LaneCrests
     {

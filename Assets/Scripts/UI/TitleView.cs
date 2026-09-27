@@ -95,6 +95,21 @@ namespace CrazyBowling.UI
         /// <summary>タイトルが出ているか（消えかけも含む）。</summary>
         public bool IsVisible => _visible;
 
+        /// <summary>CLICK TO START を押して、消え始めたか（段階6。ナレーションを止めるのに使う）。</summary>
+        public bool IsClosing => _visible && _hideStart > 0f;
+
+        /// <summary>
+        /// 最初から出し直す（段階6。CLICK TO TUNE IN の画面のあとに呼ぶ）。
+        /// ロゴの飛び込み・名義のともり方を、出し直した瞬間から始める。
+        /// </summary>
+        public void ShowFromStart()
+        {
+            _visible = true;
+            _hideStart = -100f;
+            _showStart = Time.unscaledTime;
+            ApplyVisible(1f);
+        }
+
         private void Awake()
         {
             if (gameManager == null)
