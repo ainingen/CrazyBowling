@@ -109,6 +109,8 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 439e5c703c59c524eb1cbb1cb1144799, type: 3}
     volume: 0.25
     pitchRandom: 0
+  lane07JetRepeatGap: 2
+  lane07JetMaxPerThrow: 2
   lane09Blast:
     clips:
     - {fileID: 8300000, guid: 0ddc83a5bbd2a0f4a8a5e4018d80fbf9, type: 3}

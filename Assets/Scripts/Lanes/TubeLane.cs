@@ -334,6 +334,12 @@ namespace CrazyBowling.Lanes
         /// <summary>筒が終わる位置（m）。</summary>
         public float TubeEndZ => tubeStartZ + Mathf.Max(0f, tubeLength);
 
+        /// <summary>筒の口（始まり）の位置（m。このレーンの座標）。段階6の音で、筒に入った瞬間を知るのに使う。読むだけ。</summary>
+        public float TubeStartZ => tubeStartZ;
+
+        /// <summary>筒の半径（m）。読むだけ。</summary>
+        public float TubeRadius => radius;
+
         /// <summary>当たり判定の板の枚数。</summary>
         public int ColliderFacetCount => colliderFacets != null ? colliderFacets.Length : 0;
 

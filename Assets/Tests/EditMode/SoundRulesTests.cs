@@ -228,6 +228,60 @@ namespace CrazyBowling.Tests.EditMode
             Assert.That(SoundSchedule.PickIndex(0, -1, 0.7f), Is.EqualTo(-1));
         }
 
+        // ======== 7本目のジェット ========
+
+        [Test]
+        public void 筒に入ったら鳴らす()
+        {
+            var gate = new JetSoundGate(2f, 2);
+            Assert.That(gate.TryEnter(10f), Is.True);
+            Assert.That(gate.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void 入った音の直後の推力は重ねない()
+        {
+            var gate = new JetSoundGate(2f, 2);
+            gate.TryEnter(10f);
+            Assert.That(gate.TryThrust(10.5f), Is.False);
+            Assert.That(gate.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void 止まりかけて間が空いた推力はもう一度鳴らす()
+        {
+            var gate = new JetSoundGate(2f, 2);
+            gate.TryEnter(10f);
+            Assert.That(gate.TryThrust(13f), Is.True);
+            Assert.That(gate.Count, Is.EqualTo(2));
+        }
+
+        [Test]
+        public void 一投の上限を超えては鳴らさない()
+        {
+            var gate = new JetSoundGate(0f, 2);
+            Assert.That(gate.TryEnter(1f), Is.True);
+            Assert.That(gate.TryThrust(5f), Is.True);
+            Assert.That(gate.TryThrust(9f), Is.False);
+            Assert.That(gate.TryEnter(12f), Is.False);
+        }
+
+        [Test]
+        public void 新しい投で数え直す()
+        {
+            var gate = new JetSoundGate(2f, 1);
+            gate.TryEnter(1f);
+            gate.ResetThrow();
+            Assert.That(gate.TryEnter(1.5f), Is.True);
+        }
+
+        [Test]
+        public void 筒に入らずに推力だけ効いたら鳴らす()
+        {
+            var gate = new JetSoundGate(2f, 2);
+            Assert.That(gate.TryThrust(4f), Is.True);
+        }
+
         // ======== 起伏の山 ========
 
         [Test]

@@ -211,6 +211,63 @@ namespace CrazyBowling.Core
         }
     }
 
+    /// <summary>
+    /// 7本目のジェットの音を鳴らすかを決める（段階6）。
+    /// 筒に入ったら鳴らす。推力が効き始めたときは、前の音から間が空いていれば「吹き出した」としてもう一度鳴らす。
+    /// 1投に鳴らす回数に上限を付けて、うるさくならないようにする。
+    /// </summary>
+    public class JetSoundGate
+    {
+        private int _count;
+        private float _last = float.NegativeInfinity;
+
+        /// <summary>前の音からこれより短い間は、推力の音を重ねない（秒）。</summary>
+        public float RepeatGap { get; set; }
+
+        /// <summary>1投に鳴らす回数の上限。</summary>
+        public int MaxPerThrow { get; set; }
+
+        /// <summary>この投で鳴らした回数。</summary>
+        public int Count => _count;
+
+        public JetSoundGate(float repeatGap, int maxPerThrow)
+        {
+            RepeatGap = repeatGap;
+            MaxPerThrow = maxPerThrow;
+        }
+
+        /// <summary>新しい投になった。数え直す。</summary>
+        public void ResetThrow()
+        {
+            _count = 0;
+            _last = float.NegativeInfinity;
+        }
+
+        /// <summary>筒に入った。上限に達していなければ鳴らす（鳴らすなら true）。</summary>
+        public bool TryEnter(float now)
+        {
+            if (_count >= Mathf.Max(MaxPerThrow, 0))
+            {
+                return false;
+            }
+            _count++;
+            _last = now;
+            return true;
+        }
+
+        /// <summary>推力が効き始めた。前の音から間が空いていて、上限に達していなければ鳴らす（鳴らすなら true）。</summary>
+        public bool TryThrust(float now)
+        {
+            if (_count >= Mathf.Max(MaxPerThrow, 0) || now - _last < RepeatGap)
+            {
+                return false;
+            }
+            _count++;
+            _last = now;
+            return true;
+        }
+    }
+
     /// <summary>床の起伏の山（頂上）を探す（段階6。3本目の「ぽちゃん」に使う）。</summary>
     public static class LaneCrests
     {

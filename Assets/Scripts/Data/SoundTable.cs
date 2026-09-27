@@ -173,8 +173,14 @@ namespace CrazyBowling.Data
         [Tooltip("6本目：跳び台で跳んだとき。")]
         public SoundEntry lane06Jump = new SoundEntry();
 
-        [Tooltip("7本目：エンジンの推力で押し出され始めたとき。")]
+        [Tooltip("7本目：ボールが筒（エンジン）に入ったとき。止まりかけてから推力で押し出されたときも、もう一度鳴らす。")]
         public SoundEntry lane07Jet = new SoundEntry();
+
+        [Tooltip("7本目：前のジェットの音からこれより短い間に推力が効いたら、重ねて鳴らさない（秒）。")]
+        public float lane07JetRepeatGap = 2f;
+
+        [Tooltip("7本目：1投にジェットの音を鳴らす回数の上限。")]
+        public int lane07JetMaxPerThrow = 2;
 
         [Tooltip("9本目：神殿が吹き飛ぶとき。")]
         public SoundEntry lane09Blast = new SoundEntry();
