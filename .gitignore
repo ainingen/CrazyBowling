@@ -70,3 +70,8 @@ crashlytics-build.properties
 # ---------------------------------------------
 /[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
 /[Ss]erver[Dd]ata/
+
+# ---------------------------------------------
+# 音の試作（聞いて選ぶための一時的なファイル。音源一覧.md の決まり）
+# ---------------------------------------------
+/AudioOriginals/preview_*/
