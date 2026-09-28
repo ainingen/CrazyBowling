@@ -194,6 +194,58 @@ namespace CrazyBowling.UI
         public const string ResultComment =
             "以上で本日のボウリングは終了です。またのご利用をお待ちしております。";
 
+        // ======== 個人の記録（段階6） ========
+
+        /// <summary>結果画面：合計点の自己ベストを更新したとき。</summary>
+        public const string NewRecord = "NEW RECORD!";
+
+        /// <summary>結果画面：そのレーンの自己ベストを更新した行の印。</summary>
+        public const string RecordLaneBestMark = "BEST";
+
+        /// <summary>タイトルの、記録の画面を開くボタン。記録の画面の見出しも同じ。</summary>
+        public const string Records = "RECORDS";
+
+        public const string RecordsBestScore = "BEST SCORE";
+        public const string RecordsLaneBest = "LANE BEST";
+        public const string RecordsTotals = "TOTAL";
+        public const string RecordsRecent = "RECENT GAMES";
+        public const string RecordsGames = "GAMES";
+        public const string RecordsStrikes = "STRIKES";
+        public const string RecordsSpares = "SPARES";
+        public const string RecordsGutters = "GUTTERS";
+        public const string RecordsDate = "DATE";
+        public const string RecordsRank = "RANK";
+        public const string RecordsClose = "CLOSE";
+        public const string RecordsClear = "CLEAR";
+        public const string RecordsYes = "YES";
+        public const string RecordsNo = "NO";
+
+        /// <summary>升目のガターの印（倒した本数0の投）。</summary>
+        public const string GutterMark = "G";
+
+        /// <summary>最近の成績の数。{0} が残っている数、{1} が残す数。</summary>
+        public const string RecordsRecentCountFormat = "{0} / {1}";
+
+        /// <summary>記録の画面の一言。説明書口調。</summary>
+        public const string RecordsIntro =
+            "本記録は、お使いの端末に保存されております。";
+
+        /// <summary>記録の画面の注意書き（保存場所）。説明書口調。</summary>
+        public const string RecordsStorageNote =
+            "成績は、この端末のこのブラウザにのみ保存されます。キャッシュを消去すると、記録も失われます。";
+
+        /// <summary>記録の画面の注意書き（記録するゲーム）。説明書口調。</summary>
+        public const string RecordsRuleNote =
+            "記録されるのは、10本すべてを投げ終えたゲームのみです。";
+
+        /// <summary>記録がまだ無いとき。説明書口調。</summary>
+        public const string RecordsEmpty =
+            "記録はまだございません。";
+
+        /// <summary>記録を消す前の確認。説明書口調。</summary>
+        public const string RecordsClearConfirm =
+            "すべての記録を消去します。\n消去した記録は元に戻りません。よろしいですか。";
+
         // ======== その他 ========
 
         /// <summary>縦画面のときの案内。</summary>

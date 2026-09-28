@@ -124,6 +124,15 @@ namespace CrazyBowling.UI
 
         [System.NonSerialized] private Row[] _rows;
 
+        /// <summary>「NEW RECORD!」（段階6。合計点の自己ベストを更新したときだけ出す）。</summary>
+        [System.NonSerialized] private TextMeshProUGUI _newRecordLabel;
+
+        /// <summary>このゲームで合計点の自己ベストを更新したか（段階6）。</summary>
+        private bool _showNewRecord;
+
+        /// <summary>このゲームで自己ベストを更新したレーン（段階6）。</summary>
+        [System.NonSerialized] private bool[] _laneBests;
+
         private void Awake()
         {
             if (gameManager == null)
@@ -207,10 +216,17 @@ namespace CrazyBowling.UI
                     gameManager.TotalScore, gameManager.PerfectScore);
             }
 
+            // 個人の記録（段階6）：記録したゲームで自己ベストを更新したときだけ、NEW RECORD! と BEST の印を出す
+            RecordKeeper keeper = RecordKeeper.Instance;
+            bool recorded = keeper != null && keeper.LastGameRecorded;
+            _showNewRecord = recorded && keeper.LastUpdate.newTotalBest;
+            _laneBests = recorded ? keeper.LastUpdate.newLaneBests : null;
+
             if (skin != null && rowsParent != null)
             {
                 BuildRows();
                 BuildRays();
+                BuildNewRecord();
                 if (commentLabel != null)
                 {
                     commentLabel.text = UIText.ResultComment;
@@ -253,19 +269,13 @@ namespace CrazyBowling.UI
                 : string.Format(fallenFormat, score.fallen);
         }
 
-        /// <summary>合計÷満点で S〜D を決める（表示だけ）。</summary>
+        /// <summary>RANK の境目（記録の係も同じものを使う。段階6）。</summary>
+        public float[] RankThresholds => rankThresholds;
+
+        /// <summary>合計÷満点で S〜D を決める（表示だけ。決め方は RankRule。段階6）。</summary>
         private string Rank()
         {
-            float ratio = gameManager.PerfectScore > 0 ? gameManager.TotalScore / (float)gameManager.PerfectScore : 0f;
-            string[] names = { "S", "A", "B", "C" };
-            for (int i = 0; i < rankThresholds.Length && i < names.Length; i++)
-            {
-                if (ratio >= rankThresholds[i])
-                {
-                    return names[i];
-                }
-            }
-            return "D";
+            return RankRule.Decide(gameManager.TotalScore, gameManager.PerfectScore, rankThresholds);
         }
 
         /// <summary>内訳の行を作り直す。</summary>
@@ -303,6 +313,18 @@ namespace CrazyBowling.UI
                     row.kind.color = skin.Gold;
                     row.score.color = skin.Gold;
                 }
+
+                // レーンごとの自己ベストを更新したレーン：名前の右端に小さく BEST（段階6）
+                if (_laneBests != null && i < _laneBests.Length && _laneBests[i])
+                {
+                    RectTransform bestRect = NeonUI.CreateRect(rect, "Best", new Vector2(0.44f, 0.18f), new Vector2(0.555f, 0.82f), Vector2.zero, Vector2.zero);
+                    TextMeshProUGUI best = NeonUI.CreateText(bestRect, skin.BoldFont, skin.BoldNeonMaterial, 22f, skin.Gold, TextAlignmentOptions.Right);
+                    best.enableAutoSizing = true;
+                    best.fontSizeMin = 12f;
+                    best.fontSizeMax = 22f;
+                    best.text = UIText.RecordLaneBestMark;
+                    NeonUI.SetNeonColor(best, skin.Gold, 0.5f);
+                }
                 _rows[i] = row;
             }
         }
@@ -318,6 +340,31 @@ namespace CrazyBowling.UI
             label.fontSizeMax = 34f;
             label.text = text;
             return label;
+        }
+
+        /// <summary>
+        /// 「NEW RECORD!」を作る（段階6。1回だけ作り、ゲームごとに出す・出さないを切り替える）。
+        /// RANK の反対側（左上）に置き、RANK と同じ時に飛び込む。色は流れるが、明るさは変えない（点滅させない）。
+        /// </summary>
+        private void BuildNewRecord()
+        {
+            if (rankLabel == null)
+            {
+                return;
+            }
+            if (_newRecordLabel == null)
+            {
+                RectTransform rankRect = rankLabel.rectTransform;
+                RectTransform rect = NeonUI.CreateRect(rankRect.parent, "NewRecord", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(520f, 110f));
+                rect.localPosition = new Vector3(-rankRect.localPosition.x, rankRect.localPosition.y, 0f);
+                _newRecordLabel = NeonUI.CreateText(rect, skin.BoldFont, skin.BoldNeonMaterial, 64f, Color.white, TextAlignmentOptions.Center);
+                _newRecordLabel.enableAutoSizing = true;
+                _newRecordLabel.fontSizeMin = 24f;
+                _newRecordLabel.fontSizeMax = 64f;
+                _newRecordLabel.text = UIText.NewRecord;
+            }
+            _newRecordLabel.gameObject.SetActive(_showNewRecord);
+            _newRecordLabel.alpha = 0f;
         }
 
         /// <summary>後ろで回る光の筋を作る（1回だけ）。</summary>
@@ -414,6 +461,17 @@ namespace CrazyBowling.UI
                 rankLabel.rectTransform.localScale = new Vector3(scale, scale, 1f);
                 rankLabel.rectTransform.localEulerAngles = new Vector3(0f, 0f, rankT <= 0f ? -20f : Mathf.LerpUnclamped(-20f, -6f, NeonUI.EaseOutBack(rankT)));
                 NeonUI.SetNeonColor(rankLabel, NeonUI.Hue(now * 0.15f, 0.8f), 0.7f);
+            }
+
+            // NEW RECORD!（段階6）：RANK と同じ時に大きく飛び込み、虹色がゆっくり流れる（明るさは変えない）
+            if (_newRecordLabel != null && _showNewRecord)
+            {
+                float nt = (t - 0.3f - totalCountSeconds - _rankDelay) / 0.45f;
+                _newRecordLabel.alpha = Mathf.Clamp01(nt * 3f);
+                float scale = nt <= 0f ? 2.6f : Mathf.LerpUnclamped(2.6f, 1f, NeonUI.EaseOutBack(nt));
+                _newRecordLabel.rectTransform.localScale = new Vector3(scale, scale, 1f);
+                _newRecordLabel.rectTransform.localEulerAngles = new Vector3(0f, 0f, 6f);
+                NeonUI.SetNeonColor(_newRecordLabel, NeonUI.Hue(now * 0.25f, 0.85f), 0.75f);
             }
 
             // 内訳：1行ずつ右から滑り込む

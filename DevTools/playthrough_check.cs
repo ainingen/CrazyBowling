@@ -13,7 +13,8 @@
 //
 // 見ること（仕様.md の「1〜10本目の通し確認」）
 //   本数の矛盾・判定のタイムアウト・警告・エラー・各レーン開始時のピン・共有設定（1ゲーム目と2ゲーム目で同じか）・
-//   動いているべきものが構え中に動いているか・BGM の切り替わり・音の記録（8本目の音・前のレーンの音の残り）
+//   動いているべきものが構え中に動いているか・BGM の切り替わり・音の記録（8本目の音・前のレーンの音の残り）・
+//   個人の記録（2ゲームとも記録されるか。確かめ用の別の鍵に記録し、終わったら消して、本物の記録が変わっていないか比べる）
 // 投げ方
 //   ふつう：1投目 速10・真ん中／2投目 速9・立ち位置 +0.25
 //   8本目：速8・真ん中（ピンが場外に止まる）
@@ -77,6 +78,30 @@ var radioTx = new System.Collections.Generic.Dictionary<int, int>();
 string djPrevClip = null; float djPrevTime = 0f; bool djPrevTalking = false;
 float djQuietSince = -1f, djMaxGap = 0f, seSince = -1f, seEndAt = -1f; bool seChecked = false, backPending = false;
 int djTest = 0; float djTestAt = -1f;
+
+// ---- 個人の記録（段階6）：確かめのあいだは別の鍵に記録し、本物の記録を汚さない ----
+const string recordSandbox = "CrazyBowling.Records.DevCheck";
+string realKey = CrazyBowling.Core.RecordStore.DefaultKey;
+bool realHadKey = UnityEngine.PlayerPrefs.HasKey(realKey);
+string realBefore = UnityEngine.PlayerPrefs.GetString(realKey, "");
+CrazyBowling.Core.RecordStore.Key = recordSandbox;
+UnityEngine.PlayerPrefs.DeleteKey(recordSandbox);
+var keeper = CrazyBowling.Core.RecordKeeper.Instance;
+int recordOk = 0, recordBad = 0;
+System.Action checkRecord = () =>
+{
+    if (keeper == null) { recordBad++; W("★記録：RecordKeeper が無い"); return; }
+    var book = CrazyBowling.Core.RecordStore.Load(gm.LaneCount);
+    bool ok = keeper.LastGameRecorded && book.games == game && book.recent.Count == game && book.recent[0].total == gm.TotalScore;
+    if (ok)
+        for (int i = 0; i < gm.LaneCount; i++)
+        {
+            var lr = book.recent[0].lanes[i]; var ls = gm.GetLaneScore(i);
+            if (lr.score != ls.score || lr.first + lr.second != ls.fallen) { ok = false; W($"★記録：{i + 1}本目が合わない（記録 {lr.first}+{lr.second}={lr.score}点・得点表 {ls.fallen}本 {ls.score}点）"); }
+        }
+    if (ok) recordOk++; else recordBad++;
+    W($"記録｜{game}ゲーム目：記録した {keeper.LastGameRecorded}・ゲーム数 {book.games}・最近 {book.recent.Count}・合計 {(book.recent.Count > 0 ? book.recent[0].total : -1)}（得点表 {gm.TotalScore}）・RANK {(book.recent.Count > 0 ? book.recent[0].rank : "-")}・自己ベスト {book.bestTotal}｜{(ok ? "合格" : "★不合格")}");
+};
 System.Func<string> djLabel = () => djToggle != null ? djToggle.GetComponentInChildren<TMPro.TMP_Text>(true).text : "-";
 
 // ---- ログ（警告・エラー・タイムアウト） ----
@@ -423,6 +448,14 @@ finish = () =>
     if (dj == null) { notFound++; W("★見つからない｜DjRadio"); }
     else { dj.DjMuted = djMutedAtStart; }
     sp.Muted = soundMutedAtStart;
+    // 記録：確かめ用の記録を消して鍵を戻し、本物の記録が1文字も変わっていないか比べる
+    UnityEngine.PlayerPrefs.DeleteKey(recordSandbox);
+    UnityEngine.PlayerPrefs.Save();
+    CrazyBowling.Core.RecordStore.Key = realKey;
+    bool realSame = UnityEngine.PlayerPrefs.HasKey(realKey) == realHadKey && UnityEngine.PlayerPrefs.GetString(realKey, "") == realBefore;
+    if (!realSame) { recordBad++; W("★記録：本物の記録が変わった"); }
+    W($"記録｜記録した {recordOk}ゲーム（期待 2）・本物の記録 {(realSame ? "変わっていない" : "★変わった")}（{(realHadKey ? realBefore.Length + "文字" : "無し")}）");
+    if (recordOk != 2) recordBad++;
     W($"DJ｜始めた コーナー {djCornerStarts}・ID {djIdStarts}｜切り替わりをしゃべったまままたいだ {djSwitchTalking}回・途切れ {djBreak}｜2本同時 {djDouble}｜同じ周の重なり {djRepeat}｜" +
       $"いちばん長い間 {djMaxGap:F1}秒・長すぎる間 {djLongGap}｜効果音で下がった {djDuckDown}回（下がらない {djDuckDownBad}）・戻った {djDuckBack}回（戻らない {djDuckBackBad}）｜" +
       $"8本目の交信 {txTotal}回・DJ と重なった {radioOverlap}｜DJ のボタン 合格 {djButtonOk}／不合格 {djButtonBad}｜全体の音のボタン 合格 {djMuteOk}／不合格 {djMuteBad}");
@@ -430,7 +463,7 @@ finish = () =>
               + (djSwitchTalking == 0 ? 1 : 0) + (djDuckDown == 0 ? 1 : 0) + (djButtonOk < 2 ? 1 : 0) + (djMuteOk < 2 ? 1 : 0);
     W($"まとめ｜終わったレーン {lanesFinished}（期待 20）｜投球 {throws}｜タイムアウト {timeouts}｜本数の矛盾 {contradictions}｜警告 {warn}｜エラー {err}｜" +
       $"開始時のピンの食い違い {pinStartBad}｜共有設定の食い違い {sharedMismatch}｜動きの確認 {moveChecks}回・止まっていた {moveStopped}回｜" +
-      $"BGM の食い違い {bgmBad}（RANK のあとの結果画面の曲 {rankChecks}回）｜レーンの切り替え {switches}回・前のレーンの音の残り {residue}回｜8本目のボール・ピン・歓声の音 {vac}回｜見つからない部品 {notFound}｜DJ の食い違い {djBad}｜" +
+      $"BGM の食い違い {bgmBad}（RANK のあとの結果画面の曲 {rankChecks}回）｜レーンの切り替え {switches}回・前のレーンの音の残り {residue}回｜8本目のボール・ピン・歓声の音 {vac}回｜見つからない部品 {notFound}｜DJ の食い違い {djBad}｜記録の食い違い {recordBad}｜" +
       $"{(UnityEditor.EditorApplication.isPlaying ? "" : "★途中で Play が止まった｜")}終わり");
     System.IO.File.AppendAllText(logPath, buf.ToString()); buf.Clear();
 };
@@ -494,7 +527,7 @@ tick = () =>
     // 結果画面：RANK が出てから、結果画面の曲が始まったかを見る。見終わったら、1ゲーム目なら「やり直し」、2ゲーム目なら終わる
     if (gm.IsFinished)
     {
-        if (finishedAt < 0f) { finishedAt = t; rankAt = -1f; rankBgmDone = false; }
+        if (finishedAt < 0f) { finishedAt = t; rankAt = -1f; rankBgmDone = false; checkRecord(); }
         if (rankAt < 0f)
         {
             // 鳴らした音の記録に「ランク」が出たら、RANK が出た（記録の時刻は Time.time）

@@ -186,7 +186,28 @@ namespace CrazyBowling.Core
 
             ResetScores();
             _laneIndex = Mathf.Clamp(startLaneIndex, 0, laneSequence.Count - 1) - 1;
+            // 1本目から始めたゲームだけ、個人の記録に残せる（段階6）
+            IsCleanGame = startLaneIndex <= 0;
             GoToNextLane();
+        }
+
+        /// <summary>
+        /// 1本目から始めて、途中でレーンへ直行していないゲームか（段階6。個人の記録に残すかどうかに使う）。
+        /// 開発用の直行（数字キー・開始レーンの指定）を使ったら false になる。
+        /// </summary>
+        public bool IsCleanGame { get; private set; }
+
+        /// <summary>全レーンが終わった瞬間に知らせる（段階6。個人の記録に使う）。得点はこのとき確定している。</summary>
+        public event System.Action GameFinished;
+
+        /// <summary>そのレーンの投球の結果（1投目・2投目の本数）。まだ遊んでいなければ既定値。</summary>
+        public LaneThrowResult GetLaneResult(int laneIndex)
+        {
+            if (_laneResults == null || laneIndex < 0 || laneIndex >= _laneResults.Length)
+            {
+                return default;
+            }
+            return _laneResults[laneIndex];
         }
 
         /// <summary>
@@ -206,6 +227,8 @@ namespace CrazyBowling.Core
                 ResetScores();
             }
 
+            // 直行したゲームは個人の記録に残さない（段階6）
+            IsCleanGame = false;
             _state = GameState.Idle;
             _laneIndex = Mathf.Clamp(laneNumber, 1, laneSequence.Count) - 2;
             GoToNextLane();
@@ -520,7 +543,11 @@ namespace CrazyBowling.Core
             int count = laneSequence != null ? laneSequence.Count : 0;
             _laneScores = new LaneScore[count];
             _lanePlayed = new bool[count];
+            _laneResults = new LaneThrowResult[count];
         }
+
+        /// <summary>レーンごとの投球の結果（段階6。個人の記録に 1投目・2投目の本数を残すため）。</summary>
+        private LaneThrowResult[] _laneResults;
 
         /// <summary>投球係から「レーンが終わった」と知らされた。ここで得点にする。</summary>
         private void OnLaneFinished(LaneThrowResult result)
@@ -538,6 +565,10 @@ namespace CrazyBowling.Core
             {
                 _laneScores[_laneIndex] = score;
                 _lanePlayed[_laneIndex] = true;
+                if (_laneResults != null && _laneIndex < _laneResults.Length)
+                {
+                    _laneResults[_laneIndex] = result;
+                }
             }
 
             if (logEvents)
@@ -584,6 +615,8 @@ namespace CrazyBowling.Core
                 Debug.Log($"══ 全{laneSequence.Count}レーン終了："
                     + $"{TotalScore}点 / {PerfectScore}点（{TotalFallen}本） ══", this);
             }
+
+            GameFinished?.Invoke();
         }
     }
 }
