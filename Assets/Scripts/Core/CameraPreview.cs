@@ -58,6 +58,22 @@ namespace CrazyBowling.Core
                  "投球操作を始めたときに自動で戻る。進む速さと同じか少し速めにする。")]
         [SerializeField] private float manualReturnSpeed = 2.2f;
 
+        [Header("見回し（LOOK AHEAD の間。段階6）")]
+        [Tooltip("ドラッグ1ピクセルあたりに向きを変える角度（度）。")]
+        [SerializeField] private float lookDegreesPerPixel = 0.12f;
+
+        [Tooltip("ホイール1目盛りあたりの寄り引き（画角の度数）。")]
+        [SerializeField] private float wheelZoomPerNotch = 2f;
+
+        [Tooltip("2本指の距離1ピクセルあたりの寄り引き（画角の度数）。")]
+        [SerializeField] private float pinchZoomPerPixel = 0.04f;
+
+        [Tooltip("BACK で戻るときに、向きと寄り引きを元へ戻す速さ（度／秒）。")]
+        [SerializeField] private float lookRelaxSpeed = 150f;
+
+        [Tooltip("振れる幅の既定値。レーンに LaneLookAround があれば、そのレーンだけそちらを使う。")]
+        [SerializeField] private LookAroundLimits defaultLookLimits = LookAroundLimits.Default;
+
         [Header("経路が無いレーンのとき")]
         [Tooltip("自動で作る経路の、途中の高さ（m）。")]
         [SerializeField] private float defaultTravelHeight = 2.2f;
@@ -85,6 +101,49 @@ namespace CrazyBowling.Core
 
         /// <summary>手動の下見のボタンが押されているか。</summary>
         private bool _manualHeld;
+
+        private Camera _camera;
+        private float _baseFov = -1f;
+
+        /// <summary>見回しで足している向き（x：左右、y：上下。上が正。度）。</summary>
+        private Vector2 _look;
+
+        /// <summary>見回しで足している画角（負で寄る。度）。</summary>
+        private float _zoom;
+
+        /// <summary>このレーンで振れる幅。</summary>
+        private LookAroundLimits _limits = LookAroundLimits.Default;
+
+        /// <summary>見回しのドラッグの最中か（押し始めがボタンなどの上なら false）。</summary>
+        private bool _dragging;
+        private Vector2 _lastPointer;
+        private float _lastPinch = -1f;
+
+        /// <summary>
+        /// 見回し中か（LOOK AHEAD で奥へ進んでいる間と、止まっている間）。
+        /// この間はドラッグで向きを、ホイール・2本指で寄り引きを変える。球は投げられない。BACK（<see cref="EndLookAround"/>）で戻る。
+        /// </summary>
+        public bool IsLookingAround => _state == PreviewState.Manual;
+
+        /// <summary>見回しで足している向き（確かめるとき用）。</summary>
+        public Vector2 Look => _look;
+
+        /// <summary>見回しで足している画角（確かめるとき用）。</summary>
+        public float Zoom => _zoom;
+
+        /// <summary>このレーンで振れる幅（確かめるとき用）。</summary>
+        public LookAroundLimits Limits => _limits;
+
+        /// <summary>見回しを終えて構えの視点へ戻る（BACK ボタンから呼ぶ）。</summary>
+        public void EndLookAround()
+        {
+            if (_state == PreviewState.Manual)
+            {
+                _state = PreviewState.Returning;
+                _dragging = false;
+                _lastPinch = -1f;
+            }
+        }
 
         /// <summary>下見が動いているか。UIの出し入れに使う。</summary>
         public bool IsPlaying => _state != PreviewState.Idle;
@@ -114,6 +173,11 @@ namespace CrazyBowling.Core
             _path = BuildPath(lane, laneRoot);
             _manualProgress = 0f;
             _manualHeld = false;
+
+            // 見回しの幅：レーンに LaneLookAround があれば、そのレーンだけそちらを使う
+            LaneLookAround laneLook = lane != null ? lane.GetComponentInChildren<LaneLookAround>(true) : null;
+            _limits = laneLook != null ? laneLook.Limits : defaultLookLimits;
+            ResetLook();
 
             if (!playOnLaneStart || _path == null || _path.Length < 2)
             {
@@ -193,15 +257,16 @@ namespace CrazyBowling.Core
         }
 
         /// <summary>
-        /// 手動の下見：押している間だけ経路を進み、離したらその位置で止まる。
-        /// 構えの視点へは戻さない。止めた位置からもう一度押せば続きを進む。
+        /// 手動の下見（見回し）：押している間だけ経路を進み、離したらその位置で止まる。
+        /// 止めた位置からもう一度押せば続きを進む。この間はドラッグで向きを、ホイール・2本指で寄り引きを変える
+        /// （カメラの位置は経路の上から動かさない）。球は投げられない。BACK で構えの視点へ戻る。
         /// </summary>
         private void UpdateManual()
         {
-            // 投球操作を始めたら構えの視点へ戻す。戻す専用のボタンは作らない
+            // 念のため：球が構えから外れたら（ふつうは入力を止めているので起きない）構えの視点へ戻す
             if (ballController != null && !ballController.IsAiming)
             {
-                _state = PreviewState.Returning;
+                EndLookAround();
                 return;
             }
 
@@ -210,14 +275,18 @@ namespace CrazyBowling.Core
                 _manualProgress = Mathf.Clamp01(_manualProgress + manualSpeed * Time.deltaTime);
             }
 
+            ReadLookInput();
+
             // 離している間は進めないだけで、その位置に居続ける
             Apply(_manualProgress);
         }
 
-        /// <summary>構えの視点へ戻っている最中。戻りきったら通常の制御に返す。</summary>
+        /// <summary>構えの視点へ戻っている最中。向きと寄り引きも元へ戻す。戻りきったら通常の制御に返す。</summary>
         private void UpdateReturning()
         {
             _manualProgress = Mathf.Clamp01(_manualProgress - manualReturnSpeed * Time.deltaTime);
+            _look = LookAroundRules.Relax(_look, lookRelaxSpeed, Time.deltaTime);
+            _zoom = Mathf.MoveTowards(_zoom, 0f, lookRelaxSpeed * 0.25f * Time.deltaTime);
 
             if (_manualProgress <= 0f)
             {
@@ -226,6 +295,110 @@ namespace CrazyBowling.Core
             }
 
             Apply(_manualProgress);
+        }
+
+        /// <summary>見回しの入力を読む：ドラッグ（マウス・指1本）で向き、ホイール・2本指で寄り引き。</summary>
+        private void ReadLookInput()
+        {
+            // 2本指：つまむ・広げるで寄り引き（その間は向きを変えない）
+            Touchscreen touch = Touchscreen.current;
+            int fingers = 0;
+            Vector2 f0 = Vector2.zero, f1 = Vector2.zero;
+            if (touch != null)
+            {
+                foreach (var t in touch.touches)
+                {
+                    if (!t.press.isPressed)
+                    {
+                        continue;
+                    }
+                    if (fingers == 0) f0 = t.position.ReadValue();
+                    else if (fingers == 1) f1 = t.position.ReadValue();
+                    fingers++;
+                }
+            }
+            if (fingers >= 2)
+            {
+                float distance = Vector2.Distance(f0, f1);
+                if (_lastPinch >= 0f)
+                {
+                    _zoom = LookAroundRules.ApplyZoom(_zoom, LookAroundRules.PinchToZoom(_lastPinch, distance, pinchZoomPerPixel), _limits);
+                }
+                _lastPinch = distance;
+                _dragging = false;
+                return;
+            }
+            _lastPinch = -1f;
+
+            // ホイール
+            Mouse mouse = Mouse.current;
+            if (mouse != null)
+            {
+                float wheel = mouse.scroll.ReadValue().y;
+                if (Mathf.Abs(wheel) > 0.01f)
+                {
+                    _zoom = LookAroundRules.ApplyZoom(_zoom, LookAroundRules.WheelToZoom(wheel, wheelZoomPerNotch), _limits);
+                }
+            }
+
+            // ドラッグ：押し始めがボタンなどの上なら見回さない（LOOK AHEAD・BACK を押しても向きが動かないように）
+            Pointer pointer = Pointer.current;
+            if (pointer == null)
+            {
+                return;
+            }
+            Vector2 position = pointer.position.ReadValue();
+            if (pointer.press.wasPressedThisFrame)
+            {
+                _dragging = !IsPointerOverUI();
+                _lastPointer = position;
+                return;
+            }
+            if (!pointer.press.isPressed)
+            {
+                _dragging = false;
+                return;
+            }
+            if (_dragging)
+            {
+                _look = LookAroundRules.ApplyDrag(_look, position - _lastPointer, lookDegreesPerPixel, _limits);
+                _lastPointer = position;
+            }
+        }
+
+        private static bool IsPointerOverUI()
+        {
+            return UnityEngine.EventSystems.EventSystem.current != null
+                && UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject();
+        }
+
+        /// <summary>見回しを元に戻す（向き 0・寄り引き 0・画角を元の値へ）。</summary>
+        private void ResetLook()
+        {
+            _look = Vector2.zero;
+            _zoom = 0f;
+            _dragging = false;
+            _lastPinch = -1f;
+            if (Cam != null && _baseFov > 0f)
+            {
+                Cam.fieldOfView = _baseFov;
+            }
+        }
+
+        private Camera Cam
+        {
+            get
+            {
+                if (_camera == null)
+                {
+                    _camera = GetComponent<Camera>();
+                    if (_camera != null && _baseFov < 0f)
+                    {
+                        _baseFov = _camera.fieldOfView;
+                    }
+                }
+                return _camera;
+            }
         }
 
         /// <summary>止まっている間：ボタンが押されたら手動の下見を始める。</summary>
@@ -249,7 +422,12 @@ namespace CrazyBowling.Core
             }
 
             CameraWaypoint point = CameraPathSampler.Sample(_path, progress);
-            transform.SetPositionAndRotation(point.position, point.rotation);
+            // 位置は経路の上のまま。向きに見回しを足し、寄り引きは画角だけで行う（すり抜けを起こさない）
+            transform.SetPositionAndRotation(point.position, LookAroundRules.Rotate(point.rotation, _look));
+            if (Cam != null && _baseFov > 0f)
+            {
+                Cam.fieldOfView = _baseFov + _zoom;
+            }
         }
 
         /// <summary>下見をやめて、構えの視点にそろえてから通常の制御に返す。</summary>
@@ -257,6 +435,7 @@ namespace CrazyBowling.Core
         {
             _state = PreviewState.Idle;
             _manualProgress = 0f;
+            ResetLook();
 
             // 経路の先頭＝構えの視点なので、ここで一致させておけば画面が飛ばない
             transform.SetPositionAndRotation(_home.position, _home.rotation);
@@ -271,10 +450,10 @@ namespace CrazyBowling.Core
                 cameraController.ExternalControl = active;
             }
 
-            // 手動の下見では投げられてよい（投げ始めたら戻る）。自動の下見の間だけ止める
+            // 下見の間（自動の下見・見回し・戻っている最中）は投げられない。見回しのドラッグで球が投げられないように（段階6）
             if (ballController != null)
             {
-                ballController.SetInputBlocked(active && _state == PreviewState.Auto);
+                ballController.SetInputBlocked(active && _state != PreviewState.Idle);
             }
         }
 

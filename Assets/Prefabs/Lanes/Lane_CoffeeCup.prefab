@@ -50182,6 +50182,7 @@ GameObject:
   - component: {fileID: 4554000445797229985}
   - component: {fileID: 6332823370336382337}
   - component: {fileID: 6049450535052732417}
+  - component: {fileID: 5616392249367697702}
   m_Layer: 0
   m_Name: Lane_CoffeeCup
   m_TagString: Untagged
@@ -50459,6 +50460,24 @@ MonoBehaviour:
   sunColor: {r: 0.6, g: 0.52, b: 0.95, a: 1}
   overrideAmbient: 1
   ambientColor: {r: 0.08, g: 0.06, b: 0.12, a: 1}
+--- !u!114 &5616392249367697702
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6309402574153263227}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 061855e1090b0034ca7f4dae71c669f8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Lanes.LaneLookAround
+  limits:
+    yaw: 60
+    pitchUp: 20
+    pitchDown: 0
+    zoomIn: 15
+    zoomOut: 5
 --- !u!1 &6338149660219936870
 GameObject:
   m_ObjectHideFlags: 0

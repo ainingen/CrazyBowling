@@ -101,6 +101,12 @@ namespace CrazyBowling.UI
         /// <summary>奥を見るボタン。</summary>
         public const string LookAhead = "LOOK AHEAD";
 
+        /// <summary>見回しを終えて構えに戻るボタン（段階6）。</summary>
+        public const string LookBack = "BACK";
+
+        /// <summary>見回し中に出す小さな案内（段階6）。</summary>
+        public const string LookAroundHint = "DRAG TO LOOK AROUND";
+
         /// <summary>タイトルの前の画面：どこかをクリックしてもらう一言（段階6）。</summary>
         public const string TuneInPrompt = "CLICK TO TUNE IN";
 
