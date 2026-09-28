@@ -307,7 +307,7 @@ namespace CrazyBowling.UI
             // CLICK TO TUNE IN
             _prompt = NeonUI.CreateText(Rect("Prompt", new Vector2(0f, -330f), new Vector2(1200f, 110f)),
                 skin.BoldFont, skin.BoldNeonMaterial, 76f, Color.white, TextAlignmentOptions.Center);
-            _prompt.text = UIText.TuneInPrompt;
+            _prompt.text = InputHints.Choose(UIText.TuneInPrompt, UIText.TuneInPromptTap, InputHints.UseTapOnThisDevice());
         }
 
         /// <summary>画面の真ん中を基準にした子を作る。</summary>

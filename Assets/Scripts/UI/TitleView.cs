@@ -226,7 +226,7 @@ namespace CrazyBowling.UI
             if (logoBottom != null) logoBottom.text = UIText.TitleLogoBottom;
             if (taglineLabel != null) taglineLabel.text = UIText.TitleTagline;
             if (noticeLabel != null) noticeLabel.text = UIText.TitleNotice;
-            if (startLabel != null) startLabel.text = UIText.TitleStart;
+            if (startLabel != null) startLabel.text = InputHints.Choose(UIText.TitleStart, UIText.TitleStartTap, InputHints.UseTapOnThisDevice());
             if (creditPrefix != null) creditPrefix.text = UIText.CreditPrefix;
             if (creditName != null) creditName.text = UIText.CreditName;
 

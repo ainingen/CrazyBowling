@@ -110,6 +110,9 @@ namespace CrazyBowling.UI
         /// <summary>タイトルの前の画面：どこかをクリックしてもらう一言（段階6）。</summary>
         public const string TuneInPrompt = "CLICK TO TUNE IN";
 
+        /// <summary>タイトルの前の画面：指で触れる端末のとき（段階6）。</summary>
+        public const string TuneInPromptTap = "TAP TO TUNE IN";
+
         /// <summary>タイトルの前の画面：ラジオの上の札（段階6）。</summary>
         public const string TuneInOnAir = "ON AIR";
 
@@ -172,6 +175,9 @@ namespace CrazyBowling.UI
 
         /// <summary>始めるボタン。</summary>
         public const string TitleStart = "CLICK TO START";
+
+        /// <summary>始めるボタン：指で触れる端末のとき（段階6）。</summary>
+        public const string TitleStartTap = "TAP TO START";
 
         /// <summary>タイトルの名義（上の段・細く控えめに）。英字・日本語・英字の混在はわざと。</summary>
         public const string CreditPrefix = "produced by";

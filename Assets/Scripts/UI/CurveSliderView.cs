@@ -42,8 +42,16 @@ namespace CrazyBowling.UI
         [Tooltip("カーブ無しのときに出す文字。")]
         [SerializeField] private string noCurveText = UIText.CurveNone;
 
+        [Header("STRAIGHT に戻しやすく（段階6）")]
+        [Tooltip("スライダーを離したとき、この幅より真ん中に近ければ STRAIGHT（0）に吸い付ける（0.05 で ±5%）。0 で吸い付けない。")]
+        [Range(0f, 0.3f)]
+        [SerializeField] private float snapWidth = 0.05f;
+
         /// <summary>スライダーの値を反映している最中か。二重に反映しないための印。</summary>
         private bool _applying;
+
+        /// <summary>押している間にスライダーを動かしたか（離したときに吸い付けるため）。</summary>
+        private bool _dragged;
 
         private void Awake()
         {
@@ -54,6 +62,27 @@ namespace CrazyBowling.UI
                 slider.wholeNumbers = false;
                 slider.onValueChanged.AddListener(OnSliderChanged);
             }
+
+            // 文字（STRAIGHT・LEFT・RIGHT）を押したら STRAIGHT に戻す
+            if (label != null)
+            {
+                label.raycastTarget = true;
+                CurveLabelTap tap = label.GetComponent<CurveLabelTap>();
+                if (tap == null)
+                {
+                    tap = label.gameObject.AddComponent<CurveLabelTap>();
+                }
+                tap.Tapped += ResetToStraight;
+            }
+        }
+
+        /// <summary>STRAIGHT に戻す（構え中だけ）。</summary>
+        public void ResetToStraight()
+        {
+            if (ballController != null && ballController.IsAiming)
+            {
+                ballController.SetSelectedCurve(0f);
+            }
         }
 
         private void OnDestroy()
@@ -61,6 +90,10 @@ namespace CrazyBowling.UI
             if (slider != null)
             {
                 slider.onValueChanged.RemoveListener(OnSliderChanged);
+            }
+            if (label != null && label.TryGetComponent(out CurveLabelTap tap))
+            {
+                tap.Tapped -= ResetToStraight;
             }
         }
 
@@ -71,6 +104,7 @@ namespace CrazyBowling.UI
                 return;
             }
             ballController.SetSelectedCurve(value);
+            _dragged = true;
         }
 
         private void LateUpdate()
@@ -78,6 +112,14 @@ namespace CrazyBowling.UI
             if (ballController == null)
             {
                 return;
+            }
+
+            // 離したとき、真ん中付近なら STRAIGHT に吸い付ける
+            UnityEngine.InputSystem.Pointer pointer = UnityEngine.InputSystem.Pointer.current;
+            if (_dragged && (pointer == null || !pointer.press.isPressed))
+            {
+                _dragged = false;
+                ballController.SetSelectedCurve(CurveSnap.Apply(ballController.SelectedCurve, snapWidth));
             }
 
             // 引いている間は触らせない。構えに戻ったらまた触れる

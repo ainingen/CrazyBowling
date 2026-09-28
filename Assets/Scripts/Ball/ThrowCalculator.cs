@@ -61,6 +61,29 @@ namespace CrazyBowling.Ball
     public static class ThrowCalculator
     {
         /// <summary>
+        /// 引き幅などのピクセルの値は「この高さの画面のとき」の値（段階6）。
+        /// 実際の画面では高さに比例させて使う（<see cref="ScaleForScreen"/>）。高さ1080の画面ではそのままの値になる。
+        /// </summary>
+        public const float ReferenceScreenHeight = 1080f;
+
+        /// <summary>
+        /// 高さ1080の画面のときのピクセルの値を、実際の画面の高さに合わせる（段階6）。
+        /// 引き幅・投げない幅・向きの最大・手ブレの幅を、画面の高さに対する割合で決めるのと同じ。
+        /// 初速と角度の上限（物理）は変えない。
+        /// </summary>
+        public static ThrowSettings ScaleForScreen(ThrowSettings atReference, float screenHeight)
+        {
+            float k = screenHeight > 0f ? screenHeight / ReferenceScreenHeight : 1f;
+            ThrowSettings s = atReference;
+            s.maxPullPixels = atReference.maxPullPixels * k;
+            s.minPullPixels = atReference.minPullPixels * k;
+            s.maxAnglePixels = atReference.maxAnglePixels * k;
+            s.angleDeadZonePixels = atReference.angleDeadZonePixels * k;
+            s.maxCurvePixels = atReference.maxCurvePixels * k;
+            return s;
+        }
+
+        /// <summary>
         /// ドラッグの開始点と終了点（スクリーン座標・ピクセル）から投球内容を計算する。
         /// 引いた向きの逆へ飛ぶ、パチンコのような操作。
         /// 縦の成分が強さ、横の成分が角度になる。

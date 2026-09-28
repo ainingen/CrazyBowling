@@ -56,14 +56,14 @@ namespace CrazyBowling.Ball
         [Tooltip("中央から左右に動ける範囲（m）。")]
         [SerializeField] private float sideMoveLimit = 0.4f;
 
-        [Header("投球")]
-        [Tooltip("最大の強さになる引き幅（ピクセル）。")]
+        [Header("投球（ピクセルの値は高さ1080の画面のとき。実際の画面の高さに比例させて使う）")]
+        [Tooltip("最大の強さになる引き幅（高さ1080の画面のときのピクセル。画面の高さの約28%）。")]
         [SerializeField] private float maxPullPixels = 300f;
 
-        [Tooltip("これ以下の引き幅では投げない（ピクセル）。")]
+        [Tooltip("これ以下の引き幅では投げない（高さ1080の画面のときのピクセル）。")]
         [SerializeField] private float minPullPixels = 20f;
 
-        [Tooltip("最大の角度になる横ずれ（ピクセル）。")]
+        [Tooltip("最大の角度になる横ずれ（高さ1080の画面のときのピクセル）。")]
         [SerializeField] private float maxAnglePixels = 250f;
 
         [Tooltip("左右に振れる最大角度（度）。レーンごとに上書きできる。" +
@@ -71,7 +71,7 @@ namespace CrazyBowling.Ball
                  "2度で中央からレーンの端にちょうど届く。")]
         [SerializeField] private float maxAngleDegrees = 2f;
 
-        [Tooltip("この横ずれまでは角度を付けない（ピクセル）。手ブレ対策。")]
+        [Tooltip("この横ずれまでは角度を付けない（高さ1080の画面のときのピクセル）。手ブレ対策。")]
         [SerializeField] private float angleDeadZonePixels = 10f;
 
         [Tooltip("最小の初速（m/s）。")]
@@ -728,10 +728,13 @@ namespace CrazyBowling.Ball
             transform.position = position;
         }
 
-        /// <summary>Inspector の値を計算用の設定にまとめる。</summary>
+        /// <summary>
+        /// Inspector の値を計算用の設定にまとめる。ピクセルの値は高さ1080の画面のときの値なので、
+        /// 今の画面の高さに合わせて伸び縮みさせる（段階6。画面の大きさで引く感覚が変わらないように）。
+        /// </summary>
         private ThrowSettings BuildThrowSettings()
         {
-            return new ThrowSettings
+            var atReference = new ThrowSettings
             {
                 maxPullPixels = maxPullPixels,
                 minPullPixels = minPullPixels,
@@ -741,6 +744,7 @@ namespace CrazyBowling.Ball
                 minThrowSpeed = minThrowSpeed,
                 maxThrowSpeed = maxThrowSpeed,
             };
+            return ThrowCalculator.ScaleForScreen(atReference, Screen.height);
         }
     }
 }
