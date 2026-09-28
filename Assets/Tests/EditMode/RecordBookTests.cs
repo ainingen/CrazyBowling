@@ -148,16 +148,63 @@ namespace CrazyBowling.Tests.EditMode
             Assert.That(book.games, Is.EqualTo(0));
         }
 
-        [Test]
-        public void RANKの決め方は結果画面と同じ()
+        [TestCase(300, "SSS")]
+        [TestCase(299, "SS")]
+        [TestCase(280, "SS")]
+        [TestCase(279, "S")]
+        [TestCase(250, "S")]
+        [TestCase(249, "A")]
+        [TestCase(200, "A")]
+        [TestCase(199, "B")]
+        [TestCase(150, "B")]
+        [TestCase(149, "C")]
+        [TestCase(100, "C")]
+        [TestCase(99, "D")]
+        [TestCase(0, "D")]
+        public void RANKは境目の点数で決まる(int total, string expected)
         {
-            float[] t = { 0.6f, 0.45f, 0.3f, 0.15f };
-            Assert.That(RankRule.Decide(180, 300, t), Is.EqualTo("S"));
-            Assert.That(RankRule.Decide(179, 300, t), Is.EqualTo("A"));
-            Assert.That(RankRule.Decide(135, 300, t), Is.EqualTo("A"));
-            Assert.That(RankRule.Decide(90, 300, t), Is.EqualTo("B"));
-            Assert.That(RankRule.Decide(45, 300, t), Is.EqualTo("C"));
-            Assert.That(RankRule.Decide(44, 300, t), Is.EqualTo("D"));
+            Assert.That(RankRule.Decide(total), Is.EqualTo(expected));
+            // 設定ファイルと同じ形（名前と境目の並び）で渡しても同じ
+            Assert.That(RankRule.Decide(total, new[] { 300, 280, 250, 200, 150, 100 }, new[] { "SSS", "SS", "S", "A", "B", "C" }, "D"), Is.EqualTo(expected));
+        }
+
+        [Test]
+        public void RANKの境目は変えられる()
+        {
+            // 例：SSS を 290 以上にしたら 295 も SSS
+            var min = new[] { 290, 280, 250, 200, 150, 100 };
+            var names = new[] { "SSS", "SS", "S", "A", "B", "C" };
+            Assert.That(RankRule.Decide(295, min, names, "D"), Is.EqualTo("SSS"));
+            Assert.That(RankRule.Decide(289, min, names, "D"), Is.EqualTo("SS"));
+        }
+
+        [Test]
+        public void いちばん上のRANKだけが特別()
+        {
+            Assert.That(RankRule.IsTop("SSS", RankRule.DefaultNames), Is.True);
+            Assert.That(RankRule.IsTop("SS", RankRule.DefaultNames), Is.False);
+        }
+
+        [Test]
+        public void 古い決まりで付いた記録も合計点から新しい決まりで付け直せる()
+        {
+            // 古い決まり（合計÷満点で S〜D）で記録した記録帳：180点は「S」、135点は「A」、45点は「C」と残っている
+            var old = new RecordBook();
+            RecordRules.Add(old, new GameRecord { playedAt = "2026/09/28 10:00", total = 45, rank = "C", lanes = new LaneRecord[0] }, 20);
+            RecordRules.Add(old, new GameRecord { playedAt = "2026/09/28 11:00", total = 135, rank = "A", lanes = new LaneRecord[0] }, 20);
+            RecordRules.Add(old, new GameRecord { playedAt = "2026/09/28 12:00", total = 180, rank = "S", lanes = new LaneRecord[0] }, 20);
+            string json = RecordRules.ToJson(old);
+
+            // 読み直しても形は同じ（版の番号 1 のまま読める）
+            RecordBook book = RecordRules.FromJson(json, 10, out bool ok);
+            Assert.That(ok, Is.True);
+            Assert.That(book.bestRank, Is.EqualTo("S"));
+
+            // 表示は合計点から今の決まりで付け直す（記録の画面と同じ呼び方）
+            Assert.That(RankRule.Decide(book.bestTotal), Is.EqualTo("B"));
+            Assert.That(RankRule.Decide(book.recent[0].total), Is.EqualTo("B"));
+            Assert.That(RankRule.Decide(book.recent[1].total), Is.EqualTo("C"));
+            Assert.That(RankRule.Decide(book.recent[2].total), Is.EqualTo("D"));
         }
     }
 }

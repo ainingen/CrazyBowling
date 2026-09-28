@@ -190,6 +190,9 @@ namespace CrazyBowling.UI
         /// <summary>リザルトの評価。{0} が S〜D。</summary>
         public const string RankFormat = "RANK {0}";
 
+        /// <summary>リザルトで、いちばん上の RANK（SSS。満点）のときだけ RANK の下に出す一言。</summary>
+        public const string PerfectGame = "PERFECT GAME!";
+
         /// <summary>リザルトの締めの一言。説明書口調。</summary>
         public const string ResultComment =
             "以上で本日のボウリングは終了です。またのご利用をお待ちしております。";

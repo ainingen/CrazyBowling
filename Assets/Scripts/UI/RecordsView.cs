@@ -22,6 +22,9 @@ namespace CrazyBowling.UI
         [Tooltip("レーン名とレーンの数を読む相手。空なら同じシーンから探す。")]
         [SerializeField] private GameManager gameManager;
 
+        [Tooltip("RANK の表（結果画面と同じもの）。★記録に残っている RANK の文字は使わず、合計点からこの表で付け直して出す。空なら既定の値。")]
+        [SerializeField] private RankTable rankTable;
+
         [Tooltip("投球が始まったら閉じる（通しの確認のとき）。空なら同じシーンから探す。")]
         [SerializeField] private ThrowSequencer sequencer;
 
@@ -269,7 +272,8 @@ namespace CrazyBowling.UI
             _bestLabel.color = skin.Gold;
             if (has)
             {
-                Bold(_panel, "BestRank", new Vector2(0.2f, 0.74f), new Vector2(0.33f, 0.81f), string.Format(UIText.RankFormat, book.bestRank), 44f, TextAlignmentOptions.Right, false);
+                // 記録に残っている RANK ではなく、合計点から今の決まりで付け直す（決まりを変えても表示が追いつく）
+                Bold(_panel, "BestRank", new Vector2(0.2f, 0.74f), new Vector2(0.33f, 0.81f), string.Format(UIText.RankFormat, RankTable.Decide(rankTable, book.bestTotal)), 44f, TextAlignmentOptions.Right, false);
                 Bold(_panel, "BestDate", new Vector2(0.2f, 0.69f), new Vector2(0.33f, 0.74f), book.bestPlayedAt, 26f, TextAlignmentOptions.Right, false);
             }
         }
@@ -390,7 +394,8 @@ namespace CrazyBowling.UI
             dateLabel.lineSpacing = -10f;
             TMP_Text total = Bold(row, "Total", new Vector2(DateEnd, 0f), new Vector2(TotalEnd, 1f), game.total.ToString(), 34f, TextAlignmentOptions.Right, true);
             total.color = skin.Gold;
-            Bold(row, "Rank", new Vector2(TotalEnd, 0f), new Vector2(CellStart, 1f), game.rank ?? "", 30f, TextAlignmentOptions.Center, true);
+            // 記録に残っている RANK ではなく、合計点から今の決まりで付け直す
+            Bold(row, "Rank", new Vector2(TotalEnd, 0f), new Vector2(CellStart, 1f), RankTable.Decide(rankTable, game.total), 30f, TextAlignmentOptions.Center, true);
 
             LaneRecord[] lanes = game.lanes ?? new LaneRecord[0];
             for (int i = 0; i < laneCount; i++)

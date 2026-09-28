@@ -33,7 +33,10 @@ namespace CrazyBowling.Core
         /// <summary>合計点。</summary>
         public int total;
 
-        /// <summary>RANK（S〜D）。</summary>
+        /// <summary>
+        /// 記録したときの RANK。★表示には使わない（記録の画面は合計点から今の決まりで付け直す。RANK の決まりは 2026-09-28 に S〜D から SSS〜D に変えた）。
+        /// 形は変わっていないので、版の番号は 1 のまま。
+        /// </summary>
         public string rank;
 
         /// <summary>レーンごとの記録（1本目から順に）。</summary>
@@ -53,7 +56,7 @@ namespace CrazyBowling.Core
         /// <summary>合計点の自己ベスト（まだなら -1）。</summary>
         public int bestTotal = -1;
 
-        /// <summary>自己ベストのときの RANK。</summary>
+        /// <summary>自己ベストのときの RANK（記録したときのもの。★表示は <see cref="bestTotal"/> から付け直す）。</summary>
         public string bestRank = "";
 
         /// <summary>自己ベストを出した日時。</summary>
@@ -88,22 +91,50 @@ namespace CrazyBowling.Core
         public bool[] newLaneBests;
     }
 
-    /// <summary>RANK の決め方（段階6。結果画面と記録で同じものを使う）。MonoBehaviour に依存しない。</summary>
+    /// <summary>
+    /// RANK の決め方（段階6。結果画面・記録・記録の画面で同じものを使う）。MonoBehaviour に依存しない。
+    /// 合計点を、上の RANK から順に「この点数以上」の境目と比べる。どれにも届かなければいちばん下（D）。
+    /// 境目の値は設定ファイル（<c>RankTable</c>。Assets/Data/RankTable.asset）で変えられる。無いときは下の既定の値。
+    /// ★記録の画面では、記録に残っている RANK の文字ではなく、合計点から今の決まりで付け直して出す（決まりを変えても表示が追いつくように）。
+    /// </summary>
     public static class RankRule
     {
-        /// <summary>合計÷満点を境目（S・A・B・C の順）と比べて S〜D を決める。</summary>
-        public static string Decide(int total, int perfect, float[] thresholds)
+        /// <summary>既定の RANK の名前（上から）。</summary>
+        public static readonly string[] DefaultNames = { "SSS", "SS", "S", "A", "B", "C" };
+
+        /// <summary>既定の境目（それぞれ「この点数以上」。満点 300）。</summary>
+        public static readonly int[] DefaultMinScores = { 300, 280, 250, 200, 150, 100 };
+
+        /// <summary>既定のいちばん下の RANK。</summary>
+        public const string DefaultLowest = "D";
+
+        /// <summary>
+        /// 合計点から RANK を決める。names と minScores は同じ順（上の RANK から）に並べる。
+        /// 境目は上から順に見て、最初に届いたものにする（並びが崩れていても、上の RANK が優先）。
+        /// </summary>
+        public static string Decide(int total, int[] minScores, string[] names, string lowest)
         {
-            float ratio = perfect > 0 ? total / (float)perfect : 0f;
-            string[] names = { "S", "A", "B", "C" };
-            for (int i = 0; thresholds != null && i < thresholds.Length && i < names.Length; i++)
+            int n = Mathf.Min(minScores != null ? minScores.Length : 0, names != null ? names.Length : 0);
+            for (int i = 0; i < n; i++)
             {
-                if (ratio >= thresholds[i])
+                if (total >= minScores[i])
                 {
                     return names[i];
                 }
             }
-            return "D";
+            return string.IsNullOrEmpty(lowest) ? DefaultLowest : lowest;
+        }
+
+        /// <summary>既定の境目で決める（設定ファイルが無いとき）。</summary>
+        public static string Decide(int total)
+        {
+            return Decide(total, DefaultMinScores, DefaultNames, DefaultLowest);
+        }
+
+        /// <summary>いちばん上の RANK か（結果画面の特別な出方に使う）。</summary>
+        public static bool IsTop(string rank, string[] names)
+        {
+            return names != null && names.Length > 0 && rank == names[0];
         }
     }
 

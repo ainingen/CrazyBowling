@@ -105,12 +105,12 @@ namespace CrazyBowling.Core
                 LaneThrowResult r = gameManager.GetLaneResult(i);
                 lanes[i] = RecordRules.MakeLane(r.firstThrowFallen, r.secondThrowFallen, r.throwCount, r.pinCount, gameManager.GetLaneScore(i).score);
             }
-            float[] thresholds = resultView != null ? resultView.RankThresholds : new[] { 0.6f, 0.45f, 0.3f, 0.15f };
             return new GameRecord
             {
                 playedAt = System.DateTime.Now.ToString("yyyy/MM/dd HH:mm"),
                 total = gameManager.TotalScore,
-                rank = RankRule.Decide(gameManager.TotalScore, gameManager.PerfectScore, thresholds),
+                // 結果画面と同じ RANK の表で決める（表が無ければ既定の値）
+                rank = Data.RankTable.Decide(resultView != null ? resultView.RankTable : null, gameManager.TotalScore),
                 lanes = lanes,
             };
         }

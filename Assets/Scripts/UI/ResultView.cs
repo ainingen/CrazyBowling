@@ -69,8 +69,27 @@ namespace CrazyBowling.UI
         [Tooltip("光の筋の本数。")]
         [SerializeField] private int rayCount = 18;
 
-        [Tooltip("RANK の境目（合計÷満点）。S・A・B・C の順。これより下は D。")]
-        [SerializeField] private float[] rankThresholds = { 0.6f, 0.45f, 0.3f, 0.15f };
+        [Tooltip("RANK の表（SSS〜D の境目の点数。記録の係・記録の画面も同じものを使う）。空なら既定の値（RankRule）。")]
+        [SerializeField] private RankTable rankTable;
+
+        [Header("いちばん上の RANK（SSS。満点）の特別な出方")]
+        [Tooltip("RANK の下に出す一言。")]
+        [SerializeField] private string perfectCaption = UIText.PerfectGame;
+
+        [Tooltip("RANK のまわりをゆっくり回る星の数。")]
+        [SerializeField] private int perfectStarCount = 10;
+
+        [Tooltip("星が回る輪の大きさ（半径。ピクセル）。")]
+        [SerializeField] private Vector2 perfectStarRadius = new Vector2(270f, 80f);
+
+        [Tooltip("「PERFECT GAME!」を RANK の中心からどれだけ下げるか（RANK の枠の高さに対する割合）。内訳の1行目にかからないよう、RANK の枠の中の下側に置く。")]
+        [SerializeField] private float perfectCaptionDrop = 0.36f;
+
+        [Tooltip("「PERFECT GAME!」の文字の大きさ（いちばん大きいとき）。")]
+        [SerializeField] private float perfectCaptionSize = 36f;
+
+        [Tooltip("星が1周する時間（秒）。ゆっくり。")]
+        [SerializeField] private float perfectStarCycleSeconds = 14f;
 
         [Header("文字")]
         [Tooltip("合計点の書き方。{0} が合計、{1} が満点。")]
@@ -132,6 +151,19 @@ namespace CrazyBowling.UI
 
         /// <summary>このゲームで自己ベストを更新したレーン（段階6）。</summary>
         [System.NonSerialized] private bool[] _laneBests;
+
+        /// <summary>このゲームの RANK がいちばん上（SSS）か（段階6。特別な出方にする）。</summary>
+        private bool _perfect;
+
+        /// <summary>SSS の一言「PERFECT GAME!」と、まわりを回る星（段階6。1回だけ作り、SSS のときだけ出す）。</summary>
+        [System.NonSerialized] private TextMeshProUGUI _perfectLabel;
+        [System.NonSerialized] private Image[] _perfectStars;
+
+        /// <summary>今の RANK（確かめるとき用）。</summary>
+        public string ShownRank { get; private set; } = "";
+
+        /// <summary>いちばん上の RANK の特別な出方をしているか（確かめるとき用）。</summary>
+        public bool IsPerfectShown => _perfect;
 
         private void Awake()
         {
@@ -233,7 +265,18 @@ namespace CrazyBowling.UI
                 }
                 if (rankLabel != null)
                 {
-                    rankLabel.text = string.Format(UIText.RankFormat, Rank());
+                    ShownRank = Rank();
+                    _perfect = RankTable.IsTop(rankTable, ShownRank);
+                    // SS・SSS でも枠に収まるように、文字は枠に合わせて縮める（いちばん大きいときは今までの大きさ）
+                    if (!rankLabel.enableAutoSizing)
+                    {
+                        rankLabel.fontSizeMax = rankLabel.fontSize;
+                        rankLabel.fontSizeMin = Mathf.Min(24f, rankLabel.fontSize);
+                        rankLabel.enableAutoSizing = true;
+                    }
+                    rankLabel.textWrappingMode = TextWrappingModes.NoWrap;
+                    rankLabel.text = string.Format(UIText.RankFormat, ShownRank);
+                    BuildPerfect();
                 }
                 return;
             }
@@ -269,13 +312,13 @@ namespace CrazyBowling.UI
                 : string.Format(fallenFormat, score.fallen);
         }
 
-        /// <summary>RANK の境目（記録の係も同じものを使う。段階6）。</summary>
-        public float[] RankThresholds => rankThresholds;
+        /// <summary>RANK の表（記録の係も同じものを使う。段階6）。空なら既定の値。</summary>
+        public RankTable RankTable => rankTable;
 
-        /// <summary>合計÷満点で S〜D を決める（表示だけ。決め方は RankRule。段階6）。</summary>
+        /// <summary>合計点で SSS〜D を決める（表示だけ。決め方は RankRule。段階6）。</summary>
         private string Rank()
         {
-            return RankRule.Decide(gameManager.TotalScore, gameManager.PerfectScore, rankThresholds);
+            return RankTable.Decide(rankTable, gameManager.TotalScore);
         }
 
         /// <summary>内訳の行を作り直す。</summary>
@@ -367,6 +410,44 @@ namespace CrazyBowling.UI
             _newRecordLabel.alpha = 0f;
         }
 
+        /// <summary>
+        /// いちばん上の RANK（SSS）の特別な出方を作る（段階6。1回だけ作り、SSS のときだけ出す）。
+        /// RANK の下に「PERFECT GAME!」、まわりを星がゆっくり回る。点滅はさせない（明るさはゆっくり呼吸するだけ）。
+        /// </summary>
+        private void BuildPerfect()
+        {
+            if (rankLabel == null)
+            {
+                return;
+            }
+            RectTransform rankRect = rankLabel.rectTransform;
+            if (_perfectLabel == null)
+            {
+                RectTransform rect = NeonUI.CreateRect(rankRect.parent, "PerfectGame", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(380f, 52f));
+                rect.localPosition = rankRect.localPosition + new Vector3(0f, -rankRect.rect.height * perfectCaptionDrop, 0f);
+                _perfectLabel = NeonUI.CreateText(rect, skin.BoldFont, skin.BoldNeonMaterial, perfectCaptionSize, Color.white, TextAlignmentOptions.Center);
+                _perfectLabel.enableAutoSizing = true;
+                _perfectLabel.fontSizeMin = 16f;
+                _perfectLabel.fontSizeMax = perfectCaptionSize;
+                _perfectLabel.text = perfectCaption;
+
+                _perfectStars = new Image[Mathf.Max(0, perfectStarCount)];
+                for (int i = 0; i < _perfectStars.Length; i++)
+                {
+                    RectTransform star = NeonUI.CreateRect(rankRect.parent, $"PerfectStar{i:00}", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(46f, 46f));
+                    star.SetSiblingIndex(rankRect.GetSiblingIndex());
+                    _perfectStars[i] = NeonUI.CreateImage(star, skin.Star, Color.clear, false);
+                }
+            }
+            _perfectLabel.gameObject.SetActive(_perfect);
+            _perfectLabel.alpha = 0f;
+            foreach (Image star in _perfectStars)
+            {
+                star.gameObject.SetActive(_perfect);
+                star.color = Color.clear;
+            }
+        }
+
         /// <summary>後ろで回る光の筋を作る（1回だけ）。</summary>
         private void BuildRays()
         {
@@ -402,7 +483,10 @@ namespace CrazyBowling.UI
                 float fade = Mathf.Clamp01(t / 0.8f);
                 for (int i = 0; i < _rays.Length; i++)
                 {
-                    _rays[i].color = NeonUI.WithAlpha(NeonUI.Hue(i / (float)_rays.Length - now * 0.05f, 0.75f), 0.3f * fade);
+                    // SSS（満点）のときは、RANK が出てから光の筋を金色に寄せる（色が変わるだけで、明るさは変えない）
+                    Color hue = NeonUI.Hue(i / (float)_rays.Length - now * 0.05f, 0.75f);
+                    float gold = _perfect ? Mathf.Clamp01((t - 0.3f - totalCountSeconds - _rankDelay) / 1.2f) : 0f;
+                    _rays[i].color = NeonUI.WithAlpha(Color.Lerp(hue, skin.Gold, gold * 0.85f), 0.3f * fade);
                 }
             }
 
@@ -460,7 +544,39 @@ namespace CrazyBowling.UI
                 float scale = rankT <= 0f ? 3f : Mathf.LerpUnclamped(3f, 1f, NeonUI.EaseOutBack(rankT));
                 rankLabel.rectTransform.localScale = new Vector3(scale, scale, 1f);
                 rankLabel.rectTransform.localEulerAngles = new Vector3(0f, 0f, rankT <= 0f ? -20f : Mathf.LerpUnclamped(-20f, -6f, NeonUI.EaseOutBack(rankT)));
-                NeonUI.SetNeonColor(rankLabel, NeonUI.Hue(now * 0.15f, 0.8f), 0.7f);
+                if (_perfect)
+                {
+                    // SSS：金色の上を、白い光沢がゆっくり流れる（明るさの上げ下げは小さく、点滅させない）
+                    float sheen = 0.5f + 0.5f * Mathf.Sin(now * 1.3f);
+                    NeonUI.SetNeonColor(rankLabel, Color.Lerp(skin.Gold, Color.white, 0.25f * sheen), 0.8f);
+                }
+                else
+                {
+                    NeonUI.SetNeonColor(rankLabel, NeonUI.Hue(now * 0.15f, 0.8f), 0.7f);
+                }
+            }
+
+            // SSS（満点）：RANK の下に「PERFECT GAME!」が少し遅れて下から上がってくる。まわりを星がゆっくり回る
+            if (_perfect && _perfectLabel != null)
+            {
+                float pt = (t - 0.3f - totalCountSeconds - _rankDelay - 0.35f) / 0.5f;
+                _perfectLabel.alpha = Mathf.Clamp01(pt * 2f);
+                RectTransform rankRect = rankLabel.rectTransform;
+                _perfectLabel.rectTransform.localPosition = rankRect.localPosition
+                    + new Vector3(0f, -rankRect.rect.height * perfectCaptionDrop - Mathf.LerpUnclamped(30f, 0f, NeonUI.EaseOutBack(Mathf.Clamp01(pt))), 0f);
+                // RANK と同じく少し傾ける
+                _perfectLabel.rectTransform.localEulerAngles = new Vector3(0f, 0f, -6f);
+                NeonUI.SetNeonColor(_perfectLabel, skin.Gold, 0.55f + 0.2f * NeonUI.Breath(3f));
+
+                float st = Mathf.Clamp01((t - 0.3f - totalCountSeconds - _rankDelay) / 1.2f);
+                for (int i = 0; i < _perfectStars.Length; i++)
+                {
+                    float angle = (i / (float)_perfectStars.Length + now / Mathf.Max(perfectStarCycleSeconds, 1f)) * Mathf.PI * 2f;
+                    var star = (RectTransform)_perfectStars[i].transform;
+                    star.localPosition = rankRect.localPosition + new Vector3(Mathf.Cos(angle) * perfectStarRadius.x * st, Mathf.Sin(angle) * perfectStarRadius.y * st, 0f);
+                    star.localEulerAngles = new Vector3(0f, 0f, -now * 30f + i * 36f);
+                    _perfectStars[i].color = NeonUI.WithAlpha(Color.Lerp(skin.Gold, Color.white, 0.3f), 0.85f * st);
+                }
             }
 
             // NEW RECORD!（段階6）：RANK と同じ時に大きく飛び込み、虹色がゆっくり流れる（明るさは変えない）

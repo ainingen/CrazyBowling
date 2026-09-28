@@ -7431,11 +7431,13 @@ MonoBehaviour:
   totalCountSeconds: 1.8
   rowInterval: 0.09
   rayCount: 18
-  rankThresholds:
-  - 0.6
-  - 0.45
-  - 0.3
-  - 0.15
+  rankTable: {fileID: 11400000, guid: d7b7e1a7ec486c746b994643723da0e1, type: 2}
+  perfectCaption: PERFECT GAME!
+  perfectStarCount: 10
+  perfectStarRadius: {x: 270, y: 80}
+  perfectCaptionDrop: 0.36
+  perfectCaptionSize: 36
+  perfectStarCycleSeconds: 14
   totalFormat: '{0} / {1}'
   lineFormat: '{0,2}  {1}  {2}  {3}'
   strikeText: STRIKE
@@ -10544,6 +10546,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: CrazyBowling::CrazyBowling.UI.RecordsView
   gameManager: {fileID: 1622399434}
+  rankTable: {fileID: 11400000, guid: d7b7e1a7ec486c746b994643723da0e1, type: 2}
   sequencer: {fileID: 539789172}
   skin: {fileID: 11400000, guid: d614df0b28c3dbd4e92dfd4b8add36e1, type: 2}
   root: {fileID: 326821765}
