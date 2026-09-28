@@ -44,6 +44,12 @@ namespace CrazyBowling.UI
         [Tooltip("始めるボタンと RECORDS ボタンの間（ピクセル）。")]
         [SerializeField] private float buttonGap = 10f;
 
+        [Tooltip("RECORDS ボタンの横のずらし（始めるボタンの幅に対する割合。- で左）。HOW TO PLAY ボタンと左右に並べる（段階6）。")]
+        [SerializeField] private float buttonShiftX = 0f;
+
+        [Tooltip("RECORDS ボタンの文字の大きさ（いちばん大きいとき）。")]
+        [SerializeField] private float buttonFontSize = 44f;
+
         [Header("見た目")]
         [Tooltip("最近の成績の1行の高さ（ピクセル）。")]
         [SerializeField] private float recentRowHeight = 64f;
@@ -201,9 +207,9 @@ namespace CrazyBowling.UI
             // 始めるボタンの下の端から、間をあけて下に置く（ピボットの位置を考えて合わせる）
             float startBottom = startButton.anchoredPosition.y - size.y * startButton.pivot.y;
             float height = rect.sizeDelta.y;
-            rect.anchoredPosition = new Vector2(startButton.anchoredPosition.x, startBottom - buttonGap - height * (1f - rect.pivot.y));
+            rect.anchoredPosition = new Vector2(startButton.anchoredPosition.x + size.x * buttonShiftX, startBottom - buttonGap - height * (1f - rect.pivot.y));
             rect.SetSiblingIndex(startButton.GetSiblingIndex() + 1);
-            CreateButton(rect, UIText.Records, 44f, Open);
+            CreateButton(rect, UIText.Records, buttonFontSize, Open);
         }
 
         /// <summary>画面の中身を今の記録で作り直す。</summary>

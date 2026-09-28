@@ -6530,6 +6530,78 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1141491759}
   m_CullTransparentMesh: 1
+--- !u!1 &1147784385
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1147784386}
+  - component: {fileID: 1147784387}
+  m_Layer: 0
+  m_Name: FirstThrowHint
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1147784386
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1147784385}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1366312498}
+  m_Father: {fileID: 1195164675}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1147784387
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1147784385}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c9b592cd2f51b2f49bd83d3db608f1e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.UI.FirstThrowHintView
+  ball: {fileID: 404580366}
+  sequencer: {fileID: 539789172}
+  gameManager: {fileID: 1622399434}
+  preview: {fileID: 587179660}
+  tuneIn: {fileID: 1718987722}
+  title: {fileID: 1904163209}
+  records: {fileID: 1903925492}
+  howToPlay: {fileID: 1497963013}
+  skin: {fileID: 11400000, guid: d614df0b28c3dbd4e92dfd4b8add36e1, type: 2}
+  root: {fileID: 1366312498}
+  appearDelay: 0.8
+  fadeInSeconds: 0.6
+  fadeOutSeconds: 0.12
+  anchor: {x: 0.5, y: 0.47}
+  boxSize: {x: 900, y: 190}
+  textSize: 36
+  subTextSize: 30
+  backAlpha: 0.6
+  strokeLength: 170
+  strokeSeconds: 1.5
+  gestureFadeSeconds: 0.45
+  restSeconds: 0.5
+  gestureColor: {r: 0.55, g: 0.95, b: 1, a: 1}
 --- !u!1 &1168376736
 GameObject:
   m_ObjectHideFlags: 0
@@ -6714,11 +6786,13 @@ RectTransform:
   - {fileID: 1081630029}
   - {fileID: 575154548}
   - {fileID: 2065419881}
+  - {fileID: 1147784386}
   - {fileID: 1904163208}
   - {fileID: 1718987724}
   - {fileID: 1213056775}
   - {fileID: 1297433317}
   - {fileID: 1903925491}
+  - {fileID: 1497963012}
   - {fileID: 360690236}
   - {fileID: 1900176950}
   m_Father: {fileID: 0}
@@ -7608,6 +7682,41 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5652f4060f404e84e871938234a477e2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Pins.Pin
+--- !u!1 &1366312497
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1366312498}
+  m_Layer: 0
+  m_Name: FirstThrowHintRoot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1366312498
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1366312497}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1147784386}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1397251835
 GameObject:
   m_ObjectHideFlags: 0
@@ -8291,6 +8400,75 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1486727230}
   m_CullTransparentMesh: 1
+--- !u!1 &1497963011
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1497963012}
+  - component: {fileID: 1497963013}
+  m_Layer: 0
+  m_Name: HowToPlayView
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1497963012
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1497963011}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1579952577}
+  m_Father: {fileID: 1195164675}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1497963013
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1497963011}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe3b46bb9c7c209448bb9c6f1f23abb5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.UI.HowToPlayView
+  sequencer: {fileID: 539789172}
+  skin: {fileID: 11400000, guid: d614df0b28c3dbd4e92dfd4b8add36e1, type: 2}
+  root: {fileID: 1579952577}
+  startButton: {fileID: 1274723812}
+  buttonScale: {x: 0.48, y: 0.45}
+  buttonGap: 8
+  buttonShiftX: 0.26
+  buttonFontSize: 34
+  buttonRowBackColor: {r: 0.01, g: 0.01, b: 0.04, a: 1}
+  sectionsPerPage: 2
+  headingSize: 44
+  bodySize: 34
+  bodyLineSpacing: 28
+  bodyParagraphSpacing: 18
+  headingGap: 10
+  sectionGap: 44
+  bodyColor: {r: 0.92, g: 0.92, b: 0.96, a: 1}
+  disabledButtonAlpha: 0.15
+  openSeconds: 0.3
+  solidColor: {r: 0.01, g: 0.01, b: 0.04, a: 0.95}
 --- !u!1 &1527496199
 GameObject:
   m_ObjectHideFlags: 0
@@ -8503,6 +8681,41 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!1 &1579952576
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1579952577}
+  m_Layer: 0
+  m_Name: HowToPlayRoot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1579952577
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1579952576}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1497963012}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1622399433
 GameObject:
   m_ObjectHideFlags: 0
@@ -9571,8 +9784,10 @@ MonoBehaviour:
   root: {fileID: 326821765}
   titleRoot: {fileID: 854527149}
   startButton: {fileID: 1274723812}
-  buttonScale: {x: 0.55, y: 0.55}
-  buttonGap: 10
+  buttonScale: {x: 0.48, y: 0.45}
+  buttonGap: 8
+  buttonShiftX: -0.26
+  buttonFontSize: 34
   recentRowHeight: 64
   openSeconds: 0.3
   solidColor: {r: 0.01, g: 0.01, b: 0.04, a: 0.95}

@@ -246,6 +246,53 @@ namespace CrazyBowling.UI
         public const string RecordsClearConfirm =
             "すべての記録を消去します。\n消去した記録は元に戻りません。よろしいですか。";
 
+        // ======== 遊び方（段階6） ========
+
+        /// <summary>タイトルの、遊び方の画面を開くボタン。遊び方の画面の見出しも同じ。</summary>
+        public const string HowToPlay = "HOW TO PLAY";
+
+        /// <summary>遊び方の画面：前のページ・次のページ。</summary>
+        public const string HowToPlayPrev = "◀";
+        public const string HowToPlayNext = "▶";
+
+        /// <summary>遊び方の画面：ページの書き方。{0} が今のページ、{1} が全部のページ数。</summary>
+        public const string HowToPlayPageFormat = "{0} / {1}";
+
+        /// <summary>
+        /// 遊び方の画面の見出し（取扱説明書の口調。文面はユーザーの指定どおり。変えるときは操作と食い違わないか確かめる）。
+        /// <see cref="HowToPlayBodies"/> と同じ順に並べる。
+        /// </summary>
+        public static readonly string[] HowToPlayHeadings =
+        {
+            "【ごあいさつ】",
+            "【投げかた】",
+            "【立ちかた】",
+            "【回転のかけかた】",
+            "【下見】",
+            "【得点】",
+            "【記録】",
+            "【ご注意】",
+        };
+
+        /// <summary>遊び方の画面の本文。<see cref="HowToPlayHeadings"/> と同じ順。</summary>
+        public static readonly string[] HowToPlayBodies =
+        {
+            "このたびは本製品をお選びいただき、誠にありがとうございます。本製品は、球を転がしてピンを倒す遊戯でございます。ご使用の前に、本書をよくお読みください。",
+            "画面を押したまま、手前へ引いて、離してください。引いた長さに応じて、球は前へ進みます。\n押した位置から横にずらすと、球は反対の方向へ進みます。仕様でございます。",
+            "構えている間、指またはマウスの左右の位置で立ち位置が決まります。",
+            "画面下のつまみで、球に回転をかけられます。回転をやめるときは、文字を押してください。",
+            "LOOK AHEAD を押している間、レーンの奥をご覧いただけます。止まった所では、画面をなぞって周囲を見回すことができます。お戻りの際は BACK を押してください。",
+            "各レーンで2回まで投げられます。1回目ですべて倒すとストライク（30点）、2回で倒すとスペア（20点）でございます。それ以外は倒した本数が得点となります。全10レーンの合計で評価いたします。",
+            "成績は RECORDS からご覧いただけます。",
+            "レーンによっては、床が傾いている、回転している、途中で途切れている、宇宙である等の場合がございます。いずれも仕様でございます。\n本製品の使用により生じたいかなる事態についても、当方は責任を負いかねます。",
+        };
+
+        /// <summary>1本目の最初の1投だけ出すヒント（初めて遊ぶ人向け）。1行目。</summary>
+        public const string FirstThrowHintPull = "押したまま、手前へ引いて、離してください";
+
+        /// <summary>1本目の最初の1投だけ出すヒント。2行目。</summary>
+        public const string FirstThrowHintSide = "横にずらすと、反対へ飛びます";
+
         // ======== その他 ========
 
         /// <summary>縦画面のときの案内。</summary>

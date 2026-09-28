@@ -14,7 +14,8 @@
 // 見ること（仕様.md の「1〜10本目の通し確認」）
 //   本数の矛盾・判定のタイムアウト・警告・エラー・各レーン開始時のピン・共有設定（1ゲーム目と2ゲーム目で同じか）・
 //   動いているべきものが構え中に動いているか・BGM の切り替わり・音の記録（8本目の音・前のレーンの音の残り）・
-//   個人の記録（2ゲームとも記録されるか。確かめ用の別の鍵に記録し、終わったら消して、本物の記録が変わっていないか比べる）
+//   個人の記録（2ゲームとも記録されるか。確かめ用の別の鍵に記録し、終わったら消して、本物の記録が変わっていないか比べる）・
+//   1投目のヒント（確かめ用の別の鍵で見る。出ても出なくても止めない。一度投げたら2ゲーム目の1本目には出ないか・本物の状態が変わっていないか）
 // 投げ方
 //   ふつう：1投目 速10・真ん中／2投目 速9・立ち位置 +0.25
 //   8本目：速8・真ん中（ピンが場外に止まる）
@@ -102,6 +103,16 @@ System.Action checkRecord = () =>
     if (ok) recordOk++; else recordBad++;
     W($"記録｜{game}ゲーム目：記録した {keeper.LastGameRecorded}・ゲーム数 {book.games}・最近 {book.recent.Count}・合計 {(book.recent.Count > 0 ? book.recent[0].total : -1)}（得点表 {gm.TotalScore}）・RANK {(book.recent.Count > 0 ? book.recent[0].rank : "-")}・自己ベスト {book.bestTotal}｜{(ok ? "合格" : "★不合格")}");
 };
+// ---- 1本目の最初の1投のヒント（段階6）：確かめのあいだは別の鍵を使い、本物の状態を汚さない ----
+const string hintSandbox = "CrazyBowling.FirstThrowDone.DevCheck";
+string hintRealKey = CrazyBowling.Core.FirstThrowHintStore.DefaultKey;
+bool hintRealHad = UnityEngine.PlayerPrefs.HasKey(hintRealKey);
+int hintRealBefore = UnityEngine.PlayerPrefs.GetInt(hintRealKey, 0);
+CrazyBowling.Core.FirstThrowHintStore.Key = hintSandbox;
+UnityEngine.PlayerPrefs.DeleteKey(hintSandbox);
+var hintView = UnityEngine.Object.FindFirstObjectByType<CrazyBowling.UI.FirstThrowHintView>(UnityEngine.FindObjectsInactive.Include);
+int hintBad = 0;
+bool[] hintSeen = new bool[3];
 System.Func<string> djLabel = () => djToggle != null ? djToggle.GetComponentInChildren<TMPro.TMP_Text>(true).text : "-";
 
 // ---- ログ（警告・エラー・タイムアウト） ----
@@ -456,6 +467,16 @@ finish = () =>
     if (!realSame) { recordBad++; W("★記録：本物の記録が変わった"); }
     W($"記録｜記録した {recordOk}ゲーム（期待 2）・本物の記録 {(realSame ? "変わっていない" : "★変わった")}（{(realHadKey ? realBefore.Length + "文字" : "無し")}）");
     if (recordOk != 2) recordBad++;
+    // ヒント：確かめ用の状態を消して鍵を戻し、本物の状態が変わっていないか比べる
+    bool hintDoneInSandbox = CrazyBowling.Core.FirstThrowHintStore.IsDone;
+    if (!hintDoneInSandbox) { hintBad++; W("★ヒント：投げたのに「投げた」が残っていない"); }
+    UnityEngine.PlayerPrefs.DeleteKey(hintSandbox);
+    UnityEngine.PlayerPrefs.Save();
+    CrazyBowling.Core.FirstThrowHintStore.Key = hintRealKey;
+    bool hintRealSame = UnityEngine.PlayerPrefs.HasKey(hintRealKey) == hintRealHad && UnityEngine.PlayerPrefs.GetInt(hintRealKey, 0) == hintRealBefore;
+    if (!hintRealSame) { hintBad++; W("★ヒント：本物の状態が変わった"); }
+    if (hintView == null) { notFound++; W("★見つからない｜FirstThrowHintView"); }
+    W($"ヒント｜1ゲーム目の1本目に出た {hintSeen[1]}（出なくてもよい）・2ゲーム目の1本目に出た {hintSeen[2]}（出てはいけない）・投げたあと「投げた」が残った {hintDoneInSandbox}・本物の状態 {(hintRealSame ? "変わっていない" : "★変わった")}（{(hintRealHad ? "投げた " + hintRealBefore : "無し")}）");
     W($"DJ｜始めた コーナー {djCornerStarts}・ID {djIdStarts}｜切り替わりをしゃべったまままたいだ {djSwitchTalking}回・途切れ {djBreak}｜2本同時 {djDouble}｜同じ周の重なり {djRepeat}｜" +
       $"いちばん長い間 {djMaxGap:F1}秒・長すぎる間 {djLongGap}｜効果音で下がった {djDuckDown}回（下がらない {djDuckDownBad}）・戻った {djDuckBack}回（戻らない {djDuckBackBad}）｜" +
       $"8本目の交信 {txTotal}回・DJ と重なった {radioOverlap}｜DJ のボタン 合格 {djButtonOk}／不合格 {djButtonBad}｜全体の音のボタン 合格 {djMuteOk}／不合格 {djMuteBad}");
@@ -463,7 +484,7 @@ finish = () =>
               + (djSwitchTalking == 0 ? 1 : 0) + (djDuckDown == 0 ? 1 : 0) + (djButtonOk < 2 ? 1 : 0) + (djMuteOk < 2 ? 1 : 0);
     W($"まとめ｜終わったレーン {lanesFinished}（期待 20）｜投球 {throws}｜タイムアウト {timeouts}｜本数の矛盾 {contradictions}｜警告 {warn}｜エラー {err}｜" +
       $"開始時のピンの食い違い {pinStartBad}｜共有設定の食い違い {sharedMismatch}｜動きの確認 {moveChecks}回・止まっていた {moveStopped}回｜" +
-      $"BGM の食い違い {bgmBad}（RANK のあとの結果画面の曲 {rankChecks}回）｜レーンの切り替え {switches}回・前のレーンの音の残り {residue}回｜8本目のボール・ピン・歓声の音 {vac}回｜見つからない部品 {notFound}｜DJ の食い違い {djBad}｜記録の食い違い {recordBad}｜" +
+      $"BGM の食い違い {bgmBad}（RANK のあとの結果画面の曲 {rankChecks}回）｜レーンの切り替え {switches}回・前のレーンの音の残り {residue}回｜8本目のボール・ピン・歓声の音 {vac}回｜見つからない部品 {notFound}｜DJ の食い違い {djBad}｜記録の食い違い {recordBad}｜ヒントの食い違い {hintBad}｜" +
       $"{(UnityEditor.EditorApplication.isPlaying ? "" : "★途中で Play が止まった｜")}終わり");
     System.IO.File.AppendAllText(logPath, buf.ToString()); buf.Clear();
 };
@@ -472,6 +493,13 @@ tick = () =>
     if (!UnityEditor.EditorApplication.isPlaying) { finish(); return; }
     float t = UnityEngine.Time.unscaledTime;
     int key = game * 100 + gm.LaneNumber;
+    // ヒント：出たかを覚えるだけ（出ても出なくても止めない）。2ゲーム目の1本目は、1ゲーム目で投げたあとなので出てはいけない
+    if (hintView != null && hintView.IsShowing && gm.LaneNumber == 1 && !gm.IsFinished)
+    {
+        if (!hintSeen[game]) W($"{t:F2} ヒント｜{game}ゲーム目の1本目 {seq.ThrowNumber}投目の構えで出た");
+        hintSeen[game] = true;
+        if (game == 2 && hintBad == 0) { hintBad++; W("★ヒント：一度投げたのに、2ゲーム目の1本目に出た"); }
+    }
     djTick(t, laneKey != -1 && key != laneKey);
     if (key != laneKey)
     {
