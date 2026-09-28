@@ -193,8 +193,8 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: 614a134fd8750564bbf177780c474c3f, type: 3}
     volume: 0.68
   - lane: {fileID: 11400000, guid: e8751f715585a1b4cb6bfc1608144526, type: 2}
-    clip: {fileID: 0}
-    volume: 0.6
+    clip: {fileID: 8300000, guid: d6cd1698f1a312842ace49756e0ae370, type: 3}
+    volume: 0.69
   - lane: {fileID: 11400000, guid: f89b53f6eeac9624aaccc777d7f78fa5, type: 2}
     clip: {fileID: 0}
     volume: 0.6
