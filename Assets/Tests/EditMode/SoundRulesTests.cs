@@ -319,6 +319,26 @@ namespace CrazyBowling.Tests.EditMode
         }
 
         [Test]
+        public void RANKが出るまでは結果画面の曲を流さない()
+        {
+            Assert.That(ResultBgmRule.ShouldPlay(-1f, 100f, 1f), Is.False);
+        }
+
+        [Test]
+        public void RANKが出てから決めた秒数たつまでは流さない()
+        {
+            Assert.That(ResultBgmRule.ShouldPlay(10f, 10.5f, 1f), Is.False);
+            Assert.That(ResultBgmRule.ShouldPlay(10f, 11f, 1f), Is.True);
+            Assert.That(ResultBgmRule.ShouldPlay(10f, 30f, 1f), Is.True);
+        }
+
+        [Test]
+        public void 待つ秒数が0ならRANKと同時に流す()
+        {
+            Assert.That(ResultBgmRule.ShouldPlay(10f, 10f, 0f), Is.True);
+        }
+
+        [Test]
         public void dBを音量の倍率にする()
         {
             Assert.That(SoundLevel.DbToLinear(0f), Is.EqualTo(1f).Within(1e-5f));

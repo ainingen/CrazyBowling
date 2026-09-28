@@ -94,6 +94,9 @@ namespace CrazyBowling.Core
         private float _bgmDuck = 1f;
         private Coroutine _intro;
 
+        /// <summary>結果画面で RANK が出た時刻（unscaledTime）。まだ出ていなければ負。結果画面の曲はこのあとに始める。</summary>
+        private float _rankShownAt = -1f;
+
         /// <summary>音の表。</summary>
         public SoundTable Table => table;
 
@@ -394,6 +397,8 @@ namespace CrazyBowling.Core
         /// <summary>結果画面：RANK が出た。</summary>
         public void PlayRank()
         {
+            // 結果画面の曲は、この時刻から決めた秒数たってから始める（ResolveBgm）
+            _rankShownAt = Time.unscaledTime;
             if (table != null)
             {
                 Play(table.rank, "ランク");
@@ -722,10 +727,17 @@ namespace CrazyBowling.Core
             }
             if (gameManager.IsFinished)
             {
-                clip = table.resultBgm;
-                volume = table.resultBgmVolume;
+                // 数え上げ・ドラムロール・RANK の音とぶつからないよう、RANK が出てから少しあとに始める
+                if (ResultBgmRule.ShouldPlay(_rankShownAt, Time.unscaledTime, table.resultBgmDelayAfterRank))
+                {
+                    clip = table.resultBgm;
+                    volume = table.resultBgmVolume;
+                }
                 return;
             }
+
+            // 結果画面を出ていたら、RANK の時刻を忘れる（次の結果画面では、また RANK を待つ）
+            _rankShownAt = -1f;
 
             LaneData lane = gameManager.CurrentLane;
             if (lane == null || lane.Vacuum)

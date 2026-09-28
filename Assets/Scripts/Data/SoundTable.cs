@@ -240,6 +240,9 @@ namespace CrazyBowling.Data
 
         [Range(0f, 1f)] public float resultBgmVolume = 0.6f;
 
+        [Tooltip("RANK が出てから結果画面の曲を始めるまでの時間（秒）。数え上げ・ドラムロール・RANK の音と曲がぶつからないよう、RANK のあとに始める。")]
+        public float resultBgmDelayAfterRank = 1f;
+
         [Tooltip("レーンごとの曲。★真空のレーン（8本目）では、入っていても流さない。")]
         public List<LaneBgm> laneBgm = new List<LaneBgm>();
 

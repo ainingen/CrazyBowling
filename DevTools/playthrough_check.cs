@@ -213,10 +213,11 @@ System.Func<string> judgeMotion = () =>
 };
 
 // ---- BGM（切り替わってから 2.5秒後に、流れている曲と音量を見る） ----
-System.Func<string> checkBgm = () =>
+// 結果画面の曲は RANK が出てから始まる（SoundTable.resultBgmDelayAfterRank）。afterRank が false なら「曲なし」を期待する
+System.Func<bool, string> checkBgm = afterRank =>
 {
     UnityEngine.AudioClip want = null; float wantVol = 0f;
-    if (gm.IsFinished) { want = table.resultBgm; wantVol = table.resultBgmVolume; }
+    if (gm.IsFinished) { if (afterRank) { want = table.resultBgm; wantVol = table.resultBgmVolume; } }
     else if (gm.CurrentLane != null && !gm.CurrentLane.Vacuum)
     {
         var e = table.FindLaneBgm(gm.CurrentLane);
@@ -235,7 +236,7 @@ System.Func<string> checkBgm = () =>
     if (want == null ? playing != 0 : playing != 1) ok = false;
     if (!ok) bgmBad++;
     string label = $"{(want != null ? want.name : "なし")}";
-    bgmSeen.Add($"{game}-{(gm.IsFinished ? "結果" : gm.LaneNumber.ToString())}:{label}");
+    bgmSeen.Add($"{game}-{(gm.IsFinished ? (afterRank ? "RANK後" : "結果") : gm.LaneNumber.ToString())}:{label}");
     return $"{(ok ? "" : "★")}BGM｜期待 {label} {wantVol:F2}｜鳴っている{(playing == 0 ? " なし" : s.ToString())}";
 };
 
@@ -260,6 +261,7 @@ System.Func<string> checkResidue = () =>
 // ---- 進行 ----
 int laneKey = -1; float laneT0 = 0f; bool pinDone = false, residueDone = false, bgmDone = false;
 float nextBgmLog = 0f, finishedAt = -1f;
+float rankAt = -1f; bool rankBgmDone = false; int rankChecks = 0;
 int phase = 0; float phaseT = 0f; float speed = 10f, side = 0f; float discTarget = -1f;
 CrazyBowling.Lanes.CoffeeCupRide ride = null; CrazyBowling.Lanes.CoffeeCupLane cupLane = null;
 float discAtThrow = -1f; bool waitStop = false;
@@ -280,7 +282,7 @@ finish = () =>
     W($"9本目｜阻まれた {lane9Block}・入った {lane9Enter}");
     W($"まとめ｜終わったレーン {lanesFinished}（期待 20）｜投球 {throws}｜タイムアウト {timeouts}｜本数の矛盾 {contradictions}｜警告 {warn}｜エラー {err}｜" +
       $"開始時のピンの食い違い {pinStartBad}｜共有設定の食い違い {sharedMismatch}｜動きの確認 {moveChecks}回・止まっていた {moveStopped}回｜" +
-      $"BGM の食い違い {bgmBad}｜レーンの切り替え {switches}回・前のレーンの音の残り {residue}回｜8本目のボール・ピン・歓声の音 {vac}回｜見つからない部品 {notFound}｜" +
+      $"BGM の食い違い {bgmBad}（RANK のあとの結果画面の曲 {rankChecks}回）｜レーンの切り替え {switches}回・前のレーンの音の残り {residue}回｜8本目のボール・ピン・歓声の音 {vac}回｜見つからない部品 {notFound}｜" +
       $"{(UnityEditor.EditorApplication.isPlaying ? "" : "★途中で Play が止まった｜")}終わり");
     System.IO.File.AppendAllText(logPath, buf.ToString()); buf.Clear();
 };
@@ -329,7 +331,7 @@ tick = () =>
         }
         else W($"{t:F2}   共有設定｜{sh}");
     }
-    if (!bgmDone && t - laneT0 >= 2.5f) { bgmDone = true; W($"{t:F2}   " + checkBgm()); }
+    if (!bgmDone && t - laneT0 >= 2.5f) { bgmDone = true; W($"{t:F2}   " + checkBgm(false)); }
     if (buf.Length > 0) { System.IO.File.AppendAllText(logPath, buf.ToString()); buf.Clear(); }
 
     // 9本目：投げた瞬間から止まるまでに神殿が回った角度を書く
@@ -340,11 +342,32 @@ tick = () =>
         W($"{t:F2}   9本目：投げてから止まるまでに回った角度 {UnityEngine.Mathf.Repeat(now - discAtThrow, 360f):F1}°（止まった向き {now:F1}°）");
     }
 
-    // 結果画面：1ゲーム目なら 3秒後に「やり直し」、2ゲーム目なら終わる
+    // 結果画面：RANK が出てから、結果画面の曲が始まったかを見る。見終わったら、1ゲーム目なら「やり直し」、2ゲーム目なら終わる
     if (gm.IsFinished)
     {
-        if (finishedAt < 0f) finishedAt = t;
-        if (t - finishedAt > 3f && bgmDone)
+        if (finishedAt < 0f) { finishedAt = t; rankAt = -1f; rankBgmDone = false; }
+        if (rankAt < 0f)
+        {
+            // 鳴らした音の記録に「ランク」が出たら、RANK が出た（記録の時刻は Time.time）
+            for (int i = sp.Records.Count - 1; i >= 0 && sp.Records[i].time >= UnityEngine.Time.time - (t - finishedAt) - 0.1f; i--)
+                if (sp.Records[i].name == "ランク") { rankAt = t - (UnityEngine.Time.time - sp.Records[i].time); W($"{rankAt:F2}   RANK が出た"); break; }
+        }
+        else
+        {
+            float since = t - rankAt - table.resultBgmDelayAfterRank;
+            // 曲が始まってからの 2.5秒は、BGM の2つの口を 0.25秒ごとに書く（PLAY AGAIN 前の曲の立ち上がりが見える）
+            if (since >= -0.25f && since <= 2.5f && t >= nextBgmLog)
+            {
+                nextBgmLog = t + 0.25f;
+                var s = new System.Text.StringBuilder($"{t:F2}   BGM の口（RANK のあと）");
+                foreach (var a in (UnityEngine.AudioSource[])fBgm.GetValue(sp)) s.Append($"｜{(a.clip != null ? a.clip.name : "-")} {(a.isPlaying ? "鳴" : "止")} {a.volume:F3}");
+                W(s.ToString());
+            }
+            if (!rankBgmDone && since >= 2.5f) { rankBgmDone = true; rankChecks++; W($"{t:F2}   " + checkBgm(true)); }
+        }
+        bool doneHere = rankBgmDone || t - finishedAt > 40f;
+        if (t - finishedAt > 40f && !rankBgmDone && bgmDone) { bgmBad++; W("★結果画面：40秒たっても RANK のあとの曲を確かめられなかった"); rankBgmDone = true; }
+        if (doneHere && bgmDone)
         {
             finishedAt = -1f;
             if (game == 1) { game = 2; W($"{t:F2} ==== 2ゲーム目を始める"); resultView.Restart(); }

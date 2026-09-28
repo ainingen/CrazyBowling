@@ -296,6 +296,22 @@ namespace CrazyBowling.Core
         }
     }
 
+    /// <summary>
+    /// 結果画面の曲をいつ流すか（段階6）。
+    /// 数え上げ・ドラムロール・RANK の音とぶつからないよう、RANK が出てから決めた秒数たってから流す。
+    /// </summary>
+    public static class ResultBgmRule
+    {
+        /// <summary>結果画面の曲を流してよいか。</summary>
+        /// <param name="rankShownAt">RANK が出た時刻（秒）。まだ出ていなければ負の値。</param>
+        /// <param name="now">今の時刻（秒。rankShownAt と同じ時計）。</param>
+        /// <param name="delayAfterRank">RANK が出てから曲を始めるまでの時間（秒）。</param>
+        public static bool ShouldPlay(float rankShownAt, float now, float delayAfterRank)
+        {
+            return rankShownAt >= 0f && now - rankShownAt >= delayAfterRank;
+        }
+    }
+
     /// <summary>音量の数え方（段階6）。</summary>
     public static class SoundLevel
     {
