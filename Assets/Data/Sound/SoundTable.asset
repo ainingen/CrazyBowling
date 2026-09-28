@@ -206,3 +206,27 @@ MonoBehaviour:
     clip: {fileID: 8300000, guid: b9c0f89e1734c714ab545ad3b5c9ba54, type: 3}
     volume: 0.25
   bgmCrossfadeSeconds: 1.5
+  djCorners:
+  - {fileID: 8300000, guid: 971a3e410bf9f6c40abb8f866ca329b4, type: 3}
+  - {fileID: 8300000, guid: 10fa32ac97e82a74dbceed1858f679b8, type: 3}
+  - {fileID: 8300000, guid: af865952c1a44804092798cc6e5797ee, type: 3}
+  - {fileID: 8300000, guid: cbb3e5b4fc920664fbe42cf3e8513b58, type: 3}
+  - {fileID: 8300000, guid: e9c8792b49e3c864ead78551f3923778, type: 3}
+  - {fileID: 8300000, guid: 3f35259d23a98de49ad478b8a61b89ce, type: 3}
+  - {fileID: 8300000, guid: 5fca90ba38acd824aa4ede74c3bef73c, type: 3}
+  - {fileID: 8300000, guid: 22119b436ed379647b5b572bbee413d6, type: 3}
+  - {fileID: 8300000, guid: bd919602fdb4be5498113613e2b754c3, type: 3}
+  - {fileID: 8300000, guid: 6a94d1b12e3e9034fb8be9424561b147, type: 3}
+  djIds:
+  - {fileID: 8300000, guid: 7b51eada94c98c6439fd98d1fff87886, type: 3}
+  - {fileID: 8300000, guid: 0c8846979373acb47a93ba984c0be547, type: 3}
+  - {fileID: 8300000, guid: 4945dcc715da5a94196cca524658fa6a, type: 3}
+  djVolume: 0.9
+  djGapSeconds: {x: 1, y: 2}
+  djFirstDelaySeconds: 1.5
+  djDuckDb: -6
+  djDuckAttackSeconds: 0.08
+  djDuckReleaseSeconds: 0.6
+  djStopFadeSeconds: 0.3
+  bgmDuckUnderDjDb: -8
+  bgmDuckUnderDjHoldSeconds: 2.5

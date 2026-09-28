@@ -249,6 +249,40 @@ namespace CrazyBowling.Data
         [Tooltip("曲が変わるときに、前の曲を小さくし次の曲を大きくする時間（秒）。")]
         public float bgmCrossfadeSeconds = 1.5f;
 
+        [Header("DJ のラジオ番組（段階6。CLICK TO START のあと、ゲーム中ずっと流す）")]
+        [Tooltip("コーナーの声（順不同で流す。全部を1周するまで同じものは流さない）。")]
+        public AudioClip[] djCorners = new AudioClip[0];
+
+        [Tooltip("ID（局名のお知らせ）の声。コーナーとコーナーの間に順番に挟む。")]
+        public AudioClip[] djIds = new AudioClip[0];
+
+        [Tooltip("DJ の声の音量（0〜1）。")]
+        [Range(0f, 1f)] public float djVolume = 0.9f;
+
+        [Tooltip("コーナーと ID の間の間（秒。この範囲からばらつかせる）。")]
+        public Vector2 djGapSeconds = new Vector2(1f, 2f);
+
+        [Tooltip("番組を始める前の間（秒）。CLICK TO START でナレーションが止まってから。")]
+        public float djFirstDelaySeconds = 1.5f;
+
+        [Tooltip("効果音・歓声が鳴っている間、DJ の声をどれだけ下げるか（dB。-6 で約半分）。")]
+        public float djDuckDb = -6f;
+
+        [Tooltip("DJ の声を下げるまでの時間（秒）。短いほど効果音にすぐ道をあける。")]
+        public float djDuckAttackSeconds = 0.08f;
+
+        [Tooltip("効果音が鳴り終わってから、DJ の声を元の大きさに戻す時間（秒）。")]
+        public float djDuckReleaseSeconds = 0.6f;
+
+        [Tooltip("DJ を消した・音を消したときに、しゃべっている声を小さくして止める時間（秒）。")]
+        public float djStopFadeSeconds = 0.3f;
+
+        [Tooltip("DJ がしゃべっている間、BGM をどれだけ小さくするか（dB）。")]
+        public float bgmDuckUnderDjDb = -8f;
+
+        [Tooltip("DJ がしゃべり終わってから、BGM を小さいまま保つ時間（秒）。コーナーと ID の間で BGM が上下しないように。")]
+        public float bgmDuckUnderDjHoldSeconds = 2.5f;
+
         /// <summary>このレーンの曲の設定を探す。無ければ null。</summary>
         public LaneBgm FindLaneBgm(LaneData lane)
         {

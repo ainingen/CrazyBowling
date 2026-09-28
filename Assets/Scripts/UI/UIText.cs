@@ -122,6 +122,12 @@ namespace CrazyBowling.UI
         /// <summary>音のボタン：音を消しているとき（段階6）。</summary>
         public const string SoundOff = "SOUND OFF";
 
+        /// <summary>DJ のボタン：DJ のラジオ番組を流しているとき（段階6）。</summary>
+        public const string DjOn = "DJ ON";
+
+        /// <summary>DJ のボタン：DJ だけを消しているとき（段階6）。</summary>
+        public const string DjOff = "DJ OFF";
+
         // ======== 演出（段階6） ========
 
         /// <summary>レーンに入ったときの大見出しの上の小さな札。{0} がレーン番号。</summary>

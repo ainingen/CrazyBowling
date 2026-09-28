@@ -63,6 +63,22 @@ var shared = new System.Collections.Generic.Dictionary<int, string>[] { new Syst
 var bgmSeen = new System.Collections.Generic.List<string>();
 int game = 1, runningFallen = 0;
 
+// ---- DJ のラジオ番組（段階6） ----
+var dj = CrazyBowling.Core.DjRadio.Instance;
+var djToggle = UnityEngine.Object.FindFirstObjectByType<CrazyBowling.UI.DjToggleView>(UnityEngine.FindObjectsInactive.Include);
+var sndToggle = UnityEngine.Object.FindFirstObjectByType<CrazyBowling.UI.SoundToggleView>(UnityEngine.FindObjectsInactive.Include);
+var fRadioTalk = typeof(CrazyBowling.Lanes.LaneRadioSound).GetField("_talk", BF);
+bool djMutedAtStart = dj != null && dj.DjMuted, soundMutedAtStart = sp.Muted;
+if (dj != null && dj.DjMuted) dj.DjMuted = false;   // 確かめるために DJ を流す（終わったら元に戻す）
+if (sp.Muted) sp.Muted = false;
+int djSwitchTalking = 0, djBreak = 0, djDouble = 0, djLongGap = 0, djRepeat = 0, djDuckDown = 0, djDuckDownBad = 0, djDuckBack = 0, djDuckBackBad = 0;
+int radioOverlap = 0, djButtonOk = 0, djButtonBad = 0, djMuteOk = 0, djMuteBad = 0;
+var radioTx = new System.Collections.Generic.Dictionary<int, int>();
+string djPrevClip = null; float djPrevTime = 0f; bool djPrevTalking = false;
+float djQuietSince = -1f, djMaxGap = 0f, seSince = -1f, seEndAt = -1f; bool seChecked = false, backPending = false;
+int djTest = 0; float djTestAt = -1f;
+System.Func<string> djLabel = () => djToggle != null ? djToggle.GetComponentInChildren<TMPro.TMP_Text>(true).text : "-";
+
 // ---- ログ（警告・エラー・タイムアウト） ----
 UnityEngine.Application.LogCallback onLog = (msg, st, type) =>
 {
@@ -258,6 +274,113 @@ System.Func<string> checkResidue = () =>
     return "前のレーンの音の残り なし";
 };
 
+// ---- DJ のラジオ番組を毎フレーム見る ----
+System.Action<float, bool> djTick = (t, laneChanged) =>
+{
+    if (dj == null) return;
+    var v = dj.Voice;
+    bool talking = dj.IsTalking;
+    string clip = talking && v.clip != null ? v.clip.name : null;
+    // DJ の声が2本同時に鳴らない
+    int n = 0;
+    foreach (var a in UnityEngine.Object.FindObjectsByType<UnityEngine.AudioSource>(UnityEngine.FindObjectsSortMode.None))
+        if (a.isPlaying && a.clip != null && a.clip.name.StartsWith("vo_dj_")) n++;
+    if (n > 1) { djDouble++; W($"{t:F2}   ★DJ の声が {n}本同時に鳴った"); }
+    // レーンが変わっても（結果画面・PLAY AGAIN でも）途切れない：切り替わりの前にしゃべっていた声が、同じ声のまま続きから鳴っている
+    if (laneChanged && djPrevTalking)
+    {
+        djSwitchTalking++;
+        if (!talking || clip != djPrevClip || v.time + 0.001f < djPrevTime) { djBreak++; W($"{t:F2}   ★切り替わりで DJ が途切れた｜前 {djPrevClip} {djPrevTime:F2}秒 → 今 {clip ?? "なし"}"); }
+        else W($"{t:F2}   DJ は切り替わりをまたいで続いた｜{clip} {djPrevTime:F2} → {v.time:F2}秒");
+    }
+    djPrevTalking = talking; djPrevClip = clip; djPrevTime = talking ? v.time : 0f;
+    // 間が長すぎない（流している・始まっている・交信で待ってもらっていない間）
+    bool on = dj.Started && !dj.DjMuted && !sp.Muted && sp.IsUnlocked;
+    if (on && !talking && dj.Holds == 0)
+    {
+        if (djQuietSince < 0f) djQuietSince = t;
+        djMaxGap = UnityEngine.Mathf.Max(djMaxGap, t - djQuietSince);
+        if (t - djQuietSince > table.djGapSeconds.y + 1.5f) { djLongGap++; W($"{t:F2}   ★DJ の間が {t - djQuietSince:F1}秒 続いた"); djQuietSince = t; }
+    }
+    else djQuietSince = -1f;
+    // 効果音・歓声が鳴ったら下がり、鳴り終わったら戻る
+    bool se = sp.IsSeActive;
+    if (se)
+    {
+        seEndAt = -1f;
+        if (seSince < 0f) { seSince = t; seChecked = false; }
+        if (talking && !seChecked && t - seSince >= table.djDuckAttackSeconds + 0.15f)
+        {
+            seChecked = true; backPending = true;
+            float want = CrazyBowling.Core.SoundLevel.DbToLinear(table.djDuckDb);
+            if (dj.Duck <= want + 0.02f && v.volume <= dj.BaseVolume * want + 0.02f) djDuckDown++;
+            else { djDuckDownBad++; W($"{t:F2}   ★効果音のときに DJ が下がっていない｜倍率 {dj.Duck:F2}（目標 {want:F2}）・音量 {v.volume:F2}"); }
+        }
+    }
+    else
+    {
+        seSince = -1f;
+        if (backPending)
+        {
+            if (seEndAt < 0f) seEndAt = t;
+            if (t - seEndAt >= table.djDuckReleaseSeconds + 0.3f)
+            {
+                backPending = false;
+                if (dj.Duck >= 0.98f) djDuckBack++;
+                else { djDuckBackBad++; W($"{t:F2}   ★効果音が終わっても DJ が戻らない｜倍率 {dj.Duck:F2}"); }
+            }
+        }
+    }
+    // 8本目：交信は DJ がしゃべっている最中には入らない
+    if (!gm.IsFinished && gm.LaneNumber == 8 && laneObj() != null)
+    {
+        var rs = laneObj().GetComponentInChildren<CrazyBowling.Lanes.LaneRadioSound>();
+        if (rs != null)
+        {
+            var ta = (UnityEngine.AudioSource)fRadioTalk.GetValue(rs);
+            if (ta != null && ta.isPlaying && talking) { radioOverlap++; if (radioOverlap == 1) W($"{t:F2}   ★8本目で交信と DJ が重なった"); }
+            radioTx[rs.GetInstanceID()] = rs.TransmissionCount;
+        }
+    }
+    // ボタン（2ゲーム目）：2本目で DJ を消す → 止まって状態が残る → 戻す。4本目で全体の音を消す → DJ も止まる → 戻す
+    if (game == 2 && !gm.IsFinished)
+    {
+        float since = t - djTestAt;
+        if (djTest == 0 && gm.LaneNumber >= 2 && talking) { djToggle.Toggle(); djTest = 1; djTestAt = t; W($"{t:F2}   DJ のボタンを押した（消す）"); }
+        else if (djTest == 1 && since >= table.djStopFadeSeconds + 0.4f)
+        {
+            bool ok = !talking && dj.DjMuted && UnityEngine.PlayerPrefs.GetInt("CrazyBowling.DjMuted", 0) == 1 && djLabel() == CrazyBowling.UI.UIText.DjOff;
+            if (ok) djButtonOk++; else djButtonBad++;
+            W($"{t:F2}   {(ok ? "" : "★")}DJ を消した｜しゃべっている {talking}・DjMuted {dj.DjMuted}・残した値 {UnityEngine.PlayerPrefs.GetInt("CrazyBowling.DjMuted", 0)}・文字 {djLabel()}");
+            djTest = 2; djTestAt = t;
+        }
+        else if (djTest == 2 && since >= 3f) { djToggle.Toggle(); djTest = 3; djTestAt = t; W($"{t:F2}   DJ のボタンを押した（戻す）"); }
+        else if (djTest == 3 && (talking || since > table.djGapSeconds.y + 3f))
+        {
+            bool ok = talking && !dj.DjMuted && UnityEngine.PlayerPrefs.GetInt("CrazyBowling.DjMuted", 1) == 0 && djLabel() == CrazyBowling.UI.UIText.DjOn;
+            if (ok) djButtonOk++; else djButtonBad++;
+            W($"{t:F2}   {(ok ? "" : "★")}DJ を戻した｜{since:F1}秒でしゃべり始めた {talking}・残した値 {UnityEngine.PlayerPrefs.GetInt("CrazyBowling.DjMuted", 1)}・文字 {djLabel()}");
+            djTest = 4;
+        }
+        else if (djTest == 4 && gm.LaneNumber >= 4 && talking) { sndToggle.Toggle(); djTest = 5; djTestAt = t; W($"{t:F2}   音のボタンを押した（全体の音を消す）"); }
+        else if (djTest == 5 && since >= table.djStopFadeSeconds + 0.4f)
+        {
+            bool ok = !talking && sp.Muted;
+            if (ok) djMuteOk++; else djMuteBad++;
+            W($"{t:F2}   {(ok ? "" : "★")}全体の音を消した｜DJ がしゃべっている {talking}");
+            djTest = 6; djTestAt = t;
+        }
+        else if (djTest == 6 && since >= 3f) { sndToggle.Toggle(); djTest = 7; djTestAt = t; W($"{t:F2}   音のボタンを押した（戻す）"); }
+        else if (djTest == 7 && (talking || since > table.djGapSeconds.y + 3f))
+        {
+            bool ok = talking && !sp.Muted;
+            if (ok) djMuteOk++; else djMuteBad++;
+            W($"{t:F2}   {(ok ? "" : "★")}全体の音を戻した｜{since:F1}秒で DJ がしゃべり始めた {talking}");
+            djTest = 8;
+        }
+    }
+};
+
 // ---- 進行 ----
 int laneKey = -1; float laneT0 = 0f; bool pinDone = false, residueDone = false, bgmDone = false;
 float nextBgmLog = 0f, finishedAt = -1f;
@@ -280,9 +403,34 @@ finish = () =>
         if (r.lane == 8 && (r.name.StartsWith("投げた瞬間") || r.name.StartsWith("転がる") || r.name.StartsWith("ピン（") || r.name.StartsWith("歓声（"))) vac++;
     W("BGM の並び｜" + string.Join(" ", bgmSeen));
     W($"9本目｜阻まれた {lane9Block}・入った {lane9Enter}");
+    // DJ：鳴らした音の記録から、周ごとのコーナーの並びを出し、同じ周の重なりを数える
+    var rxCorner = new System.Text.RegularExpressions.Regex(@"^DJ：コーナー(\d+)（(\d+)周目） 始めた");
+    var cycles = new System.Collections.Generic.SortedDictionary<int, System.Collections.Generic.List<int>>();
+    int djCornerStarts = 0, djIdStarts = 0;
+    foreach (var r in sp.Records)
+    {
+        if (!r.name.StartsWith("DJ：") || !r.name.Contains(" 始めた")) continue;
+        var m = rxCorner.Match(r.name);
+        if (!m.Success) { djIdStarts++; continue; }
+        djCornerStarts++;
+        int c = int.Parse(m.Groups[2].Value), k = int.Parse(m.Groups[1].Value);
+        if (!cycles.ContainsKey(c)) cycles[c] = new System.Collections.Generic.List<int>();
+        if (cycles[c].Contains(k)) { djRepeat++; W($"★DJ：{c}周目にコーナー{k}が2回流れた"); }
+        cycles[c].Add(k);
+    }
+    foreach (var kv in cycles) W($"DJ の並び｜{kv.Key}周目：コーナー {string.Join("→", kv.Value)}");
+    int txTotal = 0; foreach (var v in radioTx.Values) txTotal += v;
+    if (dj == null) { notFound++; W("★見つからない｜DjRadio"); }
+    else { dj.DjMuted = djMutedAtStart; }
+    sp.Muted = soundMutedAtStart;
+    W($"DJ｜始めた コーナー {djCornerStarts}・ID {djIdStarts}｜切り替わりをしゃべったまままたいだ {djSwitchTalking}回・途切れ {djBreak}｜2本同時 {djDouble}｜同じ周の重なり {djRepeat}｜" +
+      $"いちばん長い間 {djMaxGap:F1}秒・長すぎる間 {djLongGap}｜効果音で下がった {djDuckDown}回（下がらない {djDuckDownBad}）・戻った {djDuckBack}回（戻らない {djDuckBackBad}）｜" +
+      $"8本目の交信 {txTotal}回・DJ と重なった {radioOverlap}｜DJ のボタン 合格 {djButtonOk}／不合格 {djButtonBad}｜全体の音のボタン 合格 {djMuteOk}／不合格 {djMuteBad}");
+    int djBad = djBreak + djDouble + djRepeat + djLongGap + djDuckDownBad + djDuckBackBad + radioOverlap + djButtonBad + djMuteBad
+              + (djSwitchTalking == 0 ? 1 : 0) + (djDuckDown == 0 ? 1 : 0) + (djButtonOk < 2 ? 1 : 0) + (djMuteOk < 2 ? 1 : 0);
     W($"まとめ｜終わったレーン {lanesFinished}（期待 20）｜投球 {throws}｜タイムアウト {timeouts}｜本数の矛盾 {contradictions}｜警告 {warn}｜エラー {err}｜" +
       $"開始時のピンの食い違い {pinStartBad}｜共有設定の食い違い {sharedMismatch}｜動きの確認 {moveChecks}回・止まっていた {moveStopped}回｜" +
-      $"BGM の食い違い {bgmBad}（RANK のあとの結果画面の曲 {rankChecks}回）｜レーンの切り替え {switches}回・前のレーンの音の残り {residue}回｜8本目のボール・ピン・歓声の音 {vac}回｜見つからない部品 {notFound}｜" +
+      $"BGM の食い違い {bgmBad}（RANK のあとの結果画面の曲 {rankChecks}回）｜レーンの切り替え {switches}回・前のレーンの音の残り {residue}回｜8本目のボール・ピン・歓声の音 {vac}回｜見つからない部品 {notFound}｜DJ の食い違い {djBad}｜" +
       $"{(UnityEditor.EditorApplication.isPlaying ? "" : "★途中で Play が止まった｜")}終わり");
     System.IO.File.AppendAllText(logPath, buf.ToString()); buf.Clear();
 };
@@ -291,6 +439,7 @@ tick = () =>
     if (!UnityEditor.EditorApplication.isPlaying) { finish(); return; }
     float t = UnityEngine.Time.unscaledTime;
     int key = game * 100 + gm.LaneNumber;
+    djTick(t, laneKey != -1 && key != laneKey);
     if (key != laneKey)
     {
         laneKey = key; laneT0 = t; pinDone = residueDone = bgmDone = false; nextBgmLog = t;

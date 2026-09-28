@@ -83,8 +83,14 @@ namespace CrazyBowling.Core
         private AudioClip _bgmClip;
         private float _bgmTargetVolume;
 
-        /// <summary>曲を切り替えた瞬間の、前の曲の大きさ（消える速さを決めるためだけに使う）。</summary>
-        private readonly float[] _bgmFadeFrom = new float[2];
+        /// <summary>BGM の2つの口の、切り替えのフェードの位置（0〜1）。</summary>
+        private readonly float[] _bgmLevel = new float[2];
+
+        /// <summary>BGM の2つの口の、曲の音量（音の表の音量 × BGM ぜんぶの音量）。</summary>
+        private readonly float[] _bgmBase = new float[2];
+
+        /// <summary>効果音として1回鳴らした口（ピン・歓声・レーン専用の音など）。DJ の声を下げるかを決めるのに使う。</summary>
+        private readonly List<AudioSource> _seSources = new List<AudioSource>();
         private bool _muted;
         private bool _unlocked;
         private AudioSource _narration;
@@ -299,8 +305,43 @@ namespace CrazyBowling.Core
             source.volume = SeVolume(entry) * Mathf.Max(0f, volumeScale);
             source.pitch = RandomPitch(entry) * pitchScale;
             source.Play();
+            TrackSe(source);
             Record(name);
             return true;
+        }
+
+        /// <summary>効果音として鳴らした口を覚える（DJ の声を下げるかを決めるため）。</summary>
+        private void TrackSe(AudioSource source)
+        {
+            if (!_seSources.Contains(source))
+            {
+                _seSources.Add(source);
+            }
+        }
+
+        /// <summary>
+        /// 効果音・歓声が今鳴っているか（1回ずつ鳴らす音だけ。転がる音や月面の雑音のように繰り返す音は入れない）。
+        /// DJ の声はこれが true の間、少し下げる。レーンを出て消えた口は忘れる。
+        /// </summary>
+        public bool IsSeActive
+        {
+            get
+            {
+                for (int i = _seSources.Count - 1; i >= 0; i--)
+                {
+                    AudioSource source = _seSources[i];
+                    if (source == null)
+                    {
+                        _seSources.RemoveAt(i);
+                        continue;
+                    }
+                    if (source.isPlaying && !source.loop && source.volume > 0f)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
         }
 
         /// <summary>
@@ -323,6 +364,7 @@ namespace CrazyBowling.Core
             source.volume = SeVolume(entry);
             source.pitch = RandomPitch(entry);
             source.Play();
+            TrackSe(source);
             Record(name);
             return clip.length / Mathf.Max(source.pitch, 0.01f);
         }
@@ -662,14 +704,13 @@ namespace CrazyBowling.Core
 
             if (clip != _bgmClip)
             {
-                // 前の曲は、この瞬間の大きさから「曲が変わるときの時間」で 0 まで小さくする
-                _bgmFadeFrom[_bgmCurrent] = _bgm[_bgmCurrent].volume;
+                // 前の曲は、この瞬間のフェードの位置から「曲が変わるときの時間」で 0 まで小さくする
                 _bgmClip = clip;
                 _bgmCurrent = 1 - _bgmCurrent;
                 AudioSource next = _bgm[_bgmCurrent];
                 next.Stop();
                 next.clip = clip;
-                next.volume = 0f;
+                _bgmLevel[_bgmCurrent] = 0f;
                 if (clip != null)
                 {
                     next.Play();
@@ -681,23 +722,33 @@ namespace CrazyBowling.Core
                 }
             }
             _bgmTargetVolume = volume * table.bgmMaster;
+            _bgmBase[_bgmCurrent] = _bgmTargetVolume;
 
-            // ナレーションの間は BGM を小さくし、終わったらゆっくり戻す
-            float duckTarget = IsNarrationPlaying && !_narrationFading ? SoundLevel.DbToLinear(table.bgmDuckDb) : 1f;
-            float duckSeconds = duckTarget < _bgmDuck ? 0.3f : Mathf.Max(table.bgmDuckReleaseSeconds, 0.01f);
-            _bgmDuck = Mathf.MoveTowards(_bgmDuck, duckTarget, Time.unscaledDeltaTime / duckSeconds);
+            // ナレーションの間と、DJ がしゃべっている間（しゃべり終わってから少しの間も）は BGM を小さくし、終わったらゆっくり戻す
+            float now = Time.unscaledTime;
+            float duckTarget = 1f;
+            if (IsNarrationPlaying && !_narrationFading)
+            {
+                duckTarget = Mathf.Min(duckTarget, SoundLevel.DbToLinear(table.bgmDuckDb));
+            }
+            DjRadio dj = DjRadio.Instance;
+            if (dj != null && DuckEnvelope.Held(dj.IsTalking, dj.LastTalkTime, now, table.bgmDuckUnderDjHoldSeconds))
+            {
+                duckTarget = Mathf.Min(duckTarget, SoundLevel.DbToLinear(table.bgmDuckUnderDjDb));
+            }
+            _bgmDuck = DuckEnvelope.Approach(_bgmDuck, duckTarget, 0.3f, table.bgmDuckReleaseSeconds, Time.unscaledDeltaTime);
 
-            // 大きくする曲は目標の大きさまで、小さくする曲は切り替えた瞬間の大きさから、どちらも「曲が変わるときの時間」で動かす
-            // （次のレーンが真空で目標が 0 でも、前の曲が決めた時間で消えるように）
+            // 音量 ＝ 切り替えのフェード（0〜1）× 曲の音量 × 小さくする倍率。
+            // フェードは、大きくする曲も小さくする曲も「曲が変わるときの時間」で動かす
+            // （次のレーンが真空で曲が無くても、前の曲が決めた時間で消えるように）
             float step = Time.unscaledDeltaTime / Mathf.Max(table.bgmCrossfadeSeconds, 0.01f);
             for (int i = 0; i < _bgm.Length; i++)
             {
                 AudioSource source = _bgm[i];
                 bool current = i == _bgmCurrent;
-                float target = current && _bgmClip != null ? _bgmTargetVolume * _bgmDuck : 0f;
-                float span = current ? Mathf.Max(_bgmTargetVolume, 0.01f) : Mathf.Max(_bgmFadeFrom[i], 0.01f);
-                source.volume = Mathf.MoveTowards(source.volume, target, step * span);
-                if (i != _bgmCurrent && source.isPlaying && source.volume <= 0f)
+                _bgmLevel[i] = Mathf.MoveTowards(_bgmLevel[i], current && _bgmClip != null ? 1f : 0f, step);
+                source.volume = _bgmLevel[i] * _bgmBase[i] * _bgmDuck;
+                if (!current && source.isPlaying && _bgmLevel[i] <= 0f)
                 {
                     source.Stop();
                 }

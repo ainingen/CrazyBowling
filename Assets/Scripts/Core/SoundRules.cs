@@ -312,6 +312,29 @@ namespace CrazyBowling.Core
         }
     }
 
+    /// <summary>
+    /// 音量を下げる・戻す（ダッキング。段階6）。下げるときは速く、戻すときはゆっくり動かす。
+    /// 倍率（0〜1）を毎フレーム目標へ近づけるだけ。AudioMixer を使わないので、ブラウザでも同じに動く。
+    /// </summary>
+    public static class DuckEnvelope
+    {
+        /// <summary>
+        /// 今の倍率を目標へ近づける。下げるときは attackSeconds、戻すときは releaseSeconds で 0〜1 を動き切る速さ。
+        /// </summary>
+        public static float Approach(float current, float target, float attackSeconds, float releaseSeconds, float deltaTime)
+        {
+            float seconds = target < current ? attackSeconds : releaseSeconds;
+            float step = deltaTime / Mathf.Max(seconds, 0.001f);
+            return Mathf.MoveTowards(current, target, step);
+        }
+
+        /// <summary>下げている最中か、の判定に「保つ時間」を足す（しゃべり終わってから hold 秒は下げたままにする）。</summary>
+        public static bool Held(bool activeNow, float lastActiveTime, float now, float holdSeconds)
+        {
+            return activeNow || (lastActiveTime >= 0f && now - lastActiveTime < holdSeconds);
+        }
+    }
+
     /// <summary>音量の数え方（段階6）。</summary>
     public static class SoundLevel
     {

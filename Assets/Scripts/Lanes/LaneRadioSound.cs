@@ -59,7 +59,31 @@ namespace CrazyBowling.Lanes
                 return;
             }
 
+            // DJ のラジオ番組がしゃべっている最中には入れない。コーナーと ID の間のすき間に入れ、
+            // 交信の間は DJ に次の番組を待ってもらう（DJ の声と交信が重ならないように）
+            DjRadio dj = DjRadio.Instance;
+            if (dj != null && !dj.IsQuietForOthers)
+            {
+                return;
+            }
+            if (dj != null)
+            {
+                dj.Hold();
+                _holdingDj = dj;
+            }
             StartCoroutine(Transmit(player, table));
+        }
+
+        /// <summary>DJ に待ってもらっている（交信の間）。交信が終わるか、レーンを出たら解く。</summary>
+        private DjRadio _holdingDj;
+
+        private void ReleaseDj()
+        {
+            if (_holdingDj != null)
+            {
+                _holdingDj.Release();
+                _holdingDj = null;
+            }
         }
 
         /// <summary>交信を1回入れる。</summary>
@@ -82,14 +106,18 @@ namespace CrazyBowling.Lanes
             length = player.PlayIndexOn(_talk, table.lane08Voice, voice, $"8本目：交信 声（{voice + 1}）");
             yield return new WaitForSeconds(length + gap);
 
-            player.PlayIndexOn(_talk, table.lane08Beep, 0, "8本目：交信 ピッ（終わり）");
+            length = player.PlayIndexOn(_talk, table.lane08Beep, 0, "8本目：交信 ピッ（終わり）");
+            yield return new WaitForSeconds(length);
 
             _next = Time.time + SoundSchedule.NextDelay(table.lane08Interval, Random.value);
             _talking = false;
+            ReleaseDj();
         }
 
         private void OnDestroy()
         {
+            // 交信の途中でレーンを出たら、DJ に待ってもらうのを解く（番組が止まったままにならないように）
+            ReleaseDj();
             SoundPlayer player = SoundPlayer.Instance;
             if (player != null && _noise != null && _noise.isPlaying)
             {
