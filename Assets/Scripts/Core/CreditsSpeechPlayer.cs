@@ -156,7 +156,10 @@ namespace CrazyBowling.Core
                 bool open = creditsView != null && creditsView.IsOpen;
                 if (open && CreditsSpeechRule.CanStart(table.creditsSpeech != null, player.IsUnlocked, player.Muted, djMuted))
                 {
+                    _voice.Stop();
                     _voice.clip = table.creditsSpeech;
+                    // ★必ず頭から流す（Streaming の音は、前に止めた位置・最後まで流した位置を覚えていて、そこから始まることがある）
+                    _voice.time = 0f;
                     _baseVolume = table.creditsSpeechVolume;
                     _voice.volume = _baseVolume;
                     _fading = false;
