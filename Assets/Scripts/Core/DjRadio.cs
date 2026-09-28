@@ -10,6 +10,7 @@ namespace CrazyBowling.Core
     /// 声を鳴らす口は1つだけなので、DJ の声が2本同時に鳴ることはない。
     /// 効果音・歓声が鳴っている間は声を少し下げ、鳴り終わったらなめらかに戻す。DJ がしゃべっている間、BGM は鳴らし係が小さくする。
     /// DJ を消す（<see cref="DjMuted"/>）か、全体の音を消すと、しゃべっている声を小さくして止め、番組も止める。戻すと次の番組から続ける。
+    /// CREDITS の画面を開いている間は一時停止する（<see cref="Suspend"/>。しゃべっている声は小さくして止め、閉じたら同じ所から続ける）。
     /// 数値はすべて音の表（<see cref="SoundTable"/> の「DJ のラジオ番組」）で直す。判定・得点・物理には関わらない。
     /// </summary>
     public class DjRadio : MonoBehaviour
@@ -36,6 +37,9 @@ namespace CrazyBowling.Core
         private bool _stopping;
         private int _holds;
         private bool _muted;
+        private int _suspends;
+        private bool _paused;
+        private bool _justResumed;
 
         /// <summary>声を鳴らす口（確かめるとき用）。</summary>
         public AudioSource Voice => _voice;
@@ -82,6 +86,40 @@ namespace CrazyBowling.Core
         /// 始めるときは <see cref="Hold"/> を呼び、終わったら <see cref="Release"/> を呼ぶ（その間、DJ は次の番組を始めない）。
         /// </summary>
         public bool IsQuietForOthers => !IsTalking;
+
+        /// <summary>一時停止してもらっているか（CREDITS の画面を開いている間）。</summary>
+        public bool IsSuspended => _suspends > 0;
+
+        /// <summary>声を一時停止の位置で止めているか（確かめるとき用）。</summary>
+        public bool IsPaused => _paused;
+
+        /// <summary>
+        /// 番組を一時停止する（CREDITS の画面を開いた）。しゃべっていたら小さくしてから、その位置で止める。
+        /// 止めている間は次の番組も始めない。<see cref="Resume"/> で続きから。
+        /// </summary>
+        public void Suspend()
+        {
+            _suspends++;
+            if (_suspends == 1)
+            {
+                SoundPlayer.Instance?.Record("DJ：一時停止を頼まれた");
+            }
+        }
+
+        /// <summary>一時停止をやめる（CREDITS の画面を閉じた）。止めた位置から続ける。</summary>
+        public void Resume()
+        {
+            if (_suspends <= 0)
+            {
+                return;
+            }
+            _suspends--;
+            if (_suspends == 0)
+            {
+                _justResumed = true;
+                SoundPlayer.Instance?.Record("DJ：一時停止をやめた");
+            }
+        }
 
         /// <summary>番組を待ってもらう（8本目の交信を始めた）。</summary>
         public void Hold()
@@ -151,7 +189,7 @@ namespace CrazyBowling.Core
             if (!_started)
             {
                 bool titleOpen = (titleView != null && titleView.IsVisible) || (tuneInView != null && tuneInView.IsVisible);
-                if (on && !titleOpen && !player.IsNarrationPlaying && HasClips(table))
+                if (on && !titleOpen && _suspends == 0 && !player.IsNarrationPlaying && HasClips(table))
                 {
                     _started = true;
                     _program = new DjProgram(Count(table.djCorners), Count(table.djIds), System.Environment.TickCount, true);
@@ -168,6 +206,13 @@ namespace CrazyBowling.Core
             // DJ を消した・全体の音を消した：しゃべっていたら小さくして止め、番組も止める
             if (!on)
             {
+                if (_paused)
+                {
+                    // 一時停止していた声は、続きを流さずに捨てる（戻したら次の番組から）
+                    _voice.Stop();
+                    _paused = false;
+                    _fade = 1f;
+                }
                 if (IsTalking)
                 {
                     _stopping = true;
@@ -187,6 +232,40 @@ namespace CrazyBowling.Core
             {
                 _stopping = false;
                 _fade = 1f;
+            }
+
+            // 一時停止（CREDITS の画面）：しゃべっていたら小さくして、その位置で止める。次の番組も始めない
+            if (_suspends > 0)
+            {
+                if (IsTalking)
+                {
+                    _fade = Mathf.MoveTowards(_fade, 0f, Time.unscaledDeltaTime / Mathf.Max(table.djStopFadeSeconds, 0.01f));
+                    _voice.volume = table.djVolume * _duck * _fade;
+                    if (_fade <= 0f)
+                    {
+                        _voice.Pause();
+                        _paused = true;
+                        player.Record("DJ：一時停止した（" + Label(Current) + "）");
+                    }
+                }
+                return;
+            }
+            if (_paused)
+            {
+                // 続きから：止めた位置から流し、ゆっくり元の大きさに戻す
+                _paused = false;
+                _voice.UnPause();
+                player.Record("DJ：続きから再開した（" + Label(Current) + "）");
+            }
+            else if (_justResumed && !IsTalking && _nextAt >= 0f)
+            {
+                // すき間の途中で止めていたら、閉じてから決めた間をおいて次の番組へ
+                _nextAt = Mathf.Max(_nextAt, now + GapSeconds());
+            }
+            _justResumed = false;
+            if (!_stopping && IsTalking && _fade < 1f)
+            {
+                _fade = Mathf.MoveTowards(_fade, 1f, Time.unscaledDeltaTime / Mathf.Max(table.djStopFadeSeconds, 0.01f));
             }
             if (_nextAt < 0f && !IsTalking)
             {

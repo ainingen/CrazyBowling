@@ -283,6 +283,19 @@ namespace CrazyBowling.Data
         [Tooltip("DJ がしゃべり終わってから、BGM を小さいまま保つ時間（秒）。コーナーと ID の間で BGM が上下しないように。")]
         public float bgmDuckUnderDjHoldSeconds = 2.5f;
 
+        [Header("クレジットのあいさつ（段階6。声のファイルは台本ができてから入れる）")]
+        [Tooltip("CREDITS の画面を開いたら流すあいさつの声（vo_credits_speech。置き場所は Assets/Audio/Voice/。加工A）。空なら流さない（画面は開ける）。")]
+        public AudioClip creditsSpeech;
+
+        [Tooltip("あいさつの声の音量（0〜1）。")]
+        [Range(0f, 1f)] public float creditsSpeechVolume = 0.9f;
+
+        [Tooltip("CREDITS の画面を開いてから、あいさつを流し始めるまでの間（秒）。")]
+        public float creditsSpeechDelaySeconds = 0.6f;
+
+        [Tooltip("画面を閉じたとき・音を消したとき・DJ を消したときに、あいさつを小さくして止める時間（秒）。")]
+        public float creditsSpeechFadeSeconds = 0.4f;
+
         /// <summary>このレーンの曲の設定を探す。無ければ null。</summary>
         public LaneBgm FindLaneBgm(LaneData lane)
         {

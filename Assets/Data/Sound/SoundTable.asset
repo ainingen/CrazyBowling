@@ -230,3 +230,7 @@ MonoBehaviour:
   djStopFadeSeconds: 0.3
   bgmDuckUnderDjDb: -8
   bgmDuckUnderDjHoldSeconds: 2.5
+  creditsSpeech: {fileID: 0}
+  creditsSpeechVolume: 0.9
+  creditsSpeechDelaySeconds: 0.6
+  creditsSpeechFadeSeconds: 0.4

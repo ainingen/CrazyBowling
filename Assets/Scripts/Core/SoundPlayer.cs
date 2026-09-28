@@ -608,6 +608,27 @@ namespace CrazyBowling.Core
             Record("ナレーション：始めた");
         }
 
+        /// <summary>
+        /// ナレーションを小さくして止める（段階6。CREDITS の画面を開いたとき。あいさつの声と重ならないように）。
+        /// 流れていなければ何もしない。
+        /// </summary>
+        public void FadeOutNarration()
+        {
+            if (_intro != null)
+            {
+                // ヒュイーンのあとのナレーションも始めない
+                StopCoroutine(_intro);
+                _intro = null;
+                Record("ナレーション：CREDITS を開いたので流さない");
+            }
+            if (IsNarrationPlaying && !_narrationFading)
+            {
+                _narrationFading = true;
+                _narrationFadeStart = Time.unscaledTime;
+                Record("ナレーション：CREDITS を開いたので小さくし始めた");
+            }
+        }
+
         /// <summary>ナレーション：タイトルが閉じたら小さくして止める。音を消したらすぐ止める。</summary>
         private void UpdateNarration()
         {
