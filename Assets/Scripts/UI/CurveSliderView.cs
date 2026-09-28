@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using CrazyBowling.Ball;
+using CrazyBowling.Core;
 
 namespace CrazyBowling.UI
 {
@@ -21,6 +22,12 @@ namespace CrazyBowling.UI
 
         [Tooltip("今のカーブを出すテキスト。")]
         [SerializeField] private TMP_Text label;
+
+        [Tooltip("結果画面の間はスライダーと文字を隠す（段階6。結果画面のボタンのすき間から覗かないように）。空なら同じシーンから探す。")]
+        [SerializeField] private GameManager gameManager;
+
+        /// <summary>スライダーの見え方（結果画面の間は隠す）。</summary>
+        private CanvasGroup _group;
 
         [Header("色")]
         [Tooltip("カーブを掛けているときの色。")]
@@ -55,6 +62,18 @@ namespace CrazyBowling.UI
 
         private void Awake()
         {
+            if (gameManager == null)
+            {
+                gameManager = FindFirstObjectByType<GameManager>();
+            }
+            if (slider != null)
+            {
+                _group = slider.GetComponent<CanvasGroup>();
+                if (_group == null)
+                {
+                    _group = slider.gameObject.AddComponent<CanvasGroup>();
+                }
+            }
             if (slider != null)
             {
                 slider.minValue = -1f;
@@ -112,6 +131,14 @@ namespace CrazyBowling.UI
             if (ballController == null)
             {
                 return;
+            }
+
+            // 結果画面の間は隠す（使わないうえ、PLAY AGAIN と TITLE のすき間から文字が覗くため）
+            if (_group != null)
+            {
+                bool show = gameManager == null || !gameManager.IsFinished;
+                _group.alpha = show ? 1f : 0f;
+                _group.blocksRaycasts = show;
             }
 
             // 離したとき、真ん中付近なら STRAIGHT に吸い付ける
