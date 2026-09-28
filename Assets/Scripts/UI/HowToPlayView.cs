@@ -72,6 +72,9 @@ namespace CrazyBowling.UI
         [Tooltip("RECORDS と HOW TO PLAY の段の後ろに敷く暗い下敷きの色。ボタンのすき間から後ろの文字（カーブの表示）が覗かないように。")]
         [SerializeField] private Color buttonRowBackColor = new Color(0.01f, 0.01f, 0.04f, 1f);
 
+        [Tooltip("下敷きの幅（始めるボタンの幅に対する割合）。RECORDS・HOW TO PLAY・CREDITS の3つの端から端まで。")]
+        [SerializeField] private float buttonRowBackWidthScale = 1.25f;
+
         [Header("文字")]
         [Tooltip("1ページに載せる節の数。")]
         [Min(1)]
@@ -251,11 +254,11 @@ namespace CrazyBowling.UI
             rect.SetSiblingIndex(startButton.GetSiblingIndex() + 1);
             CreateButton(rect, UIText.HowToPlay, buttonFontSize, Open);
 
-            // 段の後ろの下敷き（始めるボタンと同じ幅。すき間から後ろのカーブの表示が覗くと「RECORDS STRAIGHT HOW TO PLAY」と読めてしまう）
+            // 段の後ろの下敷き（ボタンの段の端から端まで。すき間から後ろのカーブの表示が覗くと「RECORDS STRAIGHT HOW TO PLAY」と読めてしまう）
             RectTransform back = NeonUI.CreateRect(startButton.parent, "TitleButtonRowBack", startButton.anchorMin, startButton.anchorMax, Vector2.zero, Vector2.zero);
             back.pivot = rect.pivot;
             // 画像なしの単色（パネルの画像は中が半透明で、後ろの文字が透けた）。角が見えないよう、ボタンの枠の内側に収める
-            back.sizeDelta = new Vector2(size.x - 24f, height - 8f);
+            back.sizeDelta = new Vector2(size.x * buttonRowBackWidthScale - 24f, height - 8f);
             back.anchoredPosition = new Vector2(startButton.anchoredPosition.x, rect.anchoredPosition.y);
             NeonUI.CreateImage(back, null, buttonRowBackColor, false);
             // 始めるボタンと2つのボタンより後ろに描く
