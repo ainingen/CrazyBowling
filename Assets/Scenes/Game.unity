@@ -7829,6 +7829,8 @@ MonoBehaviour:
   buttonGap: 8
   buttonShiftX: 0.4296875
   buttonFontSize: 34
+  scrollCues: {fileID: 11400000, guid: 4d8725488169e2c47b6a4b9dc305f114, type: 2}
+  speechPlayer: {fileID: 485443144}
   producerSize: 64
   headingSize: 40
   labelSize: 26

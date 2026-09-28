@@ -1,16 +1,98 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 using CrazyBowling.Core;
+using CrazyBowling.Data;
 
 namespace CrazyBowling.UI
 {
     /// <summary>
+    /// クレジットの自動送りの計算（段階6）。MonoBehaviour に依らない（EditMode テストあり）。
+    /// 送る位置（offset）は「中身のいちばん上から、見える範囲のいちばん上までの長さ」。0 がいちばん上。
+    /// </summary>
+    public static class CreditsScrollRules
+    {
+        /// <summary>
+        /// 見出しを、見える範囲の上から fraction の位置に来させるための送る位置。中身の端を越えない（いちばん下より先へは送らない）。
+        /// </summary>
+        /// <param name="anchorFromContentTop">中身のいちばん上から見出しの上の端までの長さ。</param>
+        public static float OffsetFor(float anchorFromContentTop, float viewportHeight, float fraction, float contentHeight)
+        {
+            float max = Mathf.Max(0f, contentHeight - viewportHeight);
+            return Mathf.Clamp(anchorFromContentTop - viewportHeight * fraction, 0f, max);
+        }
+
+        /// <summary>
+        /// 時刻 t の送る位置。目印と目印の間は一定の速さ（まっすぐ結ぶ）。最初の目印より前は最初の位置、最後の目印より後は最後の位置のまま。
+        /// </summary>
+        public static float TargetOffset(float t, IList<float> times, IList<float> offsets)
+        {
+            int n = Mathf.Min(times != null ? times.Count : 0, offsets != null ? offsets.Count : 0);
+            if (n == 0)
+            {
+                return 0f;
+            }
+            if (t <= times[0])
+            {
+                return offsets[0];
+            }
+            for (int i = 0; i < n - 1; i++)
+            {
+                if (t < times[i + 1])
+                {
+                    float span = Mathf.Max(times[i + 1] - times[i], 0.0001f);
+                    return Mathf.Lerp(offsets[i], offsets[i + 1], (t - times[i]) / span);
+                }
+            }
+            return offsets[n - 1];
+        }
+
+        /// <summary>今の位置から目標へ、速さの上限を守って近づける（急に飛ばない）。</summary>
+        public static float Step(float current, float target, float maxSpeed, float deltaTime)
+        {
+            return Mathf.MoveTowards(current, target, Mathf.Max(0f, maxSpeed) * Mathf.Max(0f, deltaTime));
+        }
+    }
+
+    /// <summary>
+    /// クレジットの画面で、手で送り始めたことを知らせる（なぞる・ホイール・右の棒をつかむ）。自動送りを止めるのに使う。
+    /// </summary>
+    public class CreditsScrollInterrupt : MonoBehaviour, IBeginDragHandler, IScrollHandler, IPointerDownHandler
+    {
+        /// <summary>押しただけでも止めるか（右の棒）。なぞる場所では、押しただけでは止めない。</summary>
+        public bool stopOnPointerDown;
+
+        /// <summary>手で送り始めたときに呼ぶ。</summary>
+        public System.Action Interrupted;
+
+        public void OnBeginDrag(PointerEventData eventData)
+        {
+            Interrupted?.Invoke();
+        }
+
+        public void OnScroll(PointerEventData eventData)
+        {
+            Interrupted?.Invoke();
+        }
+
+        public void OnPointerDown(PointerEventData eventData)
+        {
+            if (stopOnPointerDown)
+            {
+                Interrupted?.Invoke();
+            }
+        }
+    }
+
+    /// <summary>
     /// クレジットの画面（段階6）。タイトルの CREDITS ボタンで開く。
     /// 見た目は遊び方・記録の画面と同じネオンの板。いちばん上に「produced by 夜中のBBQ」、その下に音源の作者（<see cref="UIText.CreditsSectionLines"/>）。
     /// 長いので、上下になぞって（ホイールで）送る。右の細い棒で、今どのあたりかが分かる。
+    /// あいさつの声が流れている間は、映画の終わりのように自動でゆっくり送る（目印は <see cref="CreditsScrollCues"/>）。
+    /// 手で送り始めたら（なぞる・ホイール・右の棒）、閉じたら、あいさつが止まったら（音・DJ を消した・最後まで流れた）、自動送りをやめる。
     /// 中身はコードで組み立てる。点滅はさせない。ゲームの進行には関わらない。
     /// </summary>
     public class CreditsView : MonoBehaviour
@@ -40,6 +122,13 @@ namespace CrazyBowling.UI
 
         [Tooltip("CREDITS ボタンの文字の大きさ（いちばん大きいとき）。")]
         [SerializeField] private float buttonFontSize = 34f;
+
+        [Header("自動送り（あいさつに合わせる）")]
+        [Tooltip("目印の時刻と、見出しを来させる位置・速さの上限。空なら自動では送らない。")]
+        [SerializeField] private CreditsScrollCues scrollCues;
+
+        [Tooltip("あいさつの声を流す係（今の位置を読む）。空なら同じシーンから探す。")]
+        [SerializeField] private CreditsSpeechPlayer speechPlayer;
 
         [Header("文字")]
         [Tooltip("「夜中のBBQ」の文字の大きさ。")]
@@ -106,8 +195,23 @@ namespace CrazyBowling.UI
         private ScrollRect _scroll;
         private TMP_Text _title;
         private TMP_Text _producer;
+        private TMP_Text _producerBottom;
         private float _openTime;
         private bool _open;
+        private readonly Dictionary<CreditsAnchor, RectTransform> _anchors = new Dictionary<CreditsAnchor, RectTransform>();
+        private readonly List<float> _cueTimes = new List<float>();
+        private readonly List<float> _cueOffsets = new List<float>();
+        private bool _autoActive;
+        private bool _autoStarted;
+        private float _autoOffset;
+        private int _nextCue;
+        private LayoutElement _endSpace;
+
+        /// <summary>自動で送っているか（確かめるとき用）。</summary>
+        public bool IsAutoScrolling => _autoActive && _autoStarted;
+
+        /// <summary>自動送りを止めたわけ（確かめるとき用）。</summary>
+        public string AutoStopReason { get; private set; } = "";
 
         /// <summary>開いているか。</summary>
         public bool IsOpen => _open;
@@ -139,6 +243,10 @@ namespace CrazyBowling.UI
             if (sequencer == null)
             {
                 sequencer = FindFirstObjectByType<ThrowSequencer>();
+            }
+            if (speechPlayer == null)
+            {
+                speechPlayer = FindFirstObjectByType<CreditsSpeechPlayer>();
             }
             if (root == null || skin == null)
             {
@@ -191,7 +299,14 @@ namespace CrazyBowling.UI
             _openTime = Time.unscaledTime;
             SetVisible(true);
             LayoutRebuilder.ForceRebuildLayoutImmediate(_content);
+            FitEndSpace();
             ScrollPosition = 1f;
+            // 自動送り：あいさつが流れ始めたら動く（流れなければ動かない）
+            _autoActive = scrollCues != null && scrollCues.autoScroll;
+            _autoStarted = false;
+            _autoOffset = 0f;
+            _nextCue = 0;
+            AutoStopReason = "";
             if (!wasOpen)
             {
                 Opened?.Invoke();
@@ -202,6 +317,7 @@ namespace CrazyBowling.UI
         public void Close()
         {
             bool wasOpen = _open;
+            StopAutoScroll("閉じた");
             _open = false;
             SetVisible(false);
             if (wasOpen)
@@ -307,6 +423,12 @@ namespace CrazyBowling.UI
             _scroll.verticalScrollbar = scrollbar;
             _scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
 
+            // 手で送り始めたら自動送りをやめる（なぞる・ホイール・右の棒をつかむ）
+            viewport.gameObject.AddComponent<CreditsScrollInterrupt>().Interrupted = () => StopAutoScroll("手で送った");
+            var barInterrupt = bar.gameObject.AddComponent<CreditsScrollInterrupt>();
+            barInterrupt.stopOnPointerDown = true;
+            barInterrupt.Interrupted = () => StopAutoScroll("右の棒をつかんだ");
+
             FillContent();
 
             CreateButton(NeonUI.CreateRect(_panel, "CloseButton", new Vector2(0.8f, 0.025f), new Vector2(0.97f, 0.11f), Vector2.zero, Vector2.zero), UIText.RecordsClose, 36f, Close);
@@ -316,7 +438,7 @@ namespace CrazyBowling.UI
         private void FillContent()
         {
             // いちばん上：produced by 夜中のBBQ（タイトルの名義と同じ表記）
-            Line(_content, "ProducedBy", UIText.CreditPrefix, skin.RegularFont, skin.RegularPlainMaterial, 30f, noteColor, TextAlignmentOptions.Center, 0f);
+            _anchors[CreditsAnchor.Top] = (RectTransform)Line(_content, "ProducedBy", UIText.CreditPrefix, skin.RegularFont, skin.RegularPlainMaterial, 30f, noteColor, TextAlignmentOptions.Center, 0f).transform;
             _producer = Line(_content, "Producer", UIText.CreditName, skin.BoldFont, skin.BoldNeonMaterial, producerSize, new Color(1f, 0.6f, 0.3f), TextAlignmentOptions.Center, 0f);
             Space("IntroSpace", 24f);
             Line(_content, "Intro", UIText.CreditsIntro, skin.RegularFont, skin.RegularPlainMaterial, bodySize, bodyColor, TextAlignmentOptions.Center, bodyLineSpacing);
@@ -327,6 +449,11 @@ namespace CrazyBowling.UI
                 Space("SectionSpace" + (s + 1), sectionGap);
                 TMP_Text heading = Line(_content, "Heading" + (s + 1), UIText.CreditsHeadings[s], skin.BoldFont, skin.BoldNeonMaterial, headingSize, Color.white, TextAlignmentOptions.Left, 0f);
                 _headings.Add(heading);
+                // 自動送りの目印（見出しの文字で見分ける）
+                string h = UIText.CreditsHeadings[s];
+                if (h == "MUSIC") _anchors[CreditsAnchor.Music] = heading.rectTransform;
+                else if (h == "SOUND EFFECTS") _anchors[CreditsAnchor.SoundEffects] = heading.rectTransform;
+                else if (h == "VOICES") _anchors[CreditsAnchor.Voices] = heading.rectTransform;
                 string[] lines = UIText.CreditsSectionLines[s];
                 for (int i = 0; i < lines.Length; i++)
                 {
@@ -337,14 +464,55 @@ namespace CrazyBowling.UI
                     }
                     else
                     {
-                        Row($"Row{s + 1}_{i + 1}", lines[i].Substring(0, tab), lines[i].Substring(tab + 1), skin.GetAccent(s * 3 + 1));
+                        string label = lines[i].Substring(0, tab);
+                        RectTransform row = Row($"Row{s + 1}_{i + 1}", label, lines[i].Substring(tab + 1), skin.GetAccent(s * 3 + 1));
+                        if (label == MoonOperatorLabel)
+                        {
+                            _anchors[CreditsAnchor.MoonOperator] = row;
+                        }
                     }
                 }
             }
 
             Space("OutroSpace", sectionGap);
-            Line(_content, "Outro", UIText.CreditsOutro, skin.RegularFont, skin.RegularPlainMaterial, bodySize, bodyColor, TextAlignmentOptions.Center, bodyLineSpacing);
+            _anchors[CreditsAnchor.Sponsor] = (RectTransform)Line(_content, "Outro", UIText.CreditsOutro, skin.RegularFont, skin.RegularPlainMaterial, bodySize, bodyColor, TextAlignmentOptions.Center, bodyLineSpacing).transform;
+
+            // いちばん下にも produced by 夜中のBBQ（あいさつの締めで読むので）
+            Space("ClosingSpace", sectionGap);
+            _anchors[CreditsAnchor.Closing] = (RectTransform)Line(_content, "ProducedByBottom", UIText.CreditPrefix, skin.RegularFont, skin.RegularPlainMaterial, 30f, noteColor, TextAlignmentOptions.Center, 0f).transform;
+            _producerBottom = Line(_content, "ProducerBottom", UIText.CreditName, skin.BoldFont, skin.BoldNeonMaterial, producerSize, new Color(1f, 0.6f, 0.3f), TextAlignmentOptions.Center, 0f);
+
+            // いちばん下の余白：締めの produced by が、自動送りで上から決めた位置まで上がれるように（映画の終わりのように）。高さは開くたびに画面に合わせる
+            RectTransform end = NeonUI.CreateRect(_content, "EndSpace", Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            _endSpace = end.gameObject.AddComponent<LayoutElement>();
+            _endSpace.minHeight = 0f;
+            _endSpace.preferredHeight = 0f;
         }
+
+        /// <summary>
+        /// いちばん下の余白を、締めの produced by が見える範囲の上から <see cref="CreditsScrollCues.anchorFromTop"/> の位置まで上がれる高さにする。
+        /// 見える範囲の高さは縦横比で変わるので、開くたびに合わせる。
+        /// </summary>
+        private void FitEndSpace()
+        {
+            if (_endSpace == null || !_anchors.TryGetValue(CreditsAnchor.Closing, out RectTransform closing) || closing == null)
+            {
+                return;
+            }
+            float fraction = scrollCues != null ? scrollCues.anchorFromTop : 0.33f;
+            _endSpace.preferredHeight = 0f;
+            _endSpace.minHeight = 0f;
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_content);
+            // 締めの上の端から、中身のいちばん下まで（余白を入れる前）
+            float below = ContentHeight - AnchorFromContentTop(closing);
+            float need = Mathf.Max(0f, ViewportHeight * (1f - fraction) - below);
+            _endSpace.preferredHeight = need;
+            _endSpace.minHeight = need;
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_content);
+        }
+
+        /// <summary>月の無線士の行の札（あいさつの台本と同じく、効果音のいちばん最後）。</summary>
+        private const string MoonOperatorLabel = "u_wxn5lzrjy3";
 
         /// <summary>1行（折り返す）。</summary>
         private TMP_Text Line(RectTransform parent, string name, string text, TMP_FontAsset font, Material material, float size, Color color, TextAlignmentOptions alignment, float lineSpacing)
@@ -358,7 +526,7 @@ namespace CrazyBowling.UI
         }
 
         /// <summary>札と本文を左右に並べた1行。高さは本文に合わせる。</summary>
-        private void Row(string name, string labelText, string bodyText, Color accent)
+        private RectTransform Row(string name, string labelText, string bodyText, Color accent)
         {
             RectTransform row = NeonUI.CreateRect(_content, name, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             var h = row.gameObject.AddComponent<HorizontalLayoutGroup>();
@@ -381,6 +549,7 @@ namespace CrazyBowling.UI
             bodyLayout.flexibleWidth = 1f - labelWidth;
             bodyLayout.preferredWidth = 0f;
             bodyLayout.minWidth = 0f;
+            return row;
         }
 
         private void Space(string name, float height)
@@ -464,11 +633,111 @@ namespace CrazyBowling.UI
 
             NeonUI.SetNeonColor(_title, NeonUI.Hue(now * 0.1f, 0.85f), 0.55f + 0.25f * NeonUI.Breath(2f));
             // 名義はタイトルと同じく、夜の炭火のような橙〜赤でゆっくり揺らぐ（点滅させない）
-            NeonUI.SetNeonColor(_producer, Color.Lerp(new Color(1f, 0.45f, 0.15f), new Color(1f, 0.2f, 0.12f), NeonUI.Breath(3.2f)), 0.5f);
+            Color ember = Color.Lerp(new Color(1f, 0.45f, 0.15f), new Color(1f, 0.2f, 0.12f), NeonUI.Breath(3.2f));
+            NeonUI.SetNeonColor(_producer, ember, 0.5f);
+            NeonUI.SetNeonColor(_producerBottom, ember, 0.5f);
             for (int i = 0; i < _headings.Count; i++)
             {
                 NeonUI.SetNeonColor(_headings[i], NeonUI.Hue(now * 0.06f + i * 0.17f, 0.75f), 0.4f);
             }
+
+            UpdateAutoScroll();
+        }
+
+        // ================= 自動送り =================
+
+        /// <summary>自動送りをやめる（手で送った・閉じた・あいさつが止まった）。やめたら、その画面を開いている間はもう動かさない。</summary>
+        public void StopAutoScroll(string reason)
+        {
+            if (!_autoActive)
+            {
+                return;
+            }
+            _autoActive = false;
+            AutoStopReason = reason;
+            if (_autoStarted)
+            {
+                SoundPlayer.Instance?.Record("クレジットの自動送り：やめた（" + reason + "）");
+            }
+        }
+
+        private void UpdateAutoScroll()
+        {
+            if (!_autoActive || scrollCues == null || speechPlayer == null || _content == null || _scroll == null)
+            {
+                return;
+            }
+            if (!speechPlayer.IsSpeaking)
+            {
+                // 流れ始める前は待つ。流れ始めたあとで止まった（最後まで流れた・音か DJ を消した）ら、そこでやめる（頭には戻らない）
+                if (_autoStarted)
+                {
+                    StopAutoScroll(speechPlayer.IsPlaying ? "あいさつを小さくし始めた" : "あいさつが止まった");
+                }
+                return;
+            }
+
+            if (!_autoStarted)
+            {
+                _autoStarted = true;
+                _autoOffset = Mathf.Max(0f, _content.anchoredPosition.y);
+                SoundPlayer.Instance?.Record("クレジットの自動送り：始めた");
+            }
+
+            // 目印の送る位置（画面の大きさで変わるので毎回出す。数は少ない）
+            float viewportHeight = ViewportHeight;
+            float contentHeight = ContentHeight;
+            _cueTimes.Clear();
+            _cueOffsets.Clear();
+            foreach (CreditsCue cue in scrollCues.cues)
+            {
+                if (cue == null || !_anchors.TryGetValue(cue.anchor, out RectTransform anchor) || anchor == null)
+                {
+                    continue;
+                }
+                _cueTimes.Add(cue.time);
+                _cueOffsets.Add(CreditsScrollRules.OffsetFor(AnchorFromContentTop(anchor), viewportHeight, scrollCues.anchorFromTop, contentHeight));
+            }
+
+            float t = speechPlayer.PlaybackTime;
+            float target = CreditsScrollRules.TargetOffset(t, _cueTimes, _cueOffsets);
+            _autoOffset = CreditsScrollRules.Step(_autoOffset, target, scrollCues.maxSpeed, Time.unscaledDeltaTime);
+            _scroll.StopMovement();
+            Vector2 position = _content.anchoredPosition;
+            position.y = _autoOffset;
+            _content.anchoredPosition = position;
+
+            // 目印の時刻を過ぎたら、その見出しがどこにあるかを記録に残す（確かめ用）
+            while (_nextCue < scrollCues.cues.Count && scrollCues.cues[_nextCue] != null && t >= scrollCues.cues[_nextCue].time)
+            {
+                CreditsCue cue = scrollCues.cues[_nextCue];
+                float at = _anchors.TryGetValue(cue.anchor, out RectTransform a) && a != null ? AnchorFromTop(cue.anchor) : -1f;
+                SoundPlayer.Instance?.Record($"クレジットの自動送り：{cue.anchor}（{cue.note}）{cue.time:F2}秒 → 今 {t:F2}秒・見出しは見える範囲の上から {at:F2}");
+                _nextCue++;
+            }
+        }
+
+        /// <summary>中身のいちばん上から、その目印の上の端までの長さ。</summary>
+        private float AnchorFromContentTop(RectTransform anchor)
+        {
+            var corners = new Vector3[4];
+            anchor.GetWorldCorners(corners);
+            float top = _content.InverseTransformPoint(corners[1]).y;
+            return _content.rect.yMax - top;
+        }
+
+        /// <summary>その目印の上の端が、見える範囲の上からどれだけの位置にあるか（0 がいちばん上、1 がいちばん下。確かめるとき用）。</summary>
+        public float AnchorFromTop(CreditsAnchor anchor)
+        {
+            if (_scroll == null || !_anchors.TryGetValue(anchor, out RectTransform rect) || rect == null)
+            {
+                return -1f;
+            }
+            var viewport = (RectTransform)_scroll.transform;
+            var corners = new Vector3[4];
+            rect.GetWorldCorners(corners);
+            float top = viewport.InverseTransformPoint(corners[1]).y;
+            return (viewport.rect.yMax - top) / Mathf.Max(viewport.rect.height, 1f);
         }
     }
 }

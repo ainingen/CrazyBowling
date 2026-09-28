@@ -47,6 +47,12 @@ namespace CrazyBowling.Core
         /// <summary>あいさつが流れているか（小さくして止めている途中も含む）。</summary>
         public bool IsPlaying => _voice != null && _voice.isPlaying;
 
+        /// <summary>あいさつをふつうに流しているか（小さくして止めている途中は含まない）。クレジットの自動送りはこの間だけ動く。</summary>
+        public bool IsSpeaking => IsPlaying && !_fading;
+
+        /// <summary>あいさつの今の位置（秒）。流していなければ 0。</summary>
+        public float PlaybackTime => IsPlaying ? _voice.time : 0f;
+
         /// <summary>DJ の番組を止めてもらっているか（確かめるとき用）。</summary>
         public bool IsSuspendingDj => _suspendingDj;
 

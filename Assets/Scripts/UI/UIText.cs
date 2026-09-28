@@ -346,11 +346,13 @@ namespace CrazyBowling.UI
                 "DRAGON-STUDIO\tvia Pixabay　Cheering Crowd／Crowd Cheer and Applause／Crowd Booing／Button Press／Boat Horn／Cartoon Jump／Explosion Effect",
                 "RibhavAgrawal\tvia Pixabay　coin recieved",
                 "Fronbondi_Skegs\tvia Pixabay　SFX - Scanning for a Radio Signals Sound Effect",
-                "u_wxn5lzrjy3\tvia Pixabay　Military Radio Communication",
                 "driftworks\tFreesound（Pixabay では freesound_community）　Bowling Ball.wav",
                 "Exchanger\tFreesound（Pixabay では freesound_community）　Tadaa.wav",
                 "m_cel\tFreesound（Pixabay では freesound_community）　Jet Engine",
                 "spanrucker\tFreesound（Pixabay では freesound_community）　Water Drip",
+                "Sergenious\tFreesound（Pixabay では freesound_community）　laser.wav（CC BY 4.0。条件は下の ATTRIBUTION のとおり）",
+                // あいさつの台本と同じく、月の交信の声の方は効果音のいちばん最後（名前が読めない謎の無線士としてお礼を言っている）
+                "u_wxn5lzrjy3\tvia Pixabay　Military Radio Communication（8本目の月面の交信の声）",
                 "8本目の無線の雑音と「ピッ」という音は、本製品のために合成したものでございます。",
             },
             new[]
