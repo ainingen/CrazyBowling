@@ -98,6 +98,17 @@ namespace CrazyBowling.UI
         /// <summary>カーブ無し。</summary>
         public const string CurveNone = "STRAIGHT";
 
+        /// <summary>画面の下の2つのゲージの見出し（段階6）。どちらがどちらか分かるように。</summary>
+        public const string PositionHeading = "POSITION";
+        public const string CurveHeading = "CURVE";
+
+        /// <summary>立ち位置のゲージの表示。{0} に中央からの距離（cm の整数）が入る（段階6）。</summary>
+        public const string PositionLeftFormat = "◀ LEFT {0}cm";
+        public const string PositionRightFormat = "RIGHT {0}cm ▶";
+
+        /// <summary>立ち位置が真ん中のときの表示（段階6）。</summary>
+        public const string PositionCenter = "CENTER";
+
         /// <summary>奥を見るボタン。</summary>
         public const string LookAhead = "LOOK AHEAD";
 
@@ -281,9 +292,9 @@ namespace CrazyBowling.UI
         public static readonly string[] HowToPlayBodies =
         {
             "このたびは本製品をお選びいただき、誠にありがとうございます。本製品は、球を転がしてピンを倒す遊戯でございます。ご使用の前に、本書をよくお読みください。",
-            "画面を押したまま、手前へ引いて、離してください。引いた長さに応じて、球は前へ進みます。\n押した位置から横にずらすと、球は反対の方向へ進みます。仕様でございます。",
-            "構えている間、指またはマウスの左右の位置で立ち位置が決まります。",
-            "画面下のつまみで、球に回転をかけられます。回転をやめるときは、文字を押してください。",
+            "画面を押したまま、手前へ引いて、離してください。引いた長さに応じて、球は前へ進みます。\n押した位置から横にずらすと、球は反対の方向へ進みます。仕様でございます。\nおやめになる場合は、押した位置まで戻すか、上へずらしてください。CANCEL の文字が光っている間に離すと、球は投げられません。",
+            "画面下の POSITION のつまみで、立ち位置をお選びください。投げるまでは、いくらでも動かせます。中央に戻すときは、文字を押してください。",
+            "画面下の CURVE のつまみで、球に回転をかけられます。回転をやめるときは、文字を押してください。",
             "LOOK AHEAD を押している間、レーンの奥をご覧いただけます。止まった所では、画面をなぞって周囲を見回すことができます。お戻りの際は BACK を押してください。",
             "各レーンで2回まで投げられます。1回目ですべて倒すとストライク（30点）、2回で倒すとスペア（20点）でございます。それ以外は倒した本数が得点となります。全10レーンの合計で評価いたします。",
             "成績は RECORDS からご覧いただけます。",
@@ -295,6 +306,9 @@ namespace CrazyBowling.UI
 
         /// <summary>1本目の最初の1投だけ出すヒント。2行目。</summary>
         public const string FirstThrowHintSide = "横にずらすと、反対へ飛びます";
+
+        /// <summary>1本目の最初の1投だけ出すヒント。3行目（段階6。立ち位置をゲージで決める作りにしたため）。</summary>
+        public const string FirstThrowHintPosition = "立ち位置は、画面下の POSITION でお選びください";
 
         // ======== クレジット（段階6） ========
 

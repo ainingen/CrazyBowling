@@ -23,6 +23,9 @@ namespace CrazyBowling.UI
         [Tooltip("今のカーブを出すテキスト。")]
         [SerializeField] private TMP_Text label;
 
+        [Tooltip("見出し（CURVE）のテキスト（段階6。立ち位置のゲージと並べたので、どちらがどちらか分かるように）。")]
+        [SerializeField] private TMP_Text heading;
+
         [Tooltip("結果画面の間はスライダーと文字を隠す（段階6。結果画面のボタンのすき間から覗かないように）。空なら同じシーンから探す。")]
         [SerializeField] private GameManager gameManager;
 
@@ -65,6 +68,10 @@ namespace CrazyBowling.UI
             if (gameManager == null)
             {
                 gameManager = FindFirstObjectByType<GameManager>();
+            }
+            if (heading != null)
+            {
+                heading.text = UIText.CurveHeading;
             }
             if (slider != null)
             {

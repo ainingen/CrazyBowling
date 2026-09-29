@@ -7,7 +7,7 @@ namespace CrazyBowling.Ball
     /// <summary>ボールの状態。</summary>
     public enum BallState
     {
-        /// <summary>構え中。マウスの左右でボールの位置を調整できる。</summary>
+        /// <summary>構え中。立ち位置のゲージ（POSITION）でボールの位置を調整できる。</summary>
         Aiming,
 
         /// <summary>引いている最中。立ち位置は固定され、角度と強さを決めている。</summary>
@@ -50,10 +50,7 @@ namespace CrazyBowling.Ball
         [Tooltip("ボールが構える基準になる Transform。この前方向へ投げる。")]
         [SerializeField] private Transform spawnPoint;
 
-        [Tooltip("マウスの動きにボールが追いつく速さ（m/s）。")]
-        [SerializeField] private float sideMoveSpeed = 10f;
-
-        [Tooltip("中央から左右に動ける範囲（m）。")]
+        [Tooltip("中央から左右に動ける範囲（m）。立ち位置のゲージの左右いっぱいがこの値になる。")]
         [SerializeField] private float sideMoveLimit = 0.4f;
 
         [Header("投球（ピクセルの値は高さ1080の画面のとき。実際の画面の高さに比例させて使う）")]
@@ -136,6 +133,12 @@ namespace CrazyBowling.Ball
         private float _stopTimer;
         private ThrowResult _dragPreview;
 
+        /// <summary>引いている間に、押した所から一度でも動かしたか（CANCEL の表示に使う。段階6）。</summary>
+        private bool _pullMoved;
+
+        /// <summary>押した位置の UI を調べるときに使い回す入れ物。</summary>
+        private readonly System.Collections.Generic.List<RaycastResult> _uiHits = new System.Collections.Generic.List<RaycastResult>();
+
         /// <summary>構え中のスライダーで決めたカーブ。投球後も次の投球まで残る。</summary>
         private float _selectedCurve;
 
@@ -190,6 +193,34 @@ namespace CrazyBowling.Ball
             }
             _selectedCurve = Mathf.Clamp(curve, -1f, 1f);
         }
+
+        /// <summary>今の立ち位置（m）。中央が0、右が正。投球後も次の投球まで残る（段階6）。</summary>
+        public float SideOffset => _sideOffset;
+
+        /// <summary>中央から左右に動ける範囲（m）。立ち位置のゲージの左右いっぱい。</summary>
+        public float SideLimit => sideMoveLimit;
+
+        /// <summary>
+        /// 立ち位置を決める（段階6。立ち位置のゲージから呼ぶ。指でもマウスでも同じ）。構え中だけ効く。
+        /// ★置いた瞬間に物理の位置も合わせる。Transform だけ動かすと物理に届くのが次のステップになり、
+        ///   同じフレームで投げると前の位置から投げてしまう（既知の罠）。
+        /// </summary>
+        public void SetSideOffset(float offset)
+        {
+            if (_state != BallState.Aiming)
+            {
+                return;
+            }
+            _sideOffset = Mathf.Clamp(offset, -sideMoveLimit, sideMoveLimit);
+            ApplySpawnPosition();
+            SyncBodyToTransform();
+        }
+
+        /// <summary>
+        /// 引いている最中に CANCEL を出すか（段階6）。投げない範囲にあり、押した所から一度は動かしたとき。
+        /// 表示専用。離したときに投げるかどうかは、離した時点の計算で決まる。
+        /// </summary>
+        public bool ShowsCancel => CrazyBowling.UI.ThrowCancelRule.ShouldShow(_state == BallState.Pulling, _dragPreview.isValid, _pullMoved);
 
         /// <summary>
         /// レーンごとの上書き。斜めや回転するレーンでは、流れを打ち消すために広い角度が要る。
@@ -288,38 +319,33 @@ namespace CrazyBowling.Ball
         }
 
         /// <summary>
-        /// 構え中：ポインタの左右でボールをスライドさせ、押されたら引きに移る。
-        /// マウスはホバーで追従し、タッチは指を置いた位置で決まる。
+        /// 構え中：押されたら引きに移る。立ち位置は動かさない（段階6から、立ち位置はゲージだけで決める）。
+        /// ポインタの位置でボールを動かすのはやめた。指ではマウスのように押す前に左右へ動かせないため。
         /// </summary>
         private void UpdateAiming()
         {
-            // カーブのスライダーなど、UIの上にポインタがあるときは投球操作をしない。
-            // これをしないと、スライダーを触りに行くだけでボールが動いてしまう
-            if (IsPointerOverUI())
+            // 床の高さが変わっても追従させる（立ち位置そのものは変えない）
+            ApplySpawnPosition();
+
+            if (!Pointer.current.press.wasPressedThisFrame)
             {
                 return;
             }
 
             Vector2 pointerPosition = Pointer.current.position.ReadValue();
 
-            // 画面の左端から右端を、左右の可動範囲に対応させる
-            float screenRatio = Mathf.Clamp01(pointerPosition.x / Mathf.Max(Screen.width, 1));
-            float targetOffset = Mathf.Lerp(-sideMoveLimit, sideMoveLimit, screenRatio);
-
-            // タッチは指を置いた瞬間に決まるので、ホバーで追う余地が無い。
-            // 押された時点では補間せず、その位置へ合わせる
-            bool pressed = Pointer.current.press.wasPressedThisFrame;
-            _sideOffset = pressed
-                ? targetOffset
-                : Mathf.MoveTowards(_sideOffset, targetOffset, sideMoveSpeed * Time.deltaTime);
-            ApplySpawnPosition();
-
-            if (pressed)
+            // ゲージやボタンの上を押したときは投球操作をしない。
+            // ★押した「位置」で UI を調べる。指では、置いたフレームにはまだ UI の側が指を知らず、
+            //   「ポインタが UI の上か」の問い合わせが外れることがあるため
+            if (IsPositionOverUI(pointerPosition))
             {
-                _dragStart = pointerPosition;
-                _dragPreview = default;
-                _state = BallState.Pulling;
+                return;
             }
+
+            _dragStart = pointerPosition;
+            _dragPreview = default;
+            _pullMoved = false;
+            _state = BallState.Pulling;
         }
 
         /// <summary>引いている最中：立ち位置は固定。離したら投球を計算する。</summary>
@@ -328,8 +354,15 @@ namespace CrazyBowling.Ball
             Vector2 pointerPosition = Pointer.current.position.ReadValue();
 
             // 表示用の予測を毎フレーム更新する（投球には使わない）
+            ThrowSettings settings = BuildThrowSettings();
             _dragPreview = ThrowCalculator.Calculate(
-                _dragStart, pointerPosition, BuildThrowSettings(), _selectedCurve, invertDrag);
+                _dragStart, pointerPosition, settings, _selectedCurve, invertDrag);
+
+            // 押した所から一度でも「投げない幅」以上動かしたら、以後は CANCEL を出してよい
+            if (!_pullMoved && CrazyBowling.UI.ThrowCancelRule.HasMoved(_dragStart, pointerPosition, settings.minPullPixels))
+            {
+                _pullMoved = true;
+            }
 
             if (!Pointer.current.press.wasReleasedThisFrame)
             {
@@ -351,11 +384,30 @@ namespace CrazyBowling.Ball
         }
 
         /// <summary>
-        /// ポインタがUIの上にあるか。EventSystem が無いシーンでは常に false を返す。
+        /// 画面のその位置に UI（当たり判定を持つ画像や文字）があるか。EventSystem が無いシーンでは常に false を返す。
+        /// 画面の UI の当たり判定（GraphicRaycaster）だけを見る。3D の物は見ない。
         /// </summary>
-        private static bool IsPointerOverUI()
+        private bool IsPositionOverUI(Vector2 screenPosition)
         {
-            return EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+            EventSystem eventSystem = EventSystem.current;
+            if (eventSystem == null)
+            {
+                return false;
+            }
+
+            var data = new PointerEventData(eventSystem) { position = screenPosition };
+            _uiHits.Clear();
+            eventSystem.RaycastAll(data, _uiHits);
+            for (int i = 0; i < _uiHits.Count; i++)
+            {
+                if (_uiHits[i].module is UnityEngine.UI.GraphicRaycaster)
+                {
+                    _uiHits.Clear();
+                    return true;
+                }
+            }
+            _uiHits.Clear();
+            return false;
         }
 
         /// <summary>転がり中：止まった、落ちた、時間切れで決着とみなす。構えには戻さない。</summary>
@@ -397,6 +449,11 @@ namespace CrazyBowling.Ball
         /// <summary>投球する。ここで初めて物理を有効にする。</summary>
         private void Throw(ThrowResult result)
         {
+            // ★立ち位置から置き直して、物理の位置も合わせてから物理を有効にする。
+            //   ゲージで決めた位置と、実際に投げ出す位置がずれないようにするため（1フレーム遅れの罠）
+            ApplySpawnPosition();
+            SyncBodyToTransform();
+
             _rigidbody.isKinematic = false;
             _rigidbody.linearVelocity = Vector3.zero;
             _rigidbody.angularVelocity = Vector3.zero;
@@ -649,7 +706,7 @@ namespace CrazyBowling.Ball
             }
             _rigidbody.isKinematic = true;
 
-            _sideOffset = 0f;
+            // 立ち位置（_sideOffset）は戻さない。カーブと同じく、次の投球まで残す（段階6。ゲージで決める作りにしたため）
             if (spawnPoint != null)
             {
                 transform.rotation = spawnPoint.rotation;
@@ -726,6 +783,18 @@ namespace CrazyBowling.Ball
             }
 
             transform.position = position;
+        }
+
+        /// <summary>
+        /// 構え中（kinematic）の物理の位置を、Transform の位置にその場で合わせる。
+        /// Transform を書いただけでは、物理に届くのは次の物理のステップになるため。
+        /// </summary>
+        private void SyncBodyToTransform()
+        {
+            if (_rigidbody != null && _rigidbody.isKinematic)
+            {
+                _rigidbody.position = transform.position;
+            }
         }
 
         /// <summary>

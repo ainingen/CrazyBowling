@@ -80,7 +80,10 @@ namespace CrazyBowling.UI
                 return;
             }
 
-            bool isDragging = ballController.IsPulling;
+            // 投げない範囲（押しただけ・戻した・上へ動かした）では線を出さない。
+            // 戻したときは代わりに ThrowCancelView が「CANCEL」を出す（段階6）
+            ThrowResult preview = ballController.DragPreview;
+            bool isDragging = ballController.IsPulling && preview.isValid;
             lineRenderer.enabled = isDragging;
 
             if (!isDragging)
@@ -88,7 +91,6 @@ namespace CrazyBowling.UI
                 return;
             }
 
-            ThrowResult preview = ballController.DragPreview;
             Vector3 direction = ballController.CalculateThrowDirection(preview.sideAngle);
 
             // ボールの足元から描く。当たり判定の下端を基準にするので、

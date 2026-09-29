@@ -166,18 +166,25 @@ namespace CrazyBowling.UI
             // 右：文（下敷きの上に、白い普通の文字で淡々と）
             RectTransform textBox = NeonUI.CreateRect(box, "Text", new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(65f, 0f), new Vector2(-130f, 140f));
             NeonUI.CreateImage(NeonUI.CreateRect(textBox, "Back", Vector2.zero, Vector2.one, Vector2.zero, new Vector2(40f, 10f)), skin.Panel, new Color(0f, 0f, 0f, backAlpha), true);
-            TextMeshProUGUI pull = NeonUI.CreateText(NeonUI.CreateRect(textBox, "Pull", new Vector2(0f, 0.5f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero),
+            // 3行：引いて投げる（大きく）・横にずらすと反対へ・立ち位置はゲージで（段階6で3行目を足した）
+            TextMeshProUGUI pull = NeonUI.CreateText(NeonUI.CreateRect(textBox, "Pull", new Vector2(0f, 0.56f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero),
                 skin.RegularFont, skin.RegularPlainMaterial, textSize, Color.white, TextAlignmentOptions.Left);
             pull.text = UIText.FirstThrowHintPull;
             pull.enableAutoSizing = true;
             pull.fontSizeMin = 18f;
             pull.fontSizeMax = textSize;
-            TextMeshProUGUI side2 = NeonUI.CreateText(NeonUI.CreateRect(textBox, "Side", new Vector2(0f, 0f), new Vector2(1f, 0.5f), Vector2.zero, Vector2.zero),
+            TextMeshProUGUI side2 = NeonUI.CreateText(NeonUI.CreateRect(textBox, "Side", new Vector2(0f, 0.28f), new Vector2(1f, 0.56f), Vector2.zero, Vector2.zero),
                 skin.RegularFont, skin.RegularPlainMaterial, subTextSize, new Color(0.85f, 0.9f, 0.95f), TextAlignmentOptions.Left);
             side2.text = UIText.FirstThrowHintSide;
             side2.enableAutoSizing = true;
             side2.fontSizeMin = 16f;
             side2.fontSizeMax = subTextSize;
+            TextMeshProUGUI position = NeonUI.CreateText(NeonUI.CreateRect(textBox, "Position", new Vector2(0f, 0f), new Vector2(1f, 0.28f), Vector2.zero, Vector2.zero),
+                skin.RegularFont, skin.RegularPlainMaterial, subTextSize, new Color(0.85f, 0.9f, 0.95f), TextAlignmentOptions.Left);
+            position.text = UIText.FirstThrowHintPosition;
+            position.enableAutoSizing = true;
+            position.fontSizeMin = 16f;
+            position.fontSizeMax = subTextSize;
         }
 
         // ================= 動き =================

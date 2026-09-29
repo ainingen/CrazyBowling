@@ -44,4 +44,50 @@ namespace CrazyBowling.UI
             return Mathf.Abs(value) < Mathf.Abs(width) ? 0f : value;
         }
     }
+
+    /// <summary>
+    /// 立ち位置のゲージ（POSITION）の値と、ボールの立ち位置（m）の対応（段階6）。MonoBehaviour に依存しない。
+    /// ゲージの値は -1（左いっぱい）〜 +1（右いっぱい）で、立ち位置の範囲（±limit m）に比例させる。
+    /// </summary>
+    public static class PositionGauge
+    {
+        /// <summary>ゲージの値（-1〜+1）を立ち位置（m）にする。範囲の外は端に収める。</summary>
+        public static float ToOffset(float value, float limit)
+        {
+            return Mathf.Clamp(value, -1f, 1f) * Mathf.Abs(limit);
+        }
+
+        /// <summary>立ち位置（m）をゲージの値（-1〜+1）にする。範囲が 0 なら 0。</summary>
+        public static float ToValue(float offset, float limit)
+        {
+            float l = Mathf.Abs(limit);
+            return l > Mathf.Epsilon ? Mathf.Clamp(offset / l, -1f, 1f) : 0f;
+        }
+
+        /// <summary>立ち位置をセンチメートルの整数にする（表示用）。</summary>
+        public static int ToCentimeters(float offset)
+        {
+            return Mathf.RoundToInt(Mathf.Abs(offset) * 100f);
+        }
+    }
+
+    /// <summary>
+    /// 引いている途中の「CANCEL」の表示の決まり（段階6）。MonoBehaviour に依存しない。
+    /// 投げない範囲（引き幅が足りない・上へ動かした）にあり、しかも押した所から一度は動かしたときだけ出す。
+    /// 押しただけの瞬間に毎回 CANCEL が出ないようにするため。
+    /// </summary>
+    public static class ThrowCancelRule
+    {
+        /// <summary>押した所から、この距離（ピクセル）以上離れたことがあるか。</summary>
+        public static bool HasMoved(Vector2 start, Vector2 now, float thresholdPixels)
+        {
+            return (now - start).sqrMagnitude >= thresholdPixels * thresholdPixels;
+        }
+
+        /// <summary>CANCEL を出すか。引いている最中・投げない範囲・一度は動かした、の3つが揃ったとき。</summary>
+        public static bool ShouldShow(bool isPulling, bool wouldThrow, bool hasMoved)
+        {
+            return isPulling && !wouldThrow && hasMoved;
+        }
+    }
 }

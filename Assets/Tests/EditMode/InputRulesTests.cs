@@ -96,5 +96,66 @@ namespace CrazyBowling.Tests.EditMode
             Assert.That(CurveSnap.Apply(-0.5f, 0.05f), Is.EqualTo(-0.5f));
             Assert.That(CurveSnap.Apply(0.04f, 0f), Is.EqualTo(0.04f));
         }
+
+        [Test]
+        public void 立ち位置のゲージは左右いっぱいで範囲の端()
+        {
+            Assert.That(PositionGauge.ToOffset(-1f, 0.4f), Is.EqualTo(-0.4f).Within(1e-6f));
+            Assert.That(PositionGauge.ToOffset(1f, 0.4f), Is.EqualTo(0.4f).Within(1e-6f));
+            Assert.That(PositionGauge.ToOffset(0f, 0.4f), Is.EqualTo(0f));
+            Assert.That(PositionGauge.ToOffset(0.5f, 0.4f), Is.EqualTo(0.2f).Within(1e-6f));
+        }
+
+        [Test]
+        public void 立ち位置のゲージは範囲の外を端に収める()
+        {
+            Assert.That(PositionGauge.ToOffset(1.7f, 0.4f), Is.EqualTo(0.4f).Within(1e-6f));
+            Assert.That(PositionGauge.ToOffset(-3f, 0.4f), Is.EqualTo(-0.4f).Within(1e-6f));
+            Assert.That(PositionGauge.ToValue(0.9f, 0.4f), Is.EqualTo(1f));
+            Assert.That(PositionGauge.ToValue(0.1f, 0f), Is.EqualTo(0f));
+        }
+
+        [Test]
+        public void 立ち位置のゲージの値と立ち位置は行き来しても同じ()
+        {
+            foreach (float v in new[] { -1f, -0.63f, -0.05f, 0f, 0.25f, 0.999f })
+            {
+                Assert.That(PositionGauge.ToValue(PositionGauge.ToOffset(v, 0.4f), 0.4f), Is.EqualTo(v).Within(1e-6f));
+            }
+            Assert.That(PositionGauge.ToCentimeters(-0.2049f), Is.EqualTo(20));
+            Assert.That(PositionGauge.ToCentimeters(0.4f), Is.EqualTo(40));
+        }
+
+        [Test]
+        public void 押しただけではCANCELを出さない()
+        {
+            Vector2 start = new Vector2(900f, 500f);
+            bool moved = ThrowCancelRule.HasMoved(start, start + new Vector2(3f, -4f), 20f);
+            Assert.That(moved, Is.False);
+            Assert.That(ThrowCancelRule.ShouldShow(true, false, moved), Is.False);
+        }
+
+        [Test]
+        public void 引いてから戻すとCANCELを出す()
+        {
+            Assert.That(ThrowCancelRule.HasMoved(new Vector2(900f, 500f), new Vector2(900f, 470f), 20f), Is.True);
+            Assert.That(ThrowCancelRule.ShouldShow(true, false, true), Is.True);
+        }
+
+        [Test]
+        public void 投げる範囲にあるときや引いていないときはCANCELを出さない()
+        {
+            Assert.That(ThrowCancelRule.ShouldShow(true, true, true), Is.False);
+            Assert.That(ThrowCancelRule.ShouldShow(false, false, true), Is.False);
+        }
+
+        [Test]
+        public void 上へ動かすと投げない範囲になる()
+        {
+            // 押した所より上（y が大きい）へ動かすと、引き幅は負になって投げない
+            ThrowResult r = ThrowCalculator.Calculate(new Vector2(900f, 500f), new Vector2(900f, 600f), ThrowCalculator.ScaleForScreen(Reference, 1080f), 0f);
+            Assert.That(r.isValid, Is.False);
+            Assert.That(ThrowCancelRule.HasMoved(new Vector2(900f, 500f), new Vector2(900f, 600f), 20f), Is.True);
+        }
     }
 }

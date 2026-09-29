@@ -38,8 +38,7 @@ if (!UnityEditor.EditorApplication.isPlaying) return "Play 中ではない。先
 if (gm == null || seq == null || ball == null || sp == null || pinSet == null || resultView == null) return "部品が見つからない（Play に入った直後なら、少し待ってからもう一度）";
 
 var fSeqState = typeof(CrazyBowling.Core.ThrowSequencer).GetField("_state", BF);
-var fSide = typeof(CrazyBowling.Ball.BallController).GetField("_sideOffset", BF);
-var mApplySpawn = typeof(CrazyBowling.Ball.BallController).GetMethod("ApplySpawnPosition", BF);
+// 立ち位置は BallController.SetSideOffset で決める（段階6から。立ち位置のゲージと同じ口。物理の位置もその場で合わせる）
 var mThrow = typeof(CrazyBowling.Ball.BallController).GetMethod("Throw", BF);
 var fBgm = typeof(CrazyBowling.Core.SoundPlayer).GetField("_bgm", BF);
 var fLaneInst = typeof(CrazyBowling.Core.GameManager).GetField("_laneInstance", BF);
@@ -595,7 +594,7 @@ tick = () =>
     }
     else if (phase == 1)
     {
-        ball.SetInputBlocked(true);   // 構え中のボールがマウスに付いて動かないようにする（下見の終わりに外されるので毎フレーム）
+        ball.SetInputBlocked(true);   // 本物のマウスやタッチで投げ始めないようにする（下見の終わりに外されるので毎フレーム）
         if (!ready) { phase = 0; return; }
         if (t - phaseT >= 0.15f * samples.Count) samples.Add(takeSample());
         if (samples.Count >= 5)
@@ -608,8 +607,7 @@ tick = () =>
             // 180°（手前）なら入り、0°（奥）なら阻まれる。1投目は阻まれる角度、2投目は入る角度に置く
             discTarget = lane == 9 && ride != null ? UnityEngine.Mathf.Repeat((n == 1 ? 0f : 180f) - 143.7f, 360f) : -1f;
             ball.ReturnToSpawn();
-            fSide.SetValue(ball, side);
-            mApplySpawn.Invoke(ball, null);
+            ball.SetSideOffset(side);
             body.position = ball.transform.position;
             UnityEngine.Physics.SyncTransforms();
             phase = 2;
