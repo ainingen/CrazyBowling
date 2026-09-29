@@ -12,18 +12,133 @@
   <body>
     <div id="unity-container">
       <canvas id="unity-canvas" tabindex="-1"></canvas>
-      <div id="unity-loading-bar">
-        <div id="unity-progress-bar-empty">
-          <div id="unity-progress-bar-full"></div>
-        </div>
-      </div>
       <div id="unity-warning"> </div>
     </div>
+
+    <!-- 読み込み画面（段階6。2026-09-29）。ゲームの準備ができたら、ゆっくり消える -->
+    <div id="cb-loading" role="status" aria-live="polite">
+      <h1 id="cb-logo"><span class="cb-crazy">CRAZY</span><span class="cb-bowling">BOWLING</span></h1>
+      <div id="cb-ball-lane"><div id="cb-ball"><i></i><i></i><i></i></div></div>
+      <div id="cb-percent"></div>
+      <div id="cb-stage">ただいま、本製品をお届けしております。</div>
+      <div id="cb-error"></div>
+      <div id="cb-tip"></div>
+      <div id="cb-credit">produced by 夜中のBBQ</div>
+    </div>
+
     <script>
       var canvas = document.querySelector("#unity-canvas");
 
-      // 一時的な知らせ（数秒で消える）と、エラー（消えない）を画面の上に出す（標準のまま）
+      // ================= 読み込み画面 =================
+      // Unity の進み具合（onProgress）は、ダウンロードの割合に 0.9 を掛けた値で届く（ダウンロードが終わっても 0.9 まで）。
+      // そのあと、wasm の翻訳・データの展開・起動の準備の間は 0.9 のまま止まり、起動が済むと 1 になる。
+      // また、3つのファイルがすべて受け取りを始めるまでは1回も届かず、配信が全体の大きさ（Content-Length）を
+      // 付けないと、ファイルごとに受け取り終わるまで 0 と数えられて段々に飛ぶ。
+      // なので：届かない間（0 のまま）は数字を出さずに印だけ回し、0.9 に達したら「準備中」の文に切り替える。
+      var loading = document.getElementById("cb-loading");
+      var percentEl = document.getElementById("cb-percent");
+      var stageEl = document.getElementById("cb-stage");
+      var tipEl = document.getElementById("cb-tip");
+      var errorEl = document.getElementById("cb-error");
+
+      var STAGE_DOWNLOAD = "ただいま、本製品をお届けしております。";
+      var STAGE_PREPARE = [
+        "ただいま、ピンを並べております。",
+        "ただいま、レーンに油を引いております。",
+        "ただいま、球を磨いております。",
+        "ただいま、照明を点けております。"
+      ];
+      var TIP_HEAD = "豆知識";
+      var TIPS = [
+        "本製品は、約36MBございます。初めての方は、読み込みにお時間をいただきます。",
+        "二回目以降は、お使いのブラウザに保存された本製品を使うため、早く始まる場合がございます。",
+        "月面のレーンでは、球が浮く場合がございます。仕様でございます。",
+        "本製品のレーンは、全10種類でございます。いずれも少々変わっております。",
+        "床が傾いているレーンがございます。球の進路にご注意ください。",
+        "ストライクは30点、スペアは20点でございます。満点は300点でございます。",
+        "押した位置から横にずらすと、球は反対の方向へ進みます。仕様でございます。",
+        "引いている途中で押した位置まで戻すと、投げずにおやめいただけます。",
+        "立ち位置は、画面下の POSITION のつまみでお選びいただけます。",
+        "本製品は、横向きでのご使用を推奨いたします。",
+        "本製品は音が鳴ります。周囲の状況にご配慮ください。",
+        "成績は、この端末のこのブラウザにのみ保存されます。"
+      ];
+      var FAIL_TEXT = "読み込みに失敗いたしました。ページを再読み込みしてください。";
+
+      var phase = "download";   // download → prepare → done（または failed）
+      var shownPercent = -1;
+      var prepareIndex = 0;
+      var tipIndex = Math.floor(Math.random() * TIPS.length);
+      var timers = [];
+
+      // 文字をゆっくり入れ替える（消えてから、書き換えて、また出す。点滅させない）
+      function swapText(el, setText) {
+        el.classList.add("cb-fade");
+        setTimeout(function () { setText(); el.classList.remove("cb-fade"); }, 700);
+      }
+      function showTip() {
+        tipEl.innerHTML = "";
+        var head = document.createElement("span");
+        head.className = "cb-tip-head";
+        head.textContent = TIP_HEAD;
+        tipEl.appendChild(head);
+        tipEl.appendChild(document.createTextNode(TIPS[tipIndex]));
+      }
+      showTip();
+      timers.push(setInterval(function () {
+        if (phase === "done" || phase === "failed") return;
+        tipIndex = (tipIndex + 1) % TIPS.length;
+        swapText(tipEl, showTip);
+      }, 6500));
+
+      // 準備中の文を、数秒ごとにゆっくり入れ替える
+      timers.push(setInterval(function () {
+        if (phase !== "prepare") return;
+        prepareIndex = (prepareIndex + 1) % STAGE_PREPARE.length;
+        swapText(stageEl, function () { stageEl.textContent = STAGE_PREPARE[prepareIndex]; });
+      }, 4500));
+
+      function onProgress(p) {
+        if (phase === "done" || phase === "failed") return;
+        if (p >= 0.9) {
+          if (phase !== "prepare") {
+            phase = "prepare";
+            percentEl.classList.add("cb-fade");
+            swapText(stageEl, function () { stageEl.textContent = STAGE_PREPARE[0]; });
+          }
+          return;
+        }
+        // 届いた値を 0〜0.9 → 0〜100% に直す。0 のまま（まだ届いていない）なら数字は出さない。戻さない
+        var percent = Math.floor(p / 0.9 * 100);
+        if (p > 0 && percent > shownPercent) {
+          shownPercent = percent;
+          percentEl.textContent = percent + "%";
+        }
+      }
+
+      function onReady() {
+        phase = "done";
+        timers.forEach(function (t) { clearInterval(t); });
+        loading.classList.add("cb-done");
+        setTimeout(function () { if (loading.parentNode) loading.parentNode.removeChild(loading); }, 900);
+      }
+
+      function onFailed(detail) {
+        if (phase === "done") return;
+        phase = "failed";
+        loading.classList.remove("cb-done");
+        errorEl.textContent = FAIL_TEXT;
+        if (detail) {
+          var small = document.createElement("small");
+          small.textContent = String(detail).split("\n")[0].slice(0, 200);
+          errorEl.appendChild(small);
+        }
+        loading.classList.add("cb-failed");
+      }
+
+      // 一時的な知らせ（数秒で消える）は標準のまま出す。エラーは読み込み画面の中に出す
       function unityShowBanner(msg, type) {
+        if (type == "error") { onFailed(msg); return; }
         var warningBanner = document.querySelector("#unity-warning");
         function updateBannerVisibility() {
           warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
@@ -31,14 +146,11 @@
         var div = document.createElement('div');
         div.innerHTML = msg;
         warningBanner.appendChild(div);
-        if (type == 'error') div.style = 'background: red; padding: 10px;';
-        else {
-          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
-          setTimeout(function() {
-            warningBanner.removeChild(div);
-            updateBannerVisibility();
-          }, 5000);
-        }
+        if (type == 'warning') div.style = 'background: #5a4a00; padding: 10px;';
+        setTimeout(function() {
+          warningBanner.removeChild(div);
+          updateBannerVisibility();
+        }, 5000);
         updateBannerVisibility();
       }
 
@@ -64,25 +176,21 @@
         showBanner: unityShowBanner,
       };
 
-      // スマホでも、パソコンでも、ページいっぱいに広げる（大きさは style.css で決める）
-
       // 2本指でつまむ動き（ページの拡大）を止める。iOS の Safari は viewport の指定だけでは止まらないため
       document.addEventListener('gesturestart', function (e) { e.preventDefault(); }, { passive: false });
 
 #if BACKGROUND_FILENAME
       canvas.style.background = "url('" + buildUrl + "/{{{ BACKGROUND_FILENAME.replace(/'/g, '%27') }}}') center / cover";
 #endif
-      document.querySelector("#unity-loading-bar").style.display = "block";
 
       var script = document.createElement("script");
       script.src = loaderUrl;
-      script.onload = () => {
-        createUnityInstance(canvas, config, (progress) => {
-          document.querySelector("#unity-progress-bar-full").style.width = 100 * progress + "%";
-        }).then((unityInstance) => {
-          document.querySelector("#unity-loading-bar").style.display = "none";
-        }).catch((message) => {
-          alert(message);
+      script.onerror = function () { onFailed("loader"); };
+      script.onload = function () {
+        createUnityInstance(canvas, config, onProgress).then(function (unityInstance) {
+          onReady();
+        }).catch(function (message) {
+          onFailed(message);
         });
       };
 
