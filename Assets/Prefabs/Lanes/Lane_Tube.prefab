@@ -144654,6 +144654,7 @@ GameObject:
   - component: {fileID: 6653490560912535814}
   - component: {fileID: 3452301631235939817}
   - component: {fileID: 1181277154084236635}
+  - component: {fileID: 730202165958130705}
   m_Layer: 0
   m_Name: Board
   m_TagString: Untagged
@@ -144733,6 +144734,20 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &730202165958130705
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6653096293914998312}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00b887ffb81294f4bb1760399134e35b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Lanes.EnglishMaterialSwap
+  japaneseMaterial: {fileID: 2100000, guid: 64b6647e3a3d915499a7d0058f0acfe9, type: 2}
+  englishMaterial: {fileID: 2100000, guid: 280939d0c67a4ae479858aba95396102, type: 2}
 --- !u!1 &6657921456947007434
 GameObject:
   m_ObjectHideFlags: 0
@@ -153110,6 +153125,7 @@ GameObject:
   - component: {fileID: 8023124220045286228}
   - component: {fileID: 7941208083482214749}
   - component: {fileID: 2741182908344285114}
+  - component: {fileID: 918329773398477550}
   m_Layer: 0
   m_Name: Screen
   m_TagString: Untagged
@@ -153189,6 +153205,20 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &918329773398477550
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7109216609342049450}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00b887ffb81294f4bb1760399134e35b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Lanes.EnglishMaterialSwap
+  japaneseMaterial: {fileID: 2100000, guid: 5858b21430bc62143b1fe61468c63a14, type: 2}
+  englishMaterial: {fileID: 2100000, guid: 77b8ee05fff416741a62cc8c17aa2480, type: 2}
 --- !u!1 &7110340320972588203
 GameObject:
   m_ObjectHideFlags: 0
