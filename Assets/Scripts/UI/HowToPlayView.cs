@@ -89,6 +89,13 @@ namespace CrazyBowling.UI
         [Tooltip("本文の行間（TextMeshPro の行間の調整。0 で詰めない標準、大きいほど広い）。")]
         [SerializeField] private float bodyLineSpacing = 28f;
 
+        [Tooltip("英語版（CB_LANG_EN）で、見出しと本文の文字の大きさに掛ける倍率（段階6。英語化）。英語は日本語より長く、1ページ目が枠からはみ出したため。日本語版には効かない。")]
+        [Range(0.6f, 1f)]
+        [SerializeField] private float englishTextScale = 0.88f;
+
+        [Tooltip("英語版（CB_LANG_EN）の本文の行間（段階6。英語化）。日本語版は bodyLineSpacing のまま。")]
+        [SerializeField] private float englishBodyLineSpacing = 18f;
+
         [Tooltip("本文の段落（改行）の間。")]
         [SerializeField] private float bodyParagraphSpacing = 18f;
 
@@ -334,12 +341,15 @@ namespace CrazyBowling.UI
             }
 
             HowToPlayRules.SectionRange(_page, SectionCount, sectionsPerPage, out int first, out int count);
+            // 英語版は少し小さく、行の間も詰める（英語化。日本語版は今までどおり）
+            float scale = GameLanguage.IsEnglish ? englishTextScale : 1f;
+            float lineSpacing = GameLanguage.IsEnglish ? englishBodyLineSpacing : bodyLineSpacing;
             for (int i = 0; i < count; i++)
             {
                 int s = first + i;
-                TMP_Text heading = Paragraph("Heading" + (s + 1), UIText.HowToPlayHeadings[s], headingSize, 0f, 0f, i == 0 ? 0f : sectionGap);
+                TMP_Text heading = Paragraph("Heading" + (s + 1), UIText.HowToPlayHeadings[s], headingSize * scale, 0f, 0f, i == 0 ? 0f : sectionGap);
                 heading.color = skin.GetAccent(s + 1);
-                Paragraph("Body" + (s + 1), UIText.HowToPlayBodies[s], bodySize, bodyLineSpacing, bodyParagraphSpacing, headingGap);
+                Paragraph("Body" + (s + 1), UIText.HowToPlayBodies[s], bodySize * scale, lineSpacing, bodyParagraphSpacing, headingGap);
             }
 
             string pageText = string.Format(UIText.HowToPlayPageFormat, _page + 1, PageCount);

@@ -55,6 +55,9 @@ namespace CrazyBowling.UI
         [Tooltip("2行目（横にずらすと…）の文字の大きさ。")]
         [SerializeField] private float subTextSize = 30f;
 
+        [Tooltip("英語版（CB_LANG_EN）の文の枠の高さ（段階6。英語化）。外側の枠（boxSize の高さ）より小さくすること。日本語版は 140 のまま。")]
+        [SerializeField] private float englishTextBoxHeight = 180f;
+
         [Tooltip("文字の下敷きの濃さ（0〜1）。後ろのレーンの上でも読めるように。")]
         [Range(0f, 1f)]
         [SerializeField] private float backAlpha = 0.6f;
@@ -164,7 +167,10 @@ namespace CrazyBowling.UI
             _fingerRing = NeonUI.CreateImage(NeonUI.CreateRect(_finger, "Ring", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(36f, 36f)), skin.Ring, Color.white, false);
 
             // 右：文（下敷きの上に、白い普通の文字で淡々と）
-            RectTransform textBox = NeonUI.CreateRect(box, "Text", new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(65f, 0f), new Vector2(-130f, 140f));
+            // 英語版は文の枠を高くする（段階6。英語化）。140 だと3行に分けた2行目・3行目が小さく縮み、800×450 の画面で読めなかったため。
+            // 日本語版は今までどおり 140（見た目を変えない）
+            float textBoxHeight = GameLanguage.IsEnglish ? englishTextBoxHeight : 140f;
+            RectTransform textBox = NeonUI.CreateRect(box, "Text", new Vector2(0f, 0.5f), new Vector2(1f, 0.5f), new Vector2(65f, 0f), new Vector2(-130f, textBoxHeight));
             NeonUI.CreateImage(NeonUI.CreateRect(textBox, "Back", Vector2.zero, Vector2.one, Vector2.zero, new Vector2(40f, 10f)), skin.Panel, new Color(0f, 0f, 0f, backAlpha), true);
             // 3行：引いて投げる（大きく）・横にずらすと反対へ・立ち位置はゲージで（段階6で3行目を足した）
             TextMeshProUGUI pull = NeonUI.CreateText(NeonUI.CreateRect(textBox, "Pull", new Vector2(0f, 0.56f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero),
