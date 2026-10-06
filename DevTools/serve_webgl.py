@@ -3,7 +3,8 @@
 #   python DevTools/serve_webgl.py <フォルダ> <番号>
 #   python DevTools/serve_webgl.py --slow 400          （1秒あたり 400KB に絞る。スマホの回線のまねで、読み込み画面を確かめる）
 #   python DevTools/serve_webgl.py --slow 400 --no-length （全体の大きさ Content-Length を付けない。進み具合が届かない配信のまね）
-# gzip のファイル（.gz）には Content-Encoding: gzip を付けて渡す（PLiCy と同じく、ブラウザが自分で展開する）。
+#   python DevTools/serve_webgl.py Builds/CrazyGames 8766 --https <証明書> <鍵>  （英語版の Brotli のビルドを HTTPS で。証明書は openssl で作る仮のもの。リポジトリに入れない）
+# gzip（.gz）・Brotli（.br）のファイルには Content-Encoding を付けて渡す（PLiCy・CrazyGames と同じく、ブラウザが自分で展開する）。
 # ★記録（PlayerPrefs）はブラウザの保存領域に「アドレスごと」に残るので、確かめるときは番号を変えないこと。
 # 止めるときは Ctrl+C。このパソコンの中（127.0.0.1）からしか見えない。
 import argparse
@@ -16,6 +17,7 @@ parser.add_argument("root", nargs="?", default=os.path.join(os.path.dirname(__fi
 parser.add_argument("port", nargs="?", type=int, default=8765)
 parser.add_argument("--slow", type=float, default=0, help="1秒あたりに送る KB（0 なら絞らない）")
 parser.add_argument("--no-length", action="store_true", help="Content-Length を付けない")
+parser.add_argument("--https", nargs=2, metavar=("CERT", "KEY"), help="HTTPS で出す（証明書と鍵のファイル）。Brotli（.br）のビルドは、ブラウザが HTTPS でしか展開しないことがあるため")
 args = parser.parse_args()
 
 ROOT = args.root
@@ -35,7 +37,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*a, directory=ROOT, **kwargs)
 
     def guess_type(self, path):
-        if path.endswith(".gz"):
+        if path.endswith(".gz") or path.endswith(".br"):
             inner = path[:-3]
             for ext, ctype in TYPES.items():
                 if inner.endswith(ext):
@@ -52,6 +54,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
     def end_headers(self):
         if self.path.split("?")[0].endswith(".gz"):
             self.send_header("Content-Encoding", "gzip")
+        elif self.path.split("?")[0].endswith(".br"):
+            self.send_header("Content-Encoding", "br")
         # 確かめのたびに作り直したビルドを確実に読むよう、キャッシュさせない
         self.send_header("Cache-Control", "no-store")
         super().end_headers()
@@ -76,5 +80,11 @@ if __name__ == "__main__":
         print(f"1秒あたり {args.slow:.0f}KB に絞る")
     if args.no_length:
         print("全体の大きさ（Content-Length）を付けない")
-    print(f"ブラウザで開く：http://localhost:{PORT}/")
-    http.server.ThreadingHTTPServer(("127.0.0.1", PORT), Handler).serve_forever()
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", PORT), Handler)
+    if args.https:
+        import ssl
+        ctx = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        ctx.load_cert_chain(args.https[0], args.https[1])
+        server.socket = ctx.wrap_socket(server.socket, server_side=True)
+    print(f"ブラウザで開く：{'https' if args.https else 'http'}://localhost:{PORT}/")
+    server.serve_forever()
