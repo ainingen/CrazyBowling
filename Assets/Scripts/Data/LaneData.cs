@@ -19,6 +19,11 @@ namespace CrazyBowling.Data
         [TextArea(2, 4)]
         [SerializeField] private string description = "チュートリアル。まっすぐ転がるだけ。";
 
+        [Tooltip("英語版（言語の印 CB_LANG_EN のビルド）で出す短い説明（段階6。英語化）。真顔の取扱説明書の口調で。" +
+                 "1行の枠に出るので短めに。英字は ASCII だけで書く。空なら日本語の説明を出す。")]
+        [TextArea(2, 4)]
+        [SerializeField] private string descriptionEn = "";
+
         [Tooltip("レーンに入ったときに数秒だけ出す一言。空なら出さない。")]
         [SerializeField] private string hintText = "";
 
@@ -50,8 +55,15 @@ namespace CrazyBowling.Data
         /// <summary>画面に出すレーンの名前。</summary>
         public string LaneName => laneName;
 
-        /// <summary>画面に出す短い説明。</summary>
-        public string Description => description;
+        /// <summary>画面に出す短い説明。英語版では英語の説明（空なら日本語の説明）。</summary>
+        public string Description =>
+            UI.GameLanguage.IsEnglish && !string.IsNullOrEmpty(descriptionEn) ? descriptionEn : description;
+
+        /// <summary>日本語の説明（言語に関係なく）。テストと確かめ用。</summary>
+        public string DescriptionJa => description;
+
+        /// <summary>英語の説明（言語に関係なく）。テストと確かめ用。</summary>
+        public string DescriptionEn => descriptionEn;
 
         /// <summary>レーンに入ったときに出す一言。空なら出さない。</summary>
         public string HintText => hintText;

@@ -14,9 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Data.LaneData
   laneName: ROLLING FLOOR
   description: "\u5E8A\u306E\u9AD8\u3055\u306F\u5834\u6240\u306B\u3088\u3063\u3066\u5909\u5316\u3057\u307E\u3059\u3002\u624B\u524D\u3068\u5965\u3067\u306F\u50BE\u304D\u304C\u7570\u306A\u308A\u307E\u3059\u3002"
+  descriptionEn: Floor height varies by location. The near and far ends slope differently.
   hintText: 
   lanePrefab: {fileID: 1961956216590800389, guid: 64e394cab94e4184486d0e98c6b3caa5, type: 3}
   maxAngleDegrees: 2
   throwCount: 2
   scoreMultiplier: 1
   pinLook: {fileID: 11400000, guid: 265d14b9206529542aec9db01941e06d, type: 2}
+  vacuum: 0

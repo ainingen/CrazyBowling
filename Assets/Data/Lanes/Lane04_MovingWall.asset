@@ -14,9 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Data.LaneData
   laneName: MOVING WALL
   description: "\u969C\u5BB3\u7269\u304C\u5DE6\u53F3\u306B\u79FB\u52D5\u3057\u3066\u3044\u307E\u3059\u3002\u901A\u904E\u306E\u6642\u6A5F\u3092\u3088\u304F\u304A\u8A08\u308A\u304F\u3060\u3055\u3044\u3002"
+  descriptionEn: Obstacles are moving from side to side. Please time your passage
+    carefully.
   hintText: 
   lanePrefab: {fileID: 3975355916577324627, guid: 09f67157c4104ff40bb543b36c315d1c, type: 3}
   maxAngleDegrees: 2
   throwCount: 2
   scoreMultiplier: 1
   pinLook: {fileID: 11400000, guid: f8c5ba77c0fefc84fa8907974174f074, type: 2}
+  vacuum: 0

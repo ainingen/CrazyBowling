@@ -14,9 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Data.LaneData
   laneName: BALL COLLIDER
   description: "\u672C\u88C5\u7F6E\u306F\u30DC\u30A6\u30EA\u30F3\u30B0\u306E\u7403\u3092\u52A0\u901F\u3059\u308B\u305F\u3081\u306B\u5EFA\u8A2D\u3055\u308C\u307E\u3057\u305F\u3002\u307B\u304B\u306E\u7528\u9014\u306F\u3054\u3056\u3044\u307E\u305B\u3093\u3002"
+  descriptionEn: This facility was constructed to accelerate bowling balls. It has
+    no other purpose.
   hintText: 
   lanePrefab: {fileID: 6309402574153263227, guid: dbc91c3af97475a49bd0f107bbef5381, type: 3}
   maxAngleDegrees: 2
   throwCount: 2
   scoreMultiplier: 1
   pinLook: {fileID: 11400000, guid: ae7b8af2ac0c07944943789abd3e5400, type: 2}
+  vacuum: 0

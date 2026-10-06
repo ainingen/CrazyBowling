@@ -14,9 +14,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Data.LaneData
   laneName: SPINNING DISC
   description: "\u5186\u76E4\u304C\u56DE\u8EE2\u3057\u3066\u304A\u308A\u307E\u3059\u3002\u30DC\u30FC\u30EB\u306F\u610F\u56F3\u3057\u305F\u65B9\u5411\u3078\u9032\u307E\u306A\u3044\u5834\u5408\u304C\u3042\u308A\u307E\u3059\u3002"
+  descriptionEn: A disc is rotating. The ball may not travel in the intended direction.
   hintText: 
   lanePrefab: {fileID: 5312813367235607595, guid: b6913c7b80402b64b9481d325fcda566, type: 3}
   maxAngleDegrees: 2
   throwCount: 2
   scoreMultiplier: 1
   pinLook: {fileID: 11400000, guid: 39531382a9addf1409050d7e3530faff, type: 2}
+  vacuum: 0
