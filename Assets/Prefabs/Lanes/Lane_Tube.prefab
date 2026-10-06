@@ -8394,6 +8394,7 @@ GameObject:
   - component: {fileID: 1866946151784872470}
   - component: {fileID: 2498692055436206000}
   - component: {fileID: 5990915949739108840}
+  - component: {fileID: 836644104630222693}
   m_Layer: 0
   m_Name: Logo2
   m_TagString: Untagged
@@ -8473,6 +8474,20 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &836644104630222693
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 410125893071048127}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00b887ffb81294f4bb1760399134e35b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Lanes.EnglishMaterialSwap
+  japaneseMaterial: {fileID: 2100000, guid: 05f3475854136d54bbeb7808a47eddfa, type: 2}
+  englishMaterial: {fileID: 2100000, guid: f3d69e451a9cee14d80684da2a70dec8, type: 2}
 --- !u!1 &413074159077846995
 GameObject:
   m_ObjectHideFlags: 0
@@ -41344,6 +41359,7 @@ GameObject:
   - component: {fileID: 1310691526985292918}
   - component: {fileID: 2313862924748621685}
   - component: {fileID: 1020023408640791932}
+  - component: {fileID: 9076742697988255667}
   m_Layer: 0
   m_Name: Logo1
   m_TagString: Untagged
@@ -41423,6 +41439,20 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &9076742697988255667
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1724144103522506539}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00b887ffb81294f4bb1760399134e35b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Lanes.EnglishMaterialSwap
+  japaneseMaterial: {fileID: 2100000, guid: 05f3475854136d54bbeb7808a47eddfa, type: 2}
+  englishMaterial: {fileID: 2100000, guid: f3d69e451a9cee14d80684da2a70dec8, type: 2}
 --- !u!1 &1733719313493322657
 GameObject:
   m_ObjectHideFlags: 0
@@ -70325,6 +70355,7 @@ GameObject:
   - component: {fileID: 6207407664888979119}
   - component: {fileID: 6377404689409262333}
   - component: {fileID: 5935573949800370701}
+  - component: {fileID: 5170084764145309878}
   m_Layer: 0
   m_Name: LogoL
   m_TagString: Untagged
@@ -70404,6 +70435,20 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &5170084764145309878
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3233485820362433719}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00b887ffb81294f4bb1760399134e35b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Lanes.EnglishMaterialSwap
+  japaneseMaterial: {fileID: 2100000, guid: 05f3475854136d54bbeb7808a47eddfa, type: 2}
+  englishMaterial: {fileID: 2100000, guid: f3d69e451a9cee14d80684da2a70dec8, type: 2}
 --- !u!1 &3233881601245219480
 GameObject:
   m_ObjectHideFlags: 0
@@ -116159,6 +116204,7 @@ GameObject:
   - component: {fileID: 8172095714016618289}
   - component: {fileID: 7543597313527820262}
   - component: {fileID: 4635367436359110475}
+  - component: {fileID: 4750643471752403230}
   m_Layer: 0
   m_Name: LogoIn
   m_TagString: Untagged
@@ -116238,6 +116284,20 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &4750643471752403230
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5541550273227177197}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00b887ffb81294f4bb1760399134e35b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Lanes.EnglishMaterialSwap
+  japaneseMaterial: {fileID: 2100000, guid: 05f3475854136d54bbeb7808a47eddfa, type: 2}
+  englishMaterial: {fileID: 2100000, guid: f3d69e451a9cee14d80684da2a70dec8, type: 2}
 --- !u!1 &5541997133877935002
 GameObject:
   m_ObjectHideFlags: 0
@@ -140915,6 +140975,7 @@ GameObject:
   - component: {fileID: 640920960785482298}
   - component: {fileID: 1546728099008915018}
   - component: {fileID: 8781724563074910117}
+  - component: {fileID: 2797296451021030739}
   m_Layer: 0
   m_Name: Logo
   m_TagString: Untagged
@@ -140994,6 +141055,20 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &2797296451021030739
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6526669879565000950}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00b887ffb81294f4bb1760399134e35b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Lanes.EnglishMaterialSwap
+  japaneseMaterial: {fileID: 2100000, guid: 05f3475854136d54bbeb7808a47eddfa, type: 2}
+  englishMaterial: {fileID: 2100000, guid: f3d69e451a9cee14d80684da2a70dec8, type: 2}
 --- !u!1 &6528914605577784417
 GameObject:
   m_ObjectHideFlags: 0
@@ -198561,6 +198636,7 @@ GameObject:
   - component: {fileID: 5329497379239290664}
   - component: {fileID: 7014879116135385493}
   - component: {fileID: 4318370814998452370}
+  - component: {fileID: 5188394557730659922}
   m_Layer: 0
   m_Name: LogoR
   m_TagString: Untagged
@@ -198640,6 +198716,20 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &5188394557730659922
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9153230966220147622}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 00b887ffb81294f4bb1760399134e35b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: CrazyBowling::CrazyBowling.Lanes.EnglishMaterialSwap
+  japaneseMaterial: {fileID: 2100000, guid: 05f3475854136d54bbeb7808a47eddfa, type: 2}
+  englishMaterial: {fileID: 2100000, guid: f3d69e451a9cee14d80684da2a70dec8, type: 2}
 --- !u!1 &9166373566808981885
 GameObject:
   m_ObjectHideFlags: 0

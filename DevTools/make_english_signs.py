@@ -3,6 +3,7 @@
 # 作るもの（Assets/Textures/Jet/）
 #   JetNoBowling_EN.png … 7本目の翼の上の看板。日本語の行を「PLEASE DO NOT BOWL ON THE WING」に描き替える
 #   JetScreen_EN.png    … 7本目のピンの奥の大画面。日本語の行「つぎの行き先：月」を消す（上に英語の NEXT STOP: THE MOON がある）
+#   JetLogo_EN.png      … 7本目の機体のロゴ。日本語の行「ギラギラ航空」を「OFFICIAL CARRIER TO THE MOON」に描き替える（色と縁取りは元の行と同じ）
 # 文字は元の日本語の行と同じ Noto Sans JP の太字（Windows に入っているもの）で描く。
 import os
 from PIL import Image, ImageDraw, ImageFont
@@ -48,7 +49,64 @@ def screen():
     im.save(os.path.join(JET, "JetScreen_EN.png"))
 
 
+def logo():
+    im = Image.open(os.path.join(JET, "JetLogo.png")).convert("RGBA")
+    # 日本語の行「ギラギラ航空」（y 441〜618）を消す。上の社名 GIRAGIRA AIR（y 58〜360）には触れない
+    clear = Image.new("RGBA", (im.width, im.height - 400), (0, 0, 0, 0))
+    im.paste(clear, (0, 400))
+    words = "OFFICIAL CARRIER TO THE MOON".split(" ")
+    outline = (40, 5, 71, 255)
+    # 元の日本語の行と同じ中心にそろえる。幅は社名（約1750ピクセル）より狭い 1400 まで、高さは元の行より低いので、社名より目立たない
+    max_width, center = 1400, ((522 + 1533) / 2, (441 + 618) / 2)
+    probe = ImageDraw.Draw(im)
+
+    def measure(size):
+        font = bold_font(size)
+        stroke = max(4, size // 9)
+        gap = size * 0.45   # 縁取りでくっつかないよう、単語の間を広めにとる
+        widths = [probe.textlength(w, font=font) for w in words]
+        return font, stroke, gap, widths, sum(widths) + gap * (len(words) - 1) + 2 * stroke
+
+    size = 120
+    while True:
+        font, stroke, gap, widths, total = measure(size)
+        if total <= max_width:
+            break
+        size -= 2
+    box = probe.textbbox((0, 0), "OFFICIAL", font=font)
+    h = box[3] - box[1]
+    x = center[0] - total / 2 + stroke
+    y = center[1] - h / 2 - box[1]
+    places = []
+    for w, ww in zip(words, widths):
+        places.append((x, w))
+        x += ww + gap
+    # 縁取り（濃い紫）
+    layer = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    ld = ImageDraw.Draw(layer)
+    for px, w in places:
+        ld.text((px, y), w, font=font, fill=outline, stroke_width=stroke, stroke_fill=outline)
+    im.alpha_composite(layer)
+    # 中の色：元の行と同じ、左の黄色（255,186,25）から右の橙（255,132,25）へのグラデーション
+    mask = Image.new("L", im.size, 0)
+    md = ImageDraw.Draw(mask)
+    for px, w in places:
+        md.text((px, y), w, font=font, fill=255)
+    grad = Image.new("RGBA", im.size)
+    gd = ImageDraw.Draw(grad)
+    x0, x1 = center[0] - total / 2, center[0] + total / 2
+    for gx in range(im.width):
+        t = min(1.0, max(0.0, (gx - x0) / (x1 - x0)))
+        gd.line([(gx, 0), (gx, im.height)], fill=(255, int(186 + (132 - 186) * t), 25, 255))
+    fill = Image.new("RGBA", im.size, (0, 0, 0, 0))
+    fill.paste(grad, (0, 0), mask)
+    im.alpha_composite(fill)
+    im.save(os.path.join(JET, "JetLogo_EN.png"))
+    return size
+
+
 if __name__ == "__main__":
     no_bowling()
     screen()
-    print("作った：JetNoBowling_EN.png・JetScreen_EN.png")
+    size = logo()
+    print(f"作った：JetNoBowling_EN.png・JetScreen_EN.png・JetLogo_EN.png（ロゴの英語の行は {size}）")
