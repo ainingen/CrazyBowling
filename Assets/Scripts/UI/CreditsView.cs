@@ -89,7 +89,7 @@ namespace CrazyBowling.UI
 
     /// <summary>
     /// クレジットの画面（段階6）。タイトルの CREDITS ボタンで開く。
-    /// 見た目は遊び方・記録の画面と同じネオンの板。いちばん上に「produced by 夜中のBBQ」、その下に音源の作者（<see cref="UIText.CreditsSectionLines"/>）。
+    /// 見た目は遊び方・記録の画面と同じネオンの板。いちばん上に「produced by 夜中のBBQ」（CrazyGames 版は出さない）、その下に音源の作者（<see cref="UIText.CreditsSectionLines"/>）。
     /// 長いので、上下になぞって（ホイールで）送る。右の細い棒で、今どのあたりかが分かる。
     /// あいさつの声が流れている間は、映画の終わりのように自動でゆっくり送る（目印は <see cref="CreditsScrollCues"/>）。
     /// 手で送り始めたら（なぞる・ホイール・右の棒）、閉じたら、あいさつが止まったら（音・DJ を消した・最後まで流れた）、自動送りをやめる。
@@ -437,11 +437,20 @@ namespace CrazyBowling.UI
         /// <summary>中身を並べる：名義 → 前書き → 節ごとに見出しと行 → 結び。</summary>
         private void FillContent()
         {
-            // いちばん上：produced by 夜中のBBQ（タイトルの名義と同じ表記）
-            _anchors[CreditsAnchor.Top] = (RectTransform)Line(_content, "ProducedBy", UIText.CreditPrefix, skin.RegularFont, skin.RegularPlainMaterial, 30f, noteColor, TextAlignmentOptions.Center, 0f).transform;
-            _producer = Line(_content, "Producer", UIText.CreditName, skin.BoldFont, skin.BoldNeonMaterial, producerSize, new Color(1f, 0.6f, 0.3f), TextAlignmentOptions.Center, 0f);
-            Space("IntroSpace", 24f);
-            Line(_content, "Intro", UIText.CreditsIntro, skin.RegularFont, skin.RegularPlainMaterial, bodySize, bodyColor, TextAlignmentOptions.Center, bodyLineSpacing);
+            bool producer = GamePortal.ShowProducerCredit;
+            if (producer)
+            {
+                // いちばん上：produced by 夜中のBBQ（タイトルの名義と同じ表記）
+                _anchors[CreditsAnchor.Top] = (RectTransform)Line(_content, "ProducedBy", UIText.CreditPrefix, skin.RegularFont, skin.RegularPlainMaterial, 30f, noteColor, TextAlignmentOptions.Center, 0f).transform;
+                _producer = Line(_content, "Producer", UIText.CreditName, skin.BoldFont, skin.BoldNeonMaterial, producerSize, new Color(1f, 0.6f, 0.3f), TextAlignmentOptions.Center, 0f);
+                Space("IntroSpace", 24f);
+            }
+            TMP_Text intro = Line(_content, "Intro", UIText.CreditsIntro, skin.RegularFont, skin.RegularPlainMaterial, bodySize, bodyColor, TextAlignmentOptions.Center, bodyLineSpacing);
+            if (!producer)
+            {
+                // CrazyGames 版（名義なし）：はじめのあいさつの目印は、いちばん上の前書き
+                _anchors[CreditsAnchor.Top] = intro.rectTransform;
+            }
 
             int sections = Mathf.Min(UIText.CreditsHeadings.Length, UIText.CreditsSectionLines.Length);
             for (int s = 0; s < sections; s++)
@@ -479,8 +488,21 @@ namespace CrazyBowling.UI
 
             // いちばん下にも produced by 夜中のBBQ（あいさつの締めで読むので）
             Space("ClosingSpace", sectionGap);
-            _anchors[CreditsAnchor.Closing] = (RectTransform)Line(_content, "ProducedByBottom", UIText.CreditPrefix, skin.RegularFont, skin.RegularPlainMaterial, 30f, noteColor, TextAlignmentOptions.Center, 0f).transform;
-            _producerBottom = Line(_content, "ProducerBottom", UIText.CreditName, skin.BoldFont, skin.BoldNeonMaterial, producerSize, new Color(1f, 0.6f, 0.3f), TextAlignmentOptions.Center, 0f);
+            if (producer)
+            {
+                _anchors[CreditsAnchor.Closing] = (RectTransform)Line(_content, "ProducedByBottom", UIText.CreditPrefix, skin.RegularFont, skin.RegularPlainMaterial, 30f, noteColor, TextAlignmentOptions.Center, 0f).transform;
+                _producerBottom = Line(_content, "ProducerBottom", UIText.CreditName, skin.BoldFont, skin.BoldNeonMaterial, producerSize, new Color(1f, 0.6f, 0.3f), TextAlignmentOptions.Center, 0f);
+            }
+            else
+            {
+                // CrazyGames 版（名義なし）：締めの目印は、名義があった位置に置く見えない印。
+                // 締めの声に合わせて、結びの一言が名義のあったときと同じ所まで上がって止まる
+                RectTransform closing = NeonUI.CreateRect(_content, "ClosingMark", Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+                var mark = closing.gameObject.AddComponent<LayoutElement>();
+                mark.minHeight = 1f;
+                mark.preferredHeight = 1f;
+                _anchors[CreditsAnchor.Closing] = closing;
+            }
 
             // いちばん下の余白：締めの produced by が、自動送りで上から決めた位置まで上がれるように（映画の終わりのように）。高さは開くたびに画面に合わせる
             RectTransform end = NeonUI.CreateRect(_content, "EndSpace", Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);

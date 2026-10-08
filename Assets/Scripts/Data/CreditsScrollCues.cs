@@ -6,7 +6,7 @@ namespace CrazyBowling.Data
     /// <summary>クレジットの画面の、自動送りの目印にするまとまり（段階6）。</summary>
     public enum CreditsAnchor
     {
-        /// <summary>はじめのあいさつ（いちばん上の produced by）。</summary>
+        /// <summary>はじめのあいさつ（いちばん上の produced by。CrazyGames 版は名義が無いので前書き）。</summary>
         Top,
 
         /// <summary>MUSIC の見出し。</summary>
@@ -24,7 +24,7 @@ namespace CrazyBowling.Data
         /// <summary>提供（結びの一言）。</summary>
         Sponsor,
 
-        /// <summary>締め（いちばん下の produced by）。</summary>
+        /// <summary>締め（いちばん下の produced by。CrazyGames 版は名義のあった位置の見えない印）。</summary>
         Closing,
     }
 

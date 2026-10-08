@@ -13,7 +13,7 @@ namespace CrazyBowling.UI
     ///   ・「CLICK TO START」はゆっくり呼吸する（点滅させない）
     ///   ・下を10本のレーン名が流れ続ける
     ///   ・右下に作り手の名乗り「produced by 夜中のBBQ」。ネオン管の署名のように、1文字ずつ灯りがともって現れる
-    ///     （ロゴより小さく控えめに。主役はロゴ。一度ともったら消えず、点滅もしない）
+    ///     （ロゴより小さく控えめに。主役はロゴ。一度ともったら消えず、点滅もしない）。CrazyGames 版では出さない
     ///
     /// GameManager は今までどおり起動と同時に1本目を始める（後ろでうっすら見える）。
     /// 始めるボタンを押すと消えて、1本目を最初からやり直す（結果画面の PLAY AGAIN と同じ呼び出し）。
@@ -138,6 +138,7 @@ namespace CrazyBowling.UI
 
             BuildRays();
             FillTexts();
+            HideProducerCreditIfNeeded();
 
             _visible = showOnLaunch;
             _showStart = Time.unscaledTime;
@@ -250,6 +251,19 @@ namespace CrazyBowling.UI
                 // 2回並べて、途切れずに流れるようにする
                 tickerLabel.text = builder.ToString() + builder.ToString();
             }
+        }
+
+        /// <summary>CrazyGames 版では、右下の名義（produced by・名前・線・光）を出さない。</summary>
+        private void HideProducerCreditIfNeeded()
+        {
+            if (GamePortal.ShowProducerCredit)
+            {
+                return;
+            }
+            if (creditPrefix != null) creditPrefix.gameObject.SetActive(false);
+            if (creditName != null) creditName.gameObject.SetActive(false);
+            if (creditLine != null) creditLine.gameObject.SetActive(false);
+            if (creditGlow != null) creditGlow.gameObject.SetActive(false);
         }
 
         /// <summary>光の筋を作る（1回だけ）。</summary>
