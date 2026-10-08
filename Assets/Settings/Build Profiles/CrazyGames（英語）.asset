@@ -23,6 +23,7 @@ MonoBehaviour:
   m_HasScriptingDefines: 1
   m_ScriptingDefines:
   - CB_LANG_EN
+  - CB_PORTAL_CRAZYGAMES
   m_PlayerSettingsYaml:
     m_Settings:
     - line: '| PlayerSettings:'
