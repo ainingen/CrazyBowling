@@ -16,6 +16,8 @@
 //   動いているべきものが構え中に動いているか・BGM の切り替わり・音の記録（8本目の音・前のレーンの音の残り）・
 //   個人の記録（2ゲームとも記録されるか。確かめ用の別の鍵に記録し、終わったら消して、本物の記録が変わっていないか比べる）・
 //   1投目のヒント（確かめ用の別の鍵で見る。出ても出なくても止めない。一度投げたら2ゲーム目の1本目には出ないか・本物の状態が変わっていないか）
+//   ★CrazyGames 版（印 CB_PORTAL_CRAZYGAMES。GamePortal.QuickStart）は、CLICK TO TUNE IN を1回押す入り口（TuneIn）から始め、
+//   1本目の後ろで流れるナレーションも見る：始まったか・効果音で下がって戻るか・DJ と重ならないか・終わったら DJ の番組が始まるか
 // 投げ方
 //   ふつう：1投目 速10・真ん中／2投目 速9・立ち位置 +0.25
 //   8本目：速8・真ん中（ピンが場外に止まる）
@@ -78,6 +80,13 @@ var radioTx = new System.Collections.Generic.Dictionary<int, int>();
 string djPrevClip = null; float djPrevTime = 0f; bool djPrevTalking = false;
 float djQuietSince = -1f, djMaxGap = 0f, seSince = -1f, seEndAt = -1f; bool seChecked = false, backPending = false;
 int djTest = 0; float djTestAt = -1f;
+
+// ---- ナレーション（CrazyGames 版。1本目の後ろで流れる） ----
+bool quick = CrazyBowling.Core.GamePortal.QuickStart;
+float narrStartAt = -1f, narrEndAt = -1f, narrSeSince = -1f, narrSeEndAt = -1f;
+bool narrSeChecked = false, narrBackPending = false, djAfterNarrChecked = false;
+int narrDuckDown = 0, narrDuckDownBad = 0, narrDuckBack = 0, narrDuckBackBad = 0, narrDjOverlap = 0, djAfterNarrBad = 0, narrThrows = 0;
+string narrStartLane = "", narrEndLane = "";
 
 // ---- 個人の記録（段階6）：確かめのあいだは別の鍵に記録し、本物の記録を汚さない ----
 const string recordSandbox = "CrazyBowling.Records.DevCheck";
@@ -302,6 +311,8 @@ System.Func<string> checkResidue = () =>
     {
         if (!a.isPlaying || a.clip == null) continue;
         var m = laneSe.Match(a.clip.name);
+        // CrazyGames 版：1ゲーム目の1本目は、CLICK TO TUNE IN のクリックのヒュイーン（8本目の音を借りている）がまだ鳴っていてよい
+        if (quick && game == 1 && cur == 1 && table.tuneInSweep.clips != null && System.Array.IndexOf(table.tuneInSweep.clips, a.clip) >= 0) continue;
         if (m.Success && int.Parse(m.Groups[1].Value) != cur) s.Append(" " + a.clip.name);
     }
     switches++;
@@ -416,6 +427,60 @@ System.Action<float, bool> djTick = (t, laneChanged) =>
     }
 };
 
+// ---- ナレーションを毎フレーム見る（CrazyGames 版だけ） ----
+System.Action<float> narrTick = t =>
+{
+    if (!quick) return;
+    bool np = sp.IsNarrationPlaying;
+    string where = $"{game}ゲーム目の{gm.LaneNumber}本目";
+    if (np && narrStartAt < 0f) { narrStartAt = t; narrStartLane = where; W($"{t:F2}   ナレーションが始まった（{where}）"); }
+    if (!np && narrStartAt >= 0f && narrEndAt < 0f) { narrEndAt = t; narrEndLane = where; W($"{t:F2}   ナレーションが終わった（{where}・{t - narrStartAt:F1}秒）"); }
+    // DJ とナレーションは重ならない
+    if (np && dj != null && dj.IsTalking) { narrDjOverlap++; if (narrDjOverlap == 1) W($"{t:F2}   ★ナレーションと DJ が重なった"); }
+    // ナレーションが終わったら、DJ の番組が始まる（始めるまでの間 djFirstDelaySeconds）
+    if (narrEndAt >= 0f && !djAfterNarrChecked && dj != null)
+    {
+        if (dj.IsTalking)
+        {
+            djAfterNarrChecked = true;
+            float after = t - narrEndAt;
+            bool ok = after <= table.djFirstDelaySeconds + 1.5f;
+            if (!ok) djAfterNarrBad++;
+            W($"{t:F2}   {(ok ? "" : "★")}ナレーションが終わって {after:F1}秒で DJ の番組が始まった");
+        }
+        else if (t - narrEndAt > table.djFirstDelaySeconds + 5f) { djAfterNarrChecked = true; djAfterNarrBad++; W($"{t:F2}   ★ナレーションが終わっても DJ の番組が始まらない"); }
+    }
+    // 効果音・歓声が鳴ったら、DJ と同じだけ下がり、鳴り終わったら戻る
+    bool se = sp.IsSeActive;
+    if (se)
+    {
+        narrSeEndAt = -1f;
+        if (narrSeSince < 0f) { narrSeSince = t; narrSeChecked = false; }
+        if (np && !narrSeChecked && t - narrSeSince >= table.djDuckAttackSeconds + 0.15f)
+        {
+            narrSeChecked = true; narrBackPending = true;
+            float want = CrazyBowling.Core.SoundLevel.DbToLinear(table.djDuckDb);
+            if (sp.NarrationDuck <= want + 0.02f) narrDuckDown++;
+            else { narrDuckDownBad++; W($"{t:F2}   ★効果音のときにナレーションが下がっていない｜倍率 {sp.NarrationDuck:F2}（目標 {want:F2}）"); }
+        }
+    }
+    else
+    {
+        narrSeSince = -1f;
+        if (narrBackPending)
+        {
+            if (narrSeEndAt < 0f) narrSeEndAt = t;
+            if (t - narrSeEndAt >= table.djDuckReleaseSeconds + 0.3f)
+            {
+                narrBackPending = false;
+                if (!sp.IsNarrationPlaying) { }
+                else if (sp.NarrationDuck >= 0.98f) narrDuckBack++;
+                else { narrDuckBackBad++; W($"{t:F2}   ★効果音が終わってもナレーションが戻らない｜倍率 {sp.NarrationDuck:F2}"); }
+            }
+        }
+    }
+};
+
 // ---- 進行 ----
 int laneKey = -1; float laneT0 = 0f; bool pinDone = false, residueDone = false, bgmDone = false;
 float nextBgmLog = 0f, finishedAt = -1f;
@@ -479,11 +544,21 @@ finish = () =>
     W($"DJ｜始めた コーナー {djCornerStarts}・ID {djIdStarts}｜切り替わりをしゃべったまままたいだ {djSwitchTalking}回・途切れ {djBreak}｜2本同時 {djDouble}｜同じ周の重なり {djRepeat}｜" +
       $"いちばん長い間 {djMaxGap:F1}秒・長すぎる間 {djLongGap}｜効果音で下がった {djDuckDown}回（下がらない {djDuckDownBad}）・戻った {djDuckBack}回（戻らない {djDuckBackBad}）｜" +
       $"8本目の交信 {txTotal}回・DJ と重なった {radioOverlap}｜DJ のボタン 合格 {djButtonOk}／不合格 {djButtonBad}｜全体の音のボタン 合格 {djMuteOk}／不合格 {djMuteBad}");
+    int narrBad = 0;
+    if (quick)
+    {
+        narrBad = narrDuckDownBad + narrDuckBackBad + narrDjOverlap + djAfterNarrBad
+                + (narrStartAt < 0f ? 1 : 0) + (narrEndAt < 0f ? 1 : 0) + (narrDuckDown == 0 ? 1 : 0) + (narrThrows == 0 ? 1 : 0);
+        W($"ナレーション｜CrazyGames 版の入り口（CLICK TO TUNE IN の1回）から始めた｜始まった {(narrStartAt >= 0f ? narrStartLane : "★始まらない")}・終わった {(narrEndAt >= 0f ? narrEndLane + $"（{narrEndAt - narrStartAt:F1}秒）" : "★終わらない")}｜" +
+          $"ナレーションの間に投げた {narrThrows}投｜効果音で下がった {narrDuckDown}回（下がらない {narrDuckDownBad}）・戻った {narrDuckBack}回（戻らない {narrDuckBackBad}）｜DJ と重なった {narrDjOverlap}｜終わったあとの DJ の番組 {(djAfterNarrBad == 0 && djAfterNarrChecked ? "始まった" : "★食い違い")}");
+        if (!djAfterNarrChecked) narrBad++;
+    }
+    else W("ナレーション｜いつもの版（タイトルを閉じて始める）なので見ない");
     int djBad = djBreak + djDouble + djRepeat + djLongGap + djDuckDownBad + djDuckBackBad + radioOverlap + djButtonBad + djMuteBad
               + (djSwitchTalking == 0 ? 1 : 0) + (djDuckDown == 0 ? 1 : 0) + (djButtonOk < 2 ? 1 : 0) + (djMuteOk < 2 ? 1 : 0);
     W($"まとめ｜終わったレーン {lanesFinished}（期待 20）｜投球 {throws}｜タイムアウト {timeouts}｜本数の矛盾 {contradictions}｜警告 {warn}｜エラー {err}｜" +
       $"開始時のピンの食い違い {pinStartBad}｜共有設定の食い違い {sharedMismatch}｜動きの確認 {moveChecks}回・止まっていた {moveStopped}回｜" +
-      $"BGM の食い違い {bgmBad}（RANK のあとの結果画面の曲 {rankChecks}回）｜レーンの切り替え {switches}回・前のレーンの音の残り {residue}回｜8本目のボール・ピン・歓声の音 {vac}回｜見つからない部品 {notFound}｜DJ の食い違い {djBad}｜記録の食い違い {recordBad}｜ヒントの食い違い {hintBad}｜" +
+      $"BGM の食い違い {bgmBad}（RANK のあとの結果画面の曲 {rankChecks}回）｜レーンの切り替え {switches}回・前のレーンの音の残り {residue}回｜8本目のボール・ピン・歓声の音 {vac}回｜見つからない部品 {notFound}｜DJ の食い違い {djBad}｜ナレーションの食い違い {narrBad}｜記録の食い違い {recordBad}｜ヒントの食い違い {hintBad}｜" +
       $"{(UnityEditor.EditorApplication.isPlaying ? "" : "★途中で Play が止まった｜")}終わり");
     System.IO.File.AppendAllText(logPath, buf.ToString()); buf.Clear();
 };
@@ -500,6 +575,7 @@ tick = () =>
         if (game == 2 && hintBad == 0) { hintBad++; W("★ヒント：一度投げたのに、2ゲーム目の1本目に出た"); }
     }
     djTick(t, laneKey != -1 && key != laneKey);
+    narrTick(t);
     if (key != laneKey)
     {
         laneKey = key; laneT0 = t; pinDone = residueDone = bgmDone = false; nextBgmLog = t;
@@ -630,6 +706,7 @@ tick = () =>
         //   転がり中の「止まった・時間切れ」の決着が効かない（ピットに入らずに止まった球が永久に決着しない）
         ball.SetInputBlocked(false);
         throws++;
+        if (quick && sp.IsNarrationPlaying) narrThrows++;
         W($"{t:F2}   {seq.ThrowNumber}投目を投げた｜速{speed}・立{side:+0.00;-0.00;0}{(discTarget >= 0f ? $"・神殿の向き {discTarget:F1}°（{(seq.ThrowNumber == 1 ? "阻まれる" : "入る")}角度）" : "")}");
         phase = 3; phaseT = t;
     }
@@ -643,10 +720,24 @@ tick = () =>
 seq.ThrowJudged += onJudged;
 seq.LaneFinished += onLaneFinished;
 UnityEngine.Application.logMessageReceived += onLog;
-if (tune != null) tune.HideImmediately();
-if (title != null) title.HideImmediately();
 sp.ClearRecords();
 W($"通しの確認を始めた（{System.DateTime.Now:yyyy-MM-dd HH:mm:ss}）");
-gm.StartGame(0);
+string how;
+if (quick && tune != null && tune.IsVisible && !tune.IsTuned)
+{
+    // CrazyGames 版：プレイヤーと同じく CLICK TO TUNE IN を1回押す（タイトルを出さずに1本目が始まり、ナレーションが流れる）
+    tune.TuneIn();
+    how = "CrazyGames 版の入り口（CLICK TO TUNE IN の1回）から1本目を始めた";
+}
+else
+{
+    if (tune != null) tune.HideImmediately();
+    if (title != null) title.HideImmediately();
+    gm.StartGame(0);
+    how = "1ゲーム目を1本目から始めた";
+    if (quick) { W("★CrazyGames 版なのに CLICK TO TUNE IN の画面が出ていなかった"); notFound++; }
+}
+W(how + (quick ? $"｜タイトルが出ている {(title != null && title.IsVisible)}" : ""));
+if (quick && title != null && title.IsVisible) { notFound++; W("★CrazyGames 版で、クリックのあとにタイトルが出た"); }
 UnityEditor.EditorApplication.update += tick;
-return "見張り役を登録し、1ゲーム目を1本目から始めた。結果は " + logPath;
+return "見張り役を登録し、" + how + "。結果は " + logPath;

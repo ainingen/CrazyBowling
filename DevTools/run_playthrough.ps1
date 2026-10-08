@@ -78,5 +78,5 @@ Write-Host (Invoke-Eval 'exit_play.cs')
 
 Write-Host '6. 結果'
 if (-not $done) { Write-Host "★$TimeoutMinutes 分で終わらなかった。$log を見ること" }
-Get-Content $log -Encoding UTF8 | Where-Object { $_ -match '★' -or $_ -match '^(まとめ|BGM の並び|9本目|DJ|記録|ヒント)' -or $_ -match '回った角度' }
+Get-Content $log -Encoding UTF8 | Where-Object { $_ -match '★' -or $_ -match '^(まとめ|BGM の並び|9本目|DJ|記録|ヒント|ナレーション)' -or $_ -match '回った角度' }
 Write-Host "全部の記録：$log"
