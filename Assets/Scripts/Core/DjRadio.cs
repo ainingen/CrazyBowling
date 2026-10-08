@@ -5,7 +5,7 @@ namespace CrazyBowling.Core
 {
     /// <summary>
     /// DJ のラジオ番組を流す係（段階6）。シーンの「Sound」に置く。
-    /// CLICK TO START でタイトルのナレーションが止まったら始め、ゲーム中ずっと流す：コーナー → ID → コーナー → ID …（並びは <see cref="DjProgram"/>）。
+    /// CLICK TO START でタイトルのナレーションが止まったら始め（CrazyGames 版は1本目の後ろでナレーションが終わったら）、ゲーム中ずっと流す：コーナー → ID → コーナー → ID …（並びは <see cref="DjProgram"/>）。
     /// レーンが変わっても、結果画面でも、PLAY AGAIN でも止めない（頭にも戻らない）。
     /// 声を鳴らす口は1つだけなので、DJ の声が2本同時に鳴ることはない。
     /// 効果音・歓声が鳴っている間は声を少し下げ、鳴り終わったらなめらかに戻す。DJ がしゃべっている間、BGM は鳴らし係が小さくする。
@@ -185,11 +185,15 @@ namespace CrazyBowling.Core
                 LastTalkTime = now;
             }
 
-            // 始める：CLICK TO TUNE IN もタイトルも閉じて、ナレーションが止まったら
+            // 始める：CLICK TO TUNE IN もタイトルも閉じて、ナレーションが止まったら。
+            // すぐ始める版（CrazyGames 版）は、CLICK TO TUNE IN が閉じて、ナレーションが終わったら（タイトルに戻っていても始める）
             if (!_started)
             {
-                bool titleOpen = (titleView != null && titleView.IsVisible) || (tuneInView != null && tuneInView.IsVisible);
-                if (on && !titleOpen && _suspends == 0 && !player.IsNarrationPlaying && HasClips(table))
+                bool quick = GamePortal.QuickStart;
+                bool titleOpen = titleView != null && titleView.IsVisible;
+                bool tuneInOpen = tuneInView != null && tuneInView.IsVisible;
+                bool narrationBusy = quick ? player.IsTitleIntroActive : player.IsNarrationPlaying;
+                if (DjStartRule.CanStart(on, titleOpen, tuneInOpen, _suspends > 0, narrationBusy, quick) && HasClips(table))
                 {
                     _started = true;
                     _program = new DjProgram(Count(table.djCorners), Count(table.djIds), System.Environment.TickCount, true);

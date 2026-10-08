@@ -138,6 +138,11 @@ namespace CrazyBowling.UI
         /// <summary>タイトルの前の画面：指で触れる端末のとき（段階6）。</summary>
         public const string TuneInPromptTap = "TAP TO TUNE IN";
 
+        /// <summary>
+        /// タイトルの前の画面：CLICK TO TUNE IN の下の小さな一言（CrazyGames 版だけ。クリック1回で1本目が始まることを伝える）。
+        /// </summary>
+        public const string TuneInSubPrompt = "AND START BOWLING";
+
         /// <summary>タイトルの前の画面：ラジオの上の札（段階6）。</summary>
         public const string TuneInOnAir = "ON AIR";
 

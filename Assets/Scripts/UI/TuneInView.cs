@@ -13,6 +13,8 @@ namespace CrazyBowling.UI
     ///   ・画面のどこをクリックしても、音を鳴らせる状態にしてから（ブラウザは最初のクリックまで音を出さないため）、
     ///     小さな「ヒュイーン」とナレーションを始め、タイトルを最初から出す
     /// Web でも Windows でも出す（入口の雰囲気をそろえる）。
+    /// ★CrazyGames 版（<see cref="GamePortal.QuickStart"/>）は、クリック1回でタイトルを出さずに1本目を始める
+    /// （ナレーションは1本目の後ろで流れる）。下に小さく「AND START BOWLING」を足す。
     /// スクリプトから投球が始まったとき（通しの確認）は、何もせずに閉じる。
     /// </summary>
     public class TuneInView : MonoBehaviour, IPointerClickHandler
@@ -58,6 +60,7 @@ namespace CrazyBowling.UI
         private TMP_Text _signLabel;
         private TMP_Text _radioName;
         private TMP_Text _prompt;
+        private TMP_Text _subPrompt;
         private TMP_Text[] _numbers;
 
         /// <summary>この画面が出ているか（消えかけも含む）。</summary>
@@ -141,7 +144,16 @@ namespace CrazyBowling.UI
             }
             if (titleView != null)
             {
-                titleView.ShowFromStart();
+                if (GamePortal.QuickStart)
+                {
+                    // CrazyGames 版：タイトルを出さずに、CLICK TO START と同じ始め方で1本目を始める
+                    player?.Record("CLICK TO TUNE IN：タイトルを出さずに1本目を始めた");
+                    titleView.StartFirstGame();
+                }
+                else
+                {
+                    titleView.ShowFromStart();
+                }
             }
         }
 
@@ -234,6 +246,12 @@ namespace CrazyBowling.UI
             float promptBreath = NeonUI.Breath(2.2f);
             _prompt.alpha = Mathf.Clamp01((t - 0.6f) / 0.6f) * (0.7f + 0.3f * promptBreath);
             NeonUI.SetNeonColor(_prompt, NeonUI.Hue(now * 0.1f, 0.7f), 0.4f + 0.4f * promptBreath);
+            if (_subPrompt != null)
+            {
+                // 下の一言：主役の CLICK TO TUNE IN より控えめに、同じ色で少し遅れて出る
+                _subPrompt.alpha = Mathf.Clamp01((t - 0.9f) / 0.6f) * (0.6f + 0.2f * promptBreath);
+                NeonUI.SetNeonColor(_subPrompt, NeonUI.Hue(now * 0.1f, 0.7f), 0.25f + 0.2f * promptBreath);
+            }
         }
 
         /// <summary>見た目を組み立てる（1回だけ）。</summary>
@@ -308,6 +326,15 @@ namespace CrazyBowling.UI
             _prompt = NeonUI.CreateText(Rect("Prompt", new Vector2(0f, -330f), new Vector2(1200f, 110f)),
                 skin.BoldFont, skin.BoldNeonMaterial, 76f, Color.white, TextAlignmentOptions.Center);
             _prompt.text = InputHints.Choose(UIText.TuneInPrompt, UIText.TuneInPromptTap, InputHints.UseTapOnThisDevice());
+
+            // CrazyGames 版だけ：クリックで遊び始めることが分かる一言を下に小さく
+            if (GamePortal.QuickStart)
+            {
+                _prompt.rectTransform.anchoredPosition = new Vector2(0f, -315f);
+                _subPrompt = NeonUI.CreateText(Rect("SubPrompt", new Vector2(0f, -392f), new Vector2(1200f, 60f)),
+                    skin.BoldFont, skin.BoldNeonMaterial, 38f, Color.white, TextAlignmentOptions.Center);
+                _subPrompt.text = UIText.TuneInSubPrompt;
+            }
         }
 
         /// <summary>画面の真ん中を基準にした子を作る。</summary>

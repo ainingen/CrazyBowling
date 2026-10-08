@@ -177,6 +177,15 @@ namespace CrazyBowling.UI
             }
 
             _hideStart = Time.unscaledTime;
+            StartFirstGame();
+        }
+
+        /// <summary>
+        /// 1本目を最初からやり直し、レーンの大見出しと説明文を出し直す（CLICK TO START と同じ始め方）。
+        /// CrazyGames 版では、CLICK TO TUNE IN の1回のクリックから、タイトルを出さずにこれを呼ぶ。
+        /// </summary>
+        public void StartFirstGame()
+        {
             if (gameManager != null)
             {
                 gameManager.StartGame();

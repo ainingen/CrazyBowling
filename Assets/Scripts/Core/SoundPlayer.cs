@@ -98,6 +98,7 @@ namespace CrazyBowling.Core
         private float _narrationFadeStart;
         private float _narrationBaseVolume;
         private float _bgmDuck = 1f;
+        private float _narrationDuck = 1f;
         private Coroutine _intro;
 
         /// <summary>結果画面で RANK が出た時刻（unscaledTime）。まだ出ていなければ負。結果画面の曲はこのあとに始める。</summary>
@@ -120,6 +121,15 @@ namespace CrazyBowling.Core
 
         /// <summary>タイトルのナレーションが流れているか（小さくして止めている途中も含む）。</summary>
         public bool IsNarrationPlaying => _narration != null && _narration.isPlaying;
+
+        /// <summary>
+        /// ナレーションの番か（CLICK TO TUNE IN のヒュイーンのあと、ナレーションを待っている間も含む）。
+        /// すぐ始める版（CrazyGames 版）で、DJ の番組をナレーションのあとに始めるのに使う。
+        /// </summary>
+        public bool IsTitleIntroActive => _intro != null || IsNarrationPlaying;
+
+        /// <summary>効果音のためにナレーションを下げている倍率（1 で下げていない。すぐ始める版だけ動く）。確かめるとき用。</summary>
+        public float NarrationDuck => _narrationDuck;
 
         /// <summary>今の BGM にかけている倍率（ナレーションの間は小さくする）。確かめるとき用。</summary>
         public float BgmDuck => _bgmDuck;
@@ -588,7 +598,16 @@ namespace CrazyBowling.Core
 
             bool visible = titleView != null && titleView.IsVisible;
             bool closing = titleView != null && titleView.IsClosing;
-            if (!TitleNarrationRule.CanStart(_muted, visible, closing))
+            if (GamePortal.QuickStart)
+            {
+                // すぐ始める版：1本目の後ろで流す。タイトルに戻っていたら・音や DJ を消していたら流さない
+                if (!TitleNarrationRule.CanStartQuick(_muted, IsDjMuted, visible))
+                {
+                    Record("ナレーション：タイトルに戻った・音か DJ を消したので流さない");
+                    yield break;
+                }
+            }
+            else if (!TitleNarrationRule.CanStart(_muted, visible, closing))
             {
                 Record("ナレーション：タイトルが閉じた・音を消したので流さない");
                 yield break;
@@ -602,6 +621,7 @@ namespace CrazyBowling.Core
             _narration.loop = false;
             _narration.pitch = 1f;
             _narrationBaseVolume = SeVolume(table.titleNarration);
+            _narrationDuck = 1f;
             _narration.volume = _narrationBaseVolume;
             _narrationFading = false;
             _narration.Play();
@@ -658,7 +678,20 @@ namespace CrazyBowling.Core
 
             bool visible = titleView != null && titleView.IsVisible;
             bool closing = titleView != null && titleView.IsClosing;
-            if (!_narrationFading && TitleNarrationRule.ShouldFadeOut(visible, closing))
+            if (GamePortal.QuickStart)
+            {
+                // すぐ始める版：TITLE で戻った・DJ を消したら小さくして止める
+                if (!_narrationFading && TitleNarrationRule.ShouldFadeOutQuick(IsDjMuted, visible))
+                {
+                    _narrationFading = true;
+                    _narrationFadeStart = Time.unscaledTime;
+                    Record(visible ? "ナレーション：タイトルに戻ったので小さくし始めた" : "ナレーション：DJ を消したので小さくし始めた");
+                }
+                // 効果音・歓声が鳴っている間は、DJ と同じように少し下げる（下げるのは速く、戻すのはゆっくり）
+                float duckTarget = IsSeActive ? SoundLevel.DbToLinear(table.djDuckDb) : 1f;
+                _narrationDuck = DuckEnvelope.Approach(_narrationDuck, duckTarget, table.djDuckAttackSeconds, table.djDuckReleaseSeconds, Time.unscaledDeltaTime);
+            }
+            else if (!_narrationFading && TitleNarrationRule.ShouldFadeOut(visible, closing))
             {
                 _narrationFading = true;
                 _narrationFadeStart = Time.unscaledTime;
@@ -675,9 +708,16 @@ namespace CrazyBowling.Core
                     Record("ナレーション：止めた");
                     return;
                 }
-                _narration.volume = _narrationBaseVolume * k;
+                _narration.volume = _narrationBaseVolume * _narrationDuck * k;
+            }
+            else if (GamePortal.QuickStart)
+            {
+                _narration.volume = _narrationBaseVolume * _narrationDuck;
             }
         }
+
+        /// <summary>DJ だけを消しているか（すぐ始める版で、ナレーションも流さない・止めるのに使う）。</summary>
+        private static bool IsDjMuted => DjRadio.Instance != null && DjRadio.Instance.DjMuted;
 
         private void Update()
         {

@@ -294,6 +294,50 @@ namespace CrazyBowling.Core
         {
             return muted;
         }
+
+        // ---- すぐ始める版（CrazyGames 版。CLICK TO TUNE IN の1回で1本目が始まり、ナレーションは1本目の後ろで流れる） ----
+
+        /// <summary>
+        /// すぐ始める版：ナレーションを流し始めてよいか。
+        /// 音を消している・DJ を消している・タイトルに戻っている（TITLE を押した）ときは流さない。
+        /// </summary>
+        public static bool CanStartQuick(bool muted, bool djMuted, bool titleVisible)
+        {
+            return !muted && !djMuted && !titleVisible;
+        }
+
+        /// <summary>
+        /// すぐ始める版：流れているナレーションを、小さくして止め始めるか。
+        /// DJ を消した・タイトルに戻った（TITLE を押した）とき。音を消したときは <see cref="ShouldStopNow"/> ですぐ止める。
+        /// </summary>
+        public static bool ShouldFadeOutQuick(bool djMuted, bool titleVisible)
+        {
+            return djMuted || titleVisible;
+        }
+    }
+
+    /// <summary>
+    /// DJ のラジオ番組をいつ始めるか（段階6）。
+    /// いつもの版：CLICK TO TUNE IN もタイトルも閉じて、ナレーションが止まったら。
+    /// すぐ始める版（CrazyGames 版）：CLICK TO TUNE IN が閉じて、ナレーション（ヒュイーンからナレーションの終わりまで）が終わったら。
+    /// タイトルが出ていても始める（ナレーションの途中で TITLE に戻ったとき、タイトルの上で番組を流すため）。
+    /// </summary>
+    public static class DjStartRule
+    {
+        /// <param name="on">音を鳴らせる・全体の音も DJ も消していない。</param>
+        /// <param name="titleOpen">タイトルが出ている。</param>
+        /// <param name="tuneInOpen">CLICK TO TUNE IN の画面が出ている。</param>
+        /// <param name="suspended">一時停止を頼まれている（CREDITS の画面）。</param>
+        /// <param name="narrationBusy">ナレーションが流れている（すぐ始める版は、ヒュイーンのあとナレーションを待っている間も含む）。</param>
+        /// <param name="quickStart">すぐ始める版か。</param>
+        public static bool CanStart(bool on, bool titleOpen, bool tuneInOpen, bool suspended, bool narrationBusy, bool quickStart)
+        {
+            if (!on || tuneInOpen || suspended || narrationBusy)
+            {
+                return false;
+            }
+            return quickStart || !titleOpen;
+        }
     }
 
     /// <summary>

@@ -318,6 +318,62 @@ namespace CrazyBowling.Tests.EditMode
             Assert.That(TitleNarrationRule.ShouldStopNow(false), Is.False);
         }
 
+        // ======== すぐ始める版（CrazyGames 版）のナレーションと DJ ========
+
+        [Test]
+        public void すぐ始める版はタイトルが出ていなくてもナレーションを流す()
+        {
+            Assert.That(TitleNarrationRule.CanStartQuick(false, false, false), Is.True);
+        }
+
+        [Test]
+        public void すぐ始める版は音かDJを消していたらナレーションを流さない()
+        {
+            Assert.That(TitleNarrationRule.CanStartQuick(true, false, false), Is.False);
+            Assert.That(TitleNarrationRule.CanStartQuick(false, true, false), Is.False);
+        }
+
+        [Test]
+        public void すぐ始める版はタイトルに戻っていたらナレーションを流さない()
+        {
+            Assert.That(TitleNarrationRule.CanStartQuick(false, false, true), Is.False);
+        }
+
+        [Test]
+        public void すぐ始める版はタイトルに戻るかDJを消したら小さくして止める()
+        {
+            Assert.That(TitleNarrationRule.ShouldFadeOutQuick(false, false), Is.False);
+            Assert.That(TitleNarrationRule.ShouldFadeOutQuick(false, true), Is.True);
+            Assert.That(TitleNarrationRule.ShouldFadeOutQuick(true, false), Is.True);
+        }
+
+        [Test]
+        public void いつもの版のDJはタイトルとナレーションが閉じてから始める()
+        {
+            Assert.That(DjStartRule.CanStart(true, false, false, false, false, false), Is.True);
+            Assert.That(DjStartRule.CanStart(true, true, false, false, false, false), Is.False);
+            Assert.That(DjStartRule.CanStart(true, false, true, false, false, false), Is.False);
+            Assert.That(DjStartRule.CanStart(true, false, false, false, true, false), Is.False);
+        }
+
+        [Test]
+        public void すぐ始める版のDJはナレーションが終わったらタイトルの上でも始める()
+        {
+            Assert.That(DjStartRule.CanStart(true, true, false, false, false, true), Is.True);
+            Assert.That(DjStartRule.CanStart(true, false, false, false, true, true), Is.False);
+            Assert.That(DjStartRule.CanStart(true, false, true, false, false, true), Is.False);
+        }
+
+        [Test]
+        public void DJは音を消している間と一時停止の間は始めない()
+        {
+            foreach (bool quick in new[] { false, true })
+            {
+                Assert.That(DjStartRule.CanStart(false, false, false, false, false, quick), Is.False);
+                Assert.That(DjStartRule.CanStart(true, false, false, true, false, quick), Is.False);
+            }
+        }
+
         [Test]
         public void RANKが出るまでは結果画面の曲を流さない()
         {
